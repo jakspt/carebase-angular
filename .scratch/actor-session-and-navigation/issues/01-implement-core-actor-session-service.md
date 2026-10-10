@@ -4,20 +4,21 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] `ActorSession` is implemented as an injectable singleton service (`providedIn: 'root'`).
-- [ ] Defines domain types `ActorRole` (`'admin' | 'doctor' | 'clerk'`) and `ActorSessionState`.
-- [ ] Exposes reactive signals: `role()`, `activeClerk()`, `activeDoctor()`, and computed `isAuthenticated()`.
-- [ ] `setRole(role, actor?)` updates active role and associated actor identity, atomically synchronizing to `sessionStorage`.
-- [ ] `clearSession()` resets all actor signals and purges storage keys.
-- [ ] Hydration runs on service construction, recovering active role and clerk/doctor profiles across browser refreshes.
-- [ ] Gracefully handles environments without `window.sessionStorage` (SSR, testing, disabled cookies) via try/catch fallbacks.
-- [ ] Headless unit tests verify role transitions, persistence, hydration, session clearance, and storage failure fallbacks.
+- [x] `ActorSession` is implemented as an injectable singleton service (`providedIn: 'root'`).
+- [x] Defines domain types `ActorRole` (`'admin' | 'doctor' | 'clerk'`) and `ActorSessionState`.
+- [x] Exposes reactive signals: `role()`, `activeClerk()`, `activeDoctor()`, and computed `isAuthenticated()`.
+- [x] `setRole(role, actor?)` updates active role and associated actor identity, atomically synchronizing to `sessionStorage`.
+- [x] `clearSession()` resets all actor signals and purges storage keys.
+- [x] Hydration runs on service construction, recovering active role and clerk/doctor profiles across browser refreshes.
+- [x] Gracefully handles environments without `window.sessionStorage` (SSR, testing, disabled cookies) via try/catch fallbacks.
+- [x] Headless unit tests verify role transitions, persistence, hydration, session clearance, and storage failure fallbacks.
 
 ## Comments
 
-- Will replace the shallow 17-line in-memory `UserService`.
-- Prepares for migrating `activeClerk` persistence out of `ClerkService`.
+- Implemented `ActorSession` service in `src/app/services/actor-session.ts` with `providedIn: 'root'`.
+- Created unit tests in `src/app/services/actor-session.spec.ts` testing all 13 scenarios across initial state, transitions, clearance, hydration, and storage exceptions.
+- Verified test suite and `ng build` cleanly pass.
