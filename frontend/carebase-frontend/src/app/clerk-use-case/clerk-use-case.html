@@ -9,32 +9,52 @@
     <!-- Active Clerk Session Header -->
     <div class="clerk-context-box">
       @if (activeClerk(); as clerk) {
-      <div class="active-clerk-card active-clerk-badge" matTooltip="Logged-in Clerk attached to bookings">
-        <mat-icon class="clerk-icon" aria-hidden="true">badge</mat-icon>
-        <div class="clerk-info">
-          <span class="clerk-label">Acting Clerk</span>
-          <span class="clerk-name" [title]="clerk.name + ' (SSN: ' + clerk.ssn + ')'">{{ clerk.name }} (SSN: {{ clerk.ssn }})</span>
+        <div
+          class="active-clerk-card active-clerk-badge"
+          matTooltip="Logged-in Clerk attached to bookings"
+        >
+          <mat-icon class="clerk-icon" aria-hidden="true">badge</mat-icon>
+          <div class="clerk-info">
+            <span class="clerk-label">Acting Clerk</span>
+            <span class="clerk-name" [title]="clerk.name + ' (SSN: ' + clerk.ssn + ')'"
+              >{{ clerk.name }} (SSN: {{ clerk.ssn }})</span
+            >
+          </div>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="clearClerk()"
+            class="change-clerk-btn"
+            aria-label="Change acting clerk"
+          >
+            <mat-icon aria-hidden="true">edit</mat-icon>
+            <span>Change</span>
+          </button>
         </div>
-        <button mat-stroked-button type="button" (click)="clearClerk()" class="change-clerk-btn" aria-label="Change acting clerk">
-          <mat-icon aria-hidden="true">edit</mat-icon>
-          <span>Change</span>
-        </button>
-      </div>
       } @else {
-      <div class="clerk-picker">
-        <mat-form-field appearance="outline" class="clerk-select-field" subscriptSizing="dynamic">
-          <mat-label>Assign Acting Clerk</mat-label>
-          <input #clerkInput matInput placeholder="Search clerk name/SSN..." [value]="clerkSearchQuery()"
-            (input)="onClerkSearchInput($event)" [matAutocomplete]="clerkAuto" />
-          <mat-icon matPrefix>badge</mat-icon>
-        </mat-form-field>
-        <mat-autocomplete #clerkAuto="matAutocomplete" [displayWith]="displayClerk"
-          (optionSelected)="selectClerk($event.option.value)">
-          @for (clerk of availableClerks(); track clerk.ssn) {
-          <mat-option [value]="clerk"> {{ clerk.name }} (SSN: {{ clerk.ssn }}) </mat-option>
-          }
-        </mat-autocomplete>
-      </div>
+        <div class="clerk-picker">
+          <mat-form-field appearance="outline" class="clerk-select-field" subscriptSizing="dynamic">
+            <mat-label>Assign Acting Clerk</mat-label>
+            <input
+              #clerkInput
+              matInput
+              placeholder="Search clerk name/SSN..."
+              [value]="clerkSearchQuery()"
+              (input)="onClerkSearchInput($event)"
+              [matAutocomplete]="clerkAuto"
+            />
+            <mat-icon matPrefix>badge</mat-icon>
+          </mat-form-field>
+          <mat-autocomplete
+            #clerkAuto="matAutocomplete"
+            [displayWith]="displayClerk"
+            (optionSelected)="selectClerk($event.option.value)"
+          >
+            @for (clerk of availableClerks(); track clerk.ssn) {
+              <mat-option [value]="clerk"> {{ clerk.name }} (SSN: {{ clerk.ssn }}) </mat-option>
+            }
+          </mat-autocomplete>
+        </div>
       }
     </div>
   </div>
@@ -44,48 +64,50 @@
   <!-- Reusable Persistent Clinical Summary Strip Across Active Steps -->
   <ng-template #clinicalSummaryStrip>
     @if (selectedPatient(); as patient) {
-    <div class="clinical-summary-strip" role="region" aria-label="Clinical Context Summary">
-      <!-- Patient Column -->
-      <div class="summary-col patient-col">
-        <mat-icon class="summary-col-icon" aria-hidden="true">person</mat-icon>
-        <div class="summary-col-content">
-          <div class="col-primary-line">
-            <span class="col-prefix">Patient:</span>
-            <span class="col-name">{{ patient.name }}</span>
+      <div class="clinical-summary-strip" role="region" aria-label="Clinical Context Summary">
+        <!-- Patient Column -->
+        <div class="summary-col patient-col">
+          <mat-icon class="summary-col-icon" aria-hidden="true">person</mat-icon>
+          <div class="summary-col-content">
+            <div class="col-primary-line">
+              <span class="col-prefix">Patient:</span>
+              <span class="col-name">{{ patient.name }}</span>
+            </div>
+            <div class="col-secondary-line">
+              <span class="col-meta"
+                >SSN: <span class="meta-val">{{ patient.ssn }}</span></span
+              >
+              <span class="col-sep" aria-hidden="true">&bull;</span>
+              <span class="col-meta">{{ patient.insurance || 'N/A' }}</span>
+            </div>
           </div>
-          <div class="col-secondary-line">
-            <span class="col-meta">SSN: <span class="meta-val">{{ patient.ssn }}</span></span>
-            <span class="col-sep" aria-hidden="true">&bull;</span>
-            <span class="col-meta">{{ patient.insurance || 'N/A' }}</span>
+        </div>
+
+        <!-- Column Divider -->
+        <div class="strip-divider" aria-hidden="true"></div>
+
+        <!-- Doctor Column -->
+        <div class="summary-col doctor-col">
+          <mat-icon class="summary-col-icon doctor" aria-hidden="true">medical_services</mat-icon>
+          <div class="summary-col-content">
+            <div class="col-primary-line">
+              <span class="col-prefix">Doctor:</span>
+              @if (selectedDoctor(); as doc) {
+                <span class="col-name">{{ doc.name }}</span>
+              } @else {
+                <span class="col-name unselected-doc">Not selected</span>
+              }
+            </div>
+            <div class="col-secondary-line">
+              @if (selectedDoctor(); as doc) {
+                <span class="col-meta">{{ doc.specialty || doc.department }}</span>
+              } @else {
+                <span class="col-meta unselected-doc">Pending selection</span>
+              }
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Column Divider -->
-      <div class="strip-divider" aria-hidden="true"></div>
-
-      <!-- Doctor Column -->
-      <div class="summary-col doctor-col">
-        <mat-icon class="summary-col-icon doctor" aria-hidden="true">medical_services</mat-icon>
-        <div class="summary-col-content">
-          <div class="col-primary-line">
-            <span class="col-prefix">Doctor:</span>
-            @if (selectedDoctor(); as doc) {
-            <span class="col-name">{{ doc.name }}</span>
-            } @else {
-            <span class="col-name unselected-doc">Not selected</span>
-            }
-          </div>
-          <div class="col-secondary-line">
-            @if (selectedDoctor(); as doc) {
-            <span class="col-meta">{{ doc.specialty || doc.department }}</span>
-            } @else {
-            <span class="col-meta unselected-doc">Pending selection</span>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
     }
   </ng-template>
 
@@ -102,66 +124,82 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Search Patient</mat-label>
-          <input matInput placeholder="Type at least 2 characters (e.g. Maria or 2041)..." [value]="patientInputValue()"
-            (input)="onPatientSearchInput($event)" [matAutocomplete]="patientAuto" />
+          <input
+            matInput
+            placeholder="Type at least 2 characters (e.g. Maria or 2041)..."
+            [value]="patientInputValue()"
+            (input)="onPatientSearchInput($event)"
+            [matAutocomplete]="patientAuto"
+          />
           <mat-icon matPrefix>search</mat-icon>
           <mat-hint>Debounced query searches registered patients</mat-hint>
         </mat-form-field>
 
-        <mat-autocomplete #patientAuto="matAutocomplete" [displayWith]="displayPatient"
-          (optionSelected)="selectPatient($event.option.value)">
+        <mat-autocomplete
+          #patientAuto="matAutocomplete"
+          [displayWith]="displayPatient"
+          (optionSelected)="selectPatient($event.option.value)"
+        >
           @if (showPatientSpinner()) {
-          <mat-option disabled>
-            <div class="inline-loading">
-              <mat-spinner diameter="18"></mat-spinner>
-              <span>Searching patients...</span>
-            </div>
-          </mat-option>
-          } @else if (
-          !patientSearchResults.isLoading() &&
-          patients().length === 0 &&
-          patientInputValue().trim().length >= 2
-          ) {
-          <mat-option disabled>No patients found matching "{{ patientInputValue() }}"</mat-option>
-          } @else {
-          @for (patient of patients(); track patient.ssn) {
-          <mat-option [value]="patient" class="patient-autocomplete-option">
-            <div class="patient-option-row">
-              <div class="patient-primary">
-                <span class="patient-name">{{ patient.name }}</span>
-                <span class="patient-meta">SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
-                  <span class="meta-val">{{ patient.insurance || 'N/A' }}</span></span>
+            <mat-option disabled>
+              <div class="inline-loading">
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Searching patients...</span>
               </div>
-              @if (patient.nacaScore !== undefined && patient.nacaScore !== null) {
-              <span class="naca-chip" [matTooltip]="getNacaTooltip(patient.nacaScore)"
-                [attr.aria-label]="'NACA score ' + patient.nacaScore">
-                NACA {{ patient.nacaScore }}
-              </span>
-              }
-            </div>
-          </mat-option>
-          }
+            </mat-option>
+          } @else if (
+            !patientSearchResults.isLoading() &&
+            patients().length === 0 &&
+            patientInputValue().trim().length >= 2
+          ) {
+            <mat-option disabled>No patients found matching "{{ patientInputValue() }}"</mat-option>
+          } @else {
+            @for (patient of patients(); track patient.ssn) {
+              <mat-option [value]="patient" class="patient-autocomplete-option">
+                <div class="patient-option-row">
+                  <div class="patient-primary">
+                    <span class="patient-name">{{ patient.name }}</span>
+                    <span class="patient-meta"
+                      >SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
+                      <span class="meta-val">{{ patient.insurance || 'N/A' }}</span></span
+                    >
+                  </div>
+                  @if (patient.nacaScore !== undefined && patient.nacaScore !== null) {
+                    <span
+                      class="naca-chip"
+                      [matTooltip]="getNacaTooltip(patient.nacaScore)"
+                      [attr.aria-label]="'NACA score ' + patient.nacaScore"
+                    >
+                      NACA {{ patient.nacaScore }}
+                    </span>
+                  }
+                </div>
+              </mat-option>
+            }
           }
         </mat-autocomplete>
 
         <!-- Selected Patient Card -->
         @if (selectedPatient(); as patient) {
-        <div class="selected-entity-card">
-          <mat-icon class="entity-icon">person</mat-icon>
-          <div class="entity-details">
-            <h4>{{ patient.name }}</h4>
-            <p>
-              SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
-              <span class="meta-val">{{ patient.insurance || 'N/A' }}</span>
-            </p>
+          <div class="selected-entity-card">
+            <mat-icon class="entity-icon">person</mat-icon>
+            <div class="entity-details">
+              <h4>{{ patient.name }}</h4>
+              <p>
+                SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
+                <span class="meta-val">{{ patient.insurance || 'N/A' }}</span>
+              </p>
+            </div>
+            @if (patient.nacaScore !== undefined && patient.nacaScore !== null) {
+              <span
+                class="naca-chip"
+                [matTooltip]="getNacaTooltip(patient.nacaScore)"
+                [attr.aria-label]="'NACA score ' + patient.nacaScore"
+              >
+                NACA {{ patient.nacaScore }}
+              </span>
+            }
           </div>
-          @if (patient.nacaScore !== undefined && patient.nacaScore !== null) {
-          <span class="naca-chip" [matTooltip]="getNacaTooltip(patient.nacaScore)"
-            [attr.aria-label]="'NACA score ' + patient.nacaScore">
-            NACA {{ patient.nacaScore }}
-          </span>
-          }
-        </div>
         }
 
         <div class="step-actions">
@@ -186,10 +224,13 @@
         <!-- Department Filter -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Hospital Department</mat-label>
-          <mat-select [value]="selectedDepartment()" (selectionChange)="onDepartmentChange($event.value)">
+          <mat-select
+            [value]="selectedDepartment()"
+            (selectionChange)="onDepartmentChange($event.value)"
+          >
             <mat-option value="">-- All Departments --</mat-option>
             @for (dept of departments(); track dept) {
-            <mat-option [value]="dept">{{ dept }}</mat-option>
+              <mat-option [value]="dept">{{ dept }}</mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>apartment</mat-icon>
@@ -198,12 +239,15 @@
         <!-- Doctor Selection -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Attending Doctor</mat-label>
-          <mat-select [value]="selectedDoctor()" [compareWith]="compareDoctor"
-            (selectionChange)="onDoctorChange($event.value)">
+          <mat-select
+            [value]="selectedDoctor()"
+            [compareWith]="compareDoctor"
+            (selectionChange)="onDoctorChange($event.value)"
+          >
             @for (doc of filteredDoctors(); track doc.ssn) {
-            <mat-option [value]="doc">
-              {{ doc.name }} &bull; {{ doc.specialty || doc.department }} ({{ doc.position }})
-            </mat-option>
+              <mat-option [value]="doc">
+                {{ doc.name }} &bull; {{ doc.specialty || doc.department }} ({{ doc.position }})
+              </mat-option>
             }
           </mat-select>
           <mat-icon matPrefix>medical_services</mat-icon>
@@ -211,19 +255,19 @@
 
         <!-- Selected Doctor Card -->
         @if (selectedDoctor(); as doc) {
-        <div class="selected-entity-card">
-          <mat-icon class="entity-icon doctor">medical_information</mat-icon>
-          <div class="entity-details">
-            <h4>{{ doc.name }}</h4>
-            <p>
-              Specialty: <span class="meta-val">{{ doc.specialty }}</span> &bull; Position:
-              <span class="meta-val">{{ doc.position }}</span>
-            </p>
-            <p>
-              Department: <span class="meta-val">{{ doc.department }}</span>
-            </p>
+          <div class="selected-entity-card">
+            <mat-icon class="entity-icon doctor">medical_information</mat-icon>
+            <div class="entity-details">
+              <h4>{{ doc.name }}</h4>
+              <p>
+                Specialty: <span class="meta-val">{{ doc.specialty }}</span> &bull; Position:
+                <span class="meta-val">{{ doc.position }}</span>
+              </p>
+              <p>
+                Department: <span class="meta-val">{{ doc.department }}</span>
+              </p>
+            </div>
           </div>
-        </div>
         }
 
         <div class="step-actions">
@@ -249,8 +293,14 @@
         <!-- Datepicker -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Appointment Date</mat-label>
-          <input matInput [matDatepicker]="picker" [min]="minDate" [value]="selectedDate()"
-            (dateChange)="onDateChange($event.value)" placeholder="Choose consultation date" />
+          <input
+            matInput
+            [matDatepicker]="picker"
+            [min]="minDate"
+            [value]="selectedDate()"
+            (dateChange)="onDateChange($event.value)"
+            placeholder="Choose consultation date"
+          />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
           <mat-hint>Appointments must be scheduled today or in the future</mat-hint>
@@ -261,70 +311,81 @@
           <div class="slots-header">
             <h4>Available Time Slots for {{ selectedDate() | date: 'EEEE, MMMM d, y' }}</h4>
             @if (selectedTimeSlot()) {
-            <span class="selected-time-pill">
-              <mat-icon>schedule</mat-icon> {{ selectedTimeSlot() }}
-            </span>
+              <span class="selected-time-pill">
+                <mat-icon>schedule</mat-icon> {{ selectedTimeSlot() }}
+              </span>
             }
           </div>
 
           <!-- Debounced progress spinner (<250ms threshold) -->
           @if (showSlotSpinner()) {
-          <div class="slot-loading-state">
-            <mat-spinner diameter="32"></mat-spinner>
-            <span>Checking doctor and patient availability...</span>
-          </div>
+            <div class="slot-loading-state">
+              <mat-spinner diameter="32"></mat-spinner>
+              <span>Checking doctor and patient availability...</span>
+            </div>
           } @else if (timeSlotsResource.isLoading()) {
-          <div class="slot-loading-state silent-loading"></div>
+            <div class="slot-loading-state silent-loading"></div>
           } @else if (timeSlots().length === 0) {
-          <div class="empty-state">
-            <mat-icon>event_busy</mat-icon>
-            <p>Please select a date to load available time slots.</p>
-          </div>
+            <div class="empty-state">
+              <mat-icon>event_busy</mat-icon>
+              <p>Please select a date to load available time slots.</p>
+            </div>
           } @else if (!hasAvailableSlots()) {
-          <div class="no-slots-banner" role="status" aria-live="polite">
-            <mat-icon class="no-slots-icon" aria-hidden="true">event_busy</mat-icon>
-            <div class="no-slots-content">
-              <strong class="no-slots-title">No available slots on this date.</strong>
-              @if (parsedNextAvailableDate(); as nextDate) {
-              <p class="no-slots-guidance">
-                <span class="next-available-label">
-                  Next available: {{ nextDate | date: 'EEEE, MMM d' }}
-                </span>
-                <button
-                  type="button"
-                  mat-stroked-button
-                  class="next-available-btn"
-                  (click)="selectNextAvailableDate(nextDate)"
-                  [matTooltip]="'Switch consultation date to ' + (nextDate | date: 'EEEE, MMMM d, y')"
-                  [attr.aria-label]="'Select next available date: ' + (nextDate | date: 'EEEE, MMMM d, y')"
-                >
-                  <mat-icon aria-hidden="true">event_available</mat-icon>
-                  <span>Select Date</span>
-                </button>
-              </p>
-              } @else {
-              <p class="no-slots-guidance">
-                All time slots are booked for this doctor on the selected date. Please choose an alternate date.
-              </p>
-              }
+            <div class="no-slots-banner" role="status" aria-live="polite">
+              <mat-icon class="no-slots-icon" aria-hidden="true">event_busy</mat-icon>
+              <div class="no-slots-content">
+                <strong class="no-slots-title">No available slots on this date.</strong>
+                @if (parsedNextAvailableDate(); as nextDate) {
+                  <p class="no-slots-guidance">
+                    <span class="next-available-label">
+                      Next available: {{ nextDate | date: 'EEEE, MMM d' }}
+                    </span>
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      class="next-available-btn"
+                      (click)="selectNextAvailableDate(nextDate)"
+                      [matTooltip]="
+                        'Switch consultation date to ' + (nextDate | date: 'EEEE, MMMM d, y')
+                      "
+                      [attr.aria-label]="
+                        'Select next available date: ' + (nextDate | date: 'EEEE, MMMM d, y')
+                      "
+                    >
+                      <mat-icon aria-hidden="true">event_available</mat-icon>
+                      <span>Select Date</span>
+                    </button>
+                  </p>
+                } @else {
+                  <p class="no-slots-guidance">
+                    All time slots are booked for this doctor on the selected date. Please choose an
+                    alternate date.
+                  </p>
+                }
+              </div>
             </div>
-          </div>
           } @else {
-          <!-- Bounded scroll container preventing overflow -->
-          <div class="time-slots-container">
-            <div class="time-slots-grid">
-              @for (slot of timeSlots(); track slot.time) {
-              <button mat-stroked-button type="button" class="time-slot-btn"
-                [class.slot-selected]="selectedTimeSlot() === slot.time" [class.slot-available]="slot.available"
-                [disabled]="!slot.available" (click)="selectTimeSlot(slot.time)">
-                <mat-icon class="slot-icon">
-                  {{ selectedTimeSlot() === slot.time ? 'check_circle' : 'schedule' }}
-                </mat-icon>
-                <span>{{ slot.time }}</span>
-              </button>
-              }
+            <!-- Bounded scroll container preventing overflow -->
+            <div class="time-slots-container">
+              <div class="time-slots-grid">
+                @for (slot of timeSlots(); track slot.time) {
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="time-slot-btn"
+                    [class.slot-selected]="selectedTimeSlot() === slot.time"
+                    [class.slot-available]="slot.available"
+                    [disabled]="!slot.available"
+                    (click)="selectTimeSlot(slot.time)"
+                  >
+                    <mat-icon class="slot-icon">
+                      {{ selectedTimeSlot() === slot.time ? 'check_circle' : 'schedule' }}
+                    </mat-icon>
+                    <span>{{ slot.time }}</span>
+                  </button>
+                }
+              </div>
             </div>
-          </div>
           }
         </div>
 
@@ -343,104 +404,114 @@
 
       <div class="step-container">
         @if (bookingSuccess()) {
-        <div class="success-box">
-          <mat-icon class="success-icon">check_circle</mat-icon>
-          <h3>Appointment Successfully Scheduled!</h3>
-          @if (createdAppointmentId()) {
-          <div class="appointment-id-badge">Appointment ID: #{{ createdAppointmentId() }}</div>
-          }
-          <p>
-            The appointment has been recorded. Availability slots for the patient and doctor have
-            been updated.
-          </p>
-          <button mat-flat-button color="primary" (click)="resetWorkflow(stepper)">
-            <mat-icon>add</mat-icon> Schedule Another Appointment
-          </button>
-        </div>
-        } @else {
-        <ng-container *ngTemplateOutlet="clinicalSummaryStrip"></ng-container>
-
-        <p class="step-instructions">
-          Enter an optional consultation reason and review the appointment details:
-        </p>
-
-        <!-- Reason Field -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Consultation Reason (Optional)</mat-label>
-          <textarea matInput rows="3"
-            placeholder="e.g. Routine cardiac checkup, Follow-up consultation, Symptoms discussion..."
-            [formField]="bookingForm.reason"></textarea>
-          @if (bookingForm.reason().touched() && bookingForm.reason().errors().length) {
-          <mat-error>{{ bookingForm.reason().errors()[0].message }}</mat-error>
-          }
-          <mat-hint>Clinical notes or patient concern</mat-hint>
-        </mat-form-field>
-
-        <!-- Review Summary Card -->
-        <div class="review-summary-card">
-          <div class="summary-header">
-            <mat-icon>fact_check</mat-icon>
-            <h3>Booking Summary</h3>
+          <div class="success-box">
+            <mat-icon class="success-icon">check_circle</mat-icon>
+            <h3>Appointment Successfully Scheduled!</h3>
+            @if (createdAppointmentId()) {
+              <div class="appointment-id-badge">Appointment ID: #{{ createdAppointmentId() }}</div>
+            }
+            <p>
+              The appointment has been recorded. Availability slots for the patient and doctor have
+              been updated.
+            </p>
+            <button mat-flat-button color="primary" (click)="resetWorkflow(stepper)">
+              <mat-icon>add</mat-icon> Schedule Another Appointment
+            </button>
           </div>
+        } @else {
+          <ng-container *ngTemplateOutlet="clinicalSummaryStrip"></ng-container>
 
-          <div class="summary-grid">
-            <div class="summary-item">
-              <span class="summary-label">Patient</span>
-              <span class="summary-val">{{ selectedPatient()?.name }}</span>
-              <span class="summary-sub">SSN: {{ selectedPatient()?.ssn }} &bull; {{ selectedPatient()?.insurance
+          <p class="step-instructions">
+            Enter an optional consultation reason and review the appointment details:
+          </p>
+
+          <!-- Reason Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Consultation Reason (Optional)</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              placeholder="e.g. Routine cardiac checkup, Follow-up consultation, Symptoms discussion..."
+              [formField]="bookingForm.reason"
+            ></textarea>
+            @if (bookingForm.reason().touched() && bookingForm.reason().errors().length) {
+              <mat-error>{{ bookingForm.reason().errors()[0].message }}</mat-error>
+            }
+            <mat-hint>Clinical notes or patient concern</mat-hint>
+          </mat-form-field>
+
+          <!-- Review Summary Card -->
+          <div class="review-summary-card">
+            <div class="summary-header">
+              <mat-icon>fact_check</mat-icon>
+              <h3>Booking Summary</h3>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span class="summary-label">Patient</span>
+                <span class="summary-val">{{ selectedPatient()?.name }}</span>
+                <span class="summary-sub"
+                  >SSN: {{ selectedPatient()?.ssn }} &bull; {{ selectedPatient()?.insurance }}</span
+                >
+              </div>
+
+              <div class="summary-item">
+                <span class="summary-label">Doctor</span>
+                <span class="summary-val">{{ selectedDoctor()?.name }}</span>
+                <span class="summary-sub"
+                  >{{ selectedDoctor()?.specialty }} ({{ selectedDoctor()?.department }})</span
+                >
+              </div>
+
+              <div class="summary-item">
+                <span class="summary-label">Date & Time</span>
+                <span class="summary-val">{{ selectedDate() | date: 'EEEE, MMMM d, y' }}</span>
+                <span class="summary-sub highlight-time">{{ selectedTimeSlot() }} (30 min)</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="summary-label">Acting Clerk</span>
+                <span class="summary-val">{{
+                  activeClerk() ? activeClerk()!.name : 'Unassigned'
                 }}</span>
-            </div>
+                @if (activeClerk()) {
+                  <span class="summary-sub">SSN: {{ activeClerk()!.ssn }}</span>
+                }
+              </div>
 
-            <div class="summary-item">
-              <span class="summary-label">Doctor</span>
-              <span class="summary-val">{{ selectedDoctor()?.name }}</span>
-              <span class="summary-sub">{{ selectedDoctor()?.specialty }} ({{ selectedDoctor()?.department }})</span>
-            </div>
-
-            <div class="summary-item">
-              <span class="summary-label">Date & Time</span>
-              <span class="summary-val">{{ selectedDate() | date: 'EEEE, MMMM d, y' }}</span>
-              <span class="summary-sub highlight-time">{{ selectedTimeSlot() }} (30 min)</span>
-            </div>
-
-            <div class="summary-item">
-              <span class="summary-label">Acting Clerk</span>
-              <span class="summary-val">{{
-                activeClerk() ? activeClerk()!.name : 'Unassigned'
-                }}</span>
-              @if (activeClerk()) {
-              <span class="summary-sub">SSN: {{ activeClerk()!.ssn }}</span>
+              @if (reason().trim()) {
+                <div class="summary-item full-width-item">
+                  <span class="summary-label">Consultation Reason</span>
+                  <span class="summary-val reason-text">{{ reason().trim() }}</span>
+                </div>
               }
             </div>
-
-            @if (reason().trim()) {
-            <div class="summary-item full-width-item">
-              <span class="summary-label">Consultation Reason</span>
-              <span class="summary-val reason-text">{{ reason().trim() }}</span>
-            </div>
-            }
           </div>
-        </div>
 
-        <div class="step-actions">
-          <button mat-button matStepperPrevious [disabled]="isSubmitting()">
-            <mat-icon>arrow_back</mat-icon> Back
-          </button>
-          <button mat-flat-button color="primary" (click)="confirmBooking(stepper)"
-            [disabled]="isSubmitting() || !selectedTimeSlot()">
-            @if (isSubmitting()) {
-            <div class="inline-loading">
-              <mat-spinner diameter="18"></mat-spinner>
-              <span>Booking Appointment...</span>
-            </div>
-            } @else {
-            <span class="inline-loading">
-              <mat-icon>event_available</mat-icon>
-              <span>Book Appointment</span>
-            </span>
-            }
-          </button>
-        </div>
+          <div class="step-actions">
+            <button mat-button matStepperPrevious [disabled]="isSubmitting()">
+              <mat-icon>arrow_back</mat-icon> Back
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="confirmBooking(stepper)"
+              [disabled]="isSubmitting() || !selectedTimeSlot()"
+            >
+              @if (isSubmitting()) {
+                <div class="inline-loading">
+                  <mat-spinner diameter="18"></mat-spinner>
+                  <span>Booking Appointment...</span>
+                </div>
+              } @else {
+                <span class="inline-loading">
+                  <mat-icon>event_available</mat-icon>
+                  <span>Book Appointment</span>
+                </span>
+              }
+            </button>
+          </div>
         }
       </div>
     </mat-step>

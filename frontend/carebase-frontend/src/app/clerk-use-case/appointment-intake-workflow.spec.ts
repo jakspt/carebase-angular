@@ -333,4 +333,3 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
     });
   });
 });
-

@@ -1,10 +1,4 @@
-import {
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  inject,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, viewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormField, submit } from '@angular/forms/signals';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';

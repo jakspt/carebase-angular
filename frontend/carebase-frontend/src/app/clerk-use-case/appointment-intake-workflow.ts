@@ -1,11 +1,4 @@
-import {
-  computed,
-  inject,
-  Injectable,
-  linkedSignal,
-  Signal,
-  signal,
-} from '@angular/core';
+import { computed, inject, Injectable, linkedSignal, Signal, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   map,
@@ -38,9 +31,7 @@ function createDebouncedLoadingSignal(
 ): Signal<boolean> {
   return toSignal(
     toObservable(isLoadingSignal).pipe(
-      switchMap((loading) =>
-        loading ? timer(delayMs).pipe(map(() => true)) : of(false),
-      ),
+      switchMap((loading) => (loading ? timer(delayMs).pipe(map(() => true)) : of(false))),
     ),
     { initialValue: false },
   );
@@ -172,7 +163,12 @@ export class AppointmentIntakeWorkflow {
 
   // Declarative dependent state: time slot resets to null whenever doctor, date, department, or patient changes
   private readonly _selectedTimeSlot = linkedSignal<
-    { doctorSsn: string | undefined; date: string; department: string; patientSsn: string | undefined },
+    {
+      doctorSsn: string | undefined;
+      date: string;
+      department: string;
+      patientSsn: string | undefined;
+    },
     string | null
   >({
     source: () => ({
@@ -323,8 +319,7 @@ export class AppointmentIntakeWorkflow {
 
   async submit(): Promise<AppointmentResult> {
     if (this.appointmentForm().invalid()) {
-      const errorMsg =
-        this.appointmentForm.reason().errors()[0]?.message || 'Validation error.';
+      const errorMsg = this.appointmentForm.reason().errors()[0]?.message || 'Validation error.';
       return {
         status: 'validation_error',
         message: errorMsg,

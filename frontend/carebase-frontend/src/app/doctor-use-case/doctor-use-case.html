@@ -23,50 +23,60 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Search Patient</mat-label>
-          <input matInput placeholder="e.g. Maria Musterfrau or 8576270456" [value]="searchInputValue()"
-            (input)="onSearchInput($event)" [matAutocomplete]="patientAuto" />
+          <input
+            matInput
+            placeholder="e.g. Maria Musterfrau or 8576270456"
+            [value]="searchInputValue()"
+            (input)="onSearchInput($event)"
+            [matAutocomplete]="patientAuto"
+          />
           <mat-icon matPrefix>search</mat-icon>
           <mat-hint>Type name or SSN to search</mat-hint>
         </mat-form-field>
 
-        <mat-autocomplete #patientAuto="matAutocomplete" [displayWith]="displayPatient"
-          (optionSelected)="onPatientSelected($event.option.value, stepper)">
+        <mat-autocomplete
+          #patientAuto="matAutocomplete"
+          [displayWith]="displayPatient"
+          (optionSelected)="onPatientSelected($event.option.value, stepper)"
+        >
           @if (searchResults.isLoading()) {
-          <mat-option disabled>
-            <div class="inline-loading">
-              <mat-spinner diameter="18"></mat-spinner>
-              <span>Searching patients...</span>
-            </div>
-          </mat-option>
+            <mat-option disabled>
+              <div class="inline-loading">
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Searching patients...</span>
+              </div>
+            </mat-option>
           } @else if (patients().length === 0 && searchQuery().trim().length > 0) {
-          <mat-option disabled>No patients found matching "{{ searchQuery() }}"</mat-option>
+            <mat-option disabled>No patients found matching "{{ searchQuery() }}"</mat-option>
           } @else {
-          @for (patient of patients(); track patient.id) {
-          <mat-option [value]="patient">
-            <div class="patient-option">
-              <span class="patient-name">{{ patient.name }}</span>
-              <span class="patient-meta">SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
-                <span class="meta-val">{{ patient.insurance || 'N/A' }}</span></span>
-            </div>
-          </mat-option>
-          }
+            @for (patient of patients(); track patient.id) {
+              <mat-option [value]="patient">
+                <div class="patient-option">
+                  <span class="patient-name">{{ patient.name }}</span>
+                  <span class="patient-meta"
+                    >SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
+                    <span class="meta-val">{{ patient.insurance || 'N/A' }}</span></span
+                  >
+                </div>
+              </mat-option>
+            }
           }
         </mat-autocomplete>
 
         @if (selectedPatient(); as patient) {
-        <div class="selected-entity-card">
-          <mat-icon class="entity-icon">person</mat-icon>
-          <div class="entity-details">
-            <h4>{{ patient.name }}</h4>
-            <p>
-              SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
-              <span class="meta-val">{{ patient.insurance || 'N/A' }}</span>
-            </p>
+          <div class="selected-entity-card">
+            <mat-icon class="entity-icon">person</mat-icon>
+            <div class="entity-details">
+              <h4>{{ patient.name }}</h4>
+              <p>
+                SSN: <span class="meta-val">{{ patient.ssn }}</span> &bull; Insurance:
+                <span class="meta-val">{{ patient.insurance || 'N/A' }}</span>
+              </p>
+            </div>
+            <button mat-button color="primary" matStepperNext>
+              Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+            </button>
           </div>
-          <button mat-button color="primary" matStepperNext>
-            Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
-          </button>
-        </div>
         }
       </div>
     </mat-step>
@@ -77,10 +87,13 @@
 
       <div class="step-container">
         @if (selectedPatient(); as patient) {
-        <div class="context-banner">
-          <span>Patient: <span class="meta-val">{{ patient.name }}</span> (SSN:
-            <span class="meta-val">{{ patient.ssn }}</span>)</span>
-        </div>
+          <div class="context-banner">
+            <span
+              >Patient: <span class="meta-val">{{ patient.name }}</span> (SSN:
+              <span class="meta-val">{{ patient.ssn }}</span
+              >)</span
+            >
+          </div>
         }
 
         <p class="step-instructions">
@@ -88,58 +101,72 @@
         </p>
 
         @if (patientDetailsResource.isLoading()) {
-        <div class="loading-state">
-          <mat-spinner diameter="32"></mat-spinner>
-          <span>Loading appointments...</span>
-        </div>
-        } @else if (appointments().length === 0) {
-        <div class="empty-state">
-          <mat-icon>event_busy</mat-icon>
-          <p>No recorded appointments found for this patient.</p>
-        </div>
-        } @else {
-        <div class="appointments-scroll-container">
-          <div class="appointments-grid">
-            @for (appt of pagedAppointments(); track appt.id) {
-            <div class="appointment-card" role="button" tabindex="0"
-              [attr.aria-pressed]="selectedAppointment()?.id === appt.id"
-              [class.selected]="selectedAppointment()?.id === appt.id" (click)="onSelectAppointment(appt, stepper)"
-              (keydown.enter)="onSelectAppointment(appt, stepper)"
-              (keydown.space)="onSelectAppointment(appt, stepper); $event.preventDefault()">
-              <div class="appt-header">
-                <div class="appt-time">
-                  <mat-icon>event</mat-icon>
-                  <span>{{ appt.date }} &bull; {{ appt.time }}</span>
-                </div>
-                @if (selectedAppointment()?.id === appt.id) {
-                <mat-icon class="check-icon" color="primary">check_circle</mat-icon>
-                }
-              </div>
-              <div class="appt-body">
-                <div class="appt-meta-row">
-                  <span class="appt-meta-label">Doctor:</span>
-                  <span class="appt-meta-value">{{ appt.doctorName || 'Not assigned' }}</span>
-                </div>
-                <div class="appt-meta-row">
-                  <span class="appt-meta-label">Reason:</span>
-                  <span class="appt-meta-value">{{ appt.reason }}</span>
-                </div>
-              </div>
-            </div>
-            }
+          <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span>Loading appointments...</span>
           </div>
-        </div>
+        } @else if (appointments().length === 0) {
+          <div class="empty-state">
+            <mat-icon>event_busy</mat-icon>
+            <p>No recorded appointments found for this patient.</p>
+          </div>
+        } @else {
+          <div class="appointments-scroll-container">
+            <div class="appointments-grid">
+              @for (appt of pagedAppointments(); track appt.id) {
+                <div
+                  class="appointment-card"
+                  role="button"
+                  tabindex="0"
+                  [attr.aria-pressed]="selectedAppointment()?.id === appt.id"
+                  [class.selected]="selectedAppointment()?.id === appt.id"
+                  (click)="onSelectAppointment(appt, stepper)"
+                  (keydown.enter)="onSelectAppointment(appt, stepper)"
+                  (keydown.space)="onSelectAppointment(appt, stepper); $event.preventDefault()"
+                >
+                  <div class="appt-header">
+                    <div class="appt-time">
+                      <mat-icon>event</mat-icon>
+                      <span>{{ appt.date }} &bull; {{ appt.time }}</span>
+                    </div>
+                    @if (selectedAppointment()?.id === appt.id) {
+                      <mat-icon class="check-icon" color="primary">check_circle</mat-icon>
+                    }
+                  </div>
+                  <div class="appt-body">
+                    <div class="appt-meta-row">
+                      <span class="appt-meta-label">Doctor:</span>
+                      <span class="appt-meta-value">{{ appt.doctorName || 'Not assigned' }}</span>
+                    </div>
+                    <div class="appt-meta-row">
+                      <span class="appt-meta-label">Reason:</span>
+                      <span class="appt-meta-value">{{ appt.reason }}</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
 
-        @if (appointments().length > 6) {
-        <mat-paginator [length]="appointments().length" [pageSize]="appointmentPageSize()"
-          [pageSizeOptions]="[6, 12, 24]" (page)="onAppointmentPageChange($event)"
-          class="appointments-paginator"></mat-paginator>
-        }
+          @if (appointments().length > 6) {
+            <mat-paginator
+              [length]="appointments().length"
+              [pageSize]="appointmentPageSize()"
+              [pageSizeOptions]="[6, 12, 24]"
+              (page)="onAppointmentPageChange($event)"
+              class="appointments-paginator"
+            ></mat-paginator>
+          }
         }
 
         <div class="step-actions">
           <button mat-button matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
-          <button mat-flat-button color="primary" matStepperNext [disabled]="!selectedAppointment()">
+          <button
+            mat-flat-button
+            color="primary"
+            matStepperNext
+            [disabled]="!selectedAppointment()"
+          >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
         </div>
@@ -152,91 +179,116 @@
 
       <div class="step-container">
         @if (treatmentCompleted()) {
-        <div class="success-box">
-          <mat-icon class="success-icon">check_circle</mat-icon>
-          <h3>Treatment Successfully Recorded!</h3>
-          <p>
-            The patient's treatment record and medications have been securely stored in the active
-            database.
-          </p>
-          <button mat-flat-button color="primary" (click)="resetWorkflow(stepper)">
-            <mat-icon>add</mat-icon> Record Another Treatment
-          </button>
-        </div>
-        } @else {
-        <div class="context-banner">
-          <span>Patient: <span class="meta-val">{{ selectedPatient()?.name }}</span> (SSN:
-            <span class="meta-val">{{ selectedPatient()?.ssn }}</span>)</span>
-          <span>&bull;</span>
-          <span>Appointment:
-            <span class="meta-val">{{ selectedAppointment()?.date }} ({{ selectedAppointment()?.reason }})</span></span>
-        </div>
-
-        <form (submit)="onSubmitTreatment(stepper); $event.preventDefault()" class="treatment-form">
-          <!-- Treatment Description -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Treatment Description</mat-label>
-            <textarea matInput rows="4"
-              placeholder="Enter diagnosis findings, procedures performed, or treatment notes..."
-              [formField]="treatmentForm.description"></textarea>
-            @if (
-            treatmentForm.description().touched() && treatmentForm.description().errors().length
-            ) {
-            <mat-error>{{ treatmentForm.description().errors()[0].message }}</mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Cost -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Treatment Cost (€)</mat-label>
-            <input matInput type="number" placeholder="0.00" [formField]="treatmentForm.cost" />
-            @if (treatmentForm.cost().touched() && treatmentForm.cost().errors().length) {
-            <mat-error>{{ treatmentForm.cost().errors()[0].message }}</mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Medications Chips -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Prescribed Medications</mat-label>
-            <mat-chip-grid #chipGrid aria-label="Selected medications">
-              @for (med of treatmentModel().medications; track med.id) {
-              <mat-chip-row (removed)="removeMedication(med)">
-                {{ med.name }}
-                <button matChipRemove [attr.aria-label]="'remove ' + med.name">
-                  <mat-icon>cancel</mat-icon>
-                </button>
-              </mat-chip-row>
-              }
-            </mat-chip-grid>
-            <input placeholder="Search medication to add..." #medInput (input)="medSearchQuery.set(medInput.value)"
-              [matAutocomplete]="medAuto" [matChipInputFor]="chipGrid" />
-            <mat-autocomplete #medAuto="matAutocomplete" (optionSelected)="
-                  addMedication($event.option.value); medInput.value = ''; medSearchQuery.set('')
-                ">
-              @for (med of filteredMedications(); track med.id) {
-              <mat-option [value]="med">{{ med.name }}</mat-option>
-              }
-            </mat-autocomplete>
-            <mat-hint>Choose from standard formulary medications</mat-hint>
-          </mat-form-field>
-
-          <div class="step-actions">
-            <button mat-button type="button" matStepperPrevious>
-              <mat-icon>arrow_back</mat-icon> Back
-            </button>
-            <button mat-flat-button color="primary" type="submit"
-              [disabled]="treatmentForm().invalid() || isSubmitting()">
-              @if (isSubmitting()) {
-              <div class="inline-loading">
-                <mat-spinner diameter="18"></mat-spinner>
-                <span>Saving...</span>
-              </div>
-              } @else {
-              <span>Complete Treatment</span>
-              }
+          <div class="success-box">
+            <mat-icon class="success-icon">check_circle</mat-icon>
+            <h3>Treatment Successfully Recorded!</h3>
+            <p>
+              The patient's treatment record and medications have been securely stored in the active
+              database.
+            </p>
+            <button mat-flat-button color="primary" (click)="resetWorkflow(stepper)">
+              <mat-icon>add</mat-icon> Record Another Treatment
             </button>
           </div>
-        </form>
+        } @else {
+          <div class="context-banner">
+            <span
+              >Patient: <span class="meta-val">{{ selectedPatient()?.name }}</span> (SSN:
+              <span class="meta-val">{{ selectedPatient()?.ssn }}</span
+              >)</span
+            >
+            <span>&bull;</span>
+            <span
+              >Appointment:
+              <span class="meta-val"
+                >{{ selectedAppointment()?.date }} ({{ selectedAppointment()?.reason }})</span
+              ></span
+            >
+          </div>
+
+          <form
+            (submit)="onSubmitTreatment(stepper); $event.preventDefault()"
+            class="treatment-form"
+          >
+            <!-- Treatment Description -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Treatment Description</mat-label>
+              <textarea
+                matInput
+                rows="4"
+                placeholder="Enter diagnosis findings, procedures performed, or treatment notes..."
+                [formField]="treatmentForm.description"
+              ></textarea>
+              @if (
+                treatmentForm.description().touched() && treatmentForm.description().errors().length
+              ) {
+                <mat-error>{{ treatmentForm.description().errors()[0].message }}</mat-error>
+              }
+            </mat-form-field>
+
+            <!-- Cost -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Treatment Cost (€)</mat-label>
+              <input matInput type="number" placeholder="0.00" [formField]="treatmentForm.cost" />
+              @if (treatmentForm.cost().touched() && treatmentForm.cost().errors().length) {
+                <mat-error>{{ treatmentForm.cost().errors()[0].message }}</mat-error>
+              }
+            </mat-form-field>
+
+            <!-- Medications Chips -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Prescribed Medications</mat-label>
+              <mat-chip-grid #chipGrid aria-label="Selected medications">
+                @for (med of treatmentModel().medications; track med.id) {
+                  <mat-chip-row (removed)="removeMedication(med)">
+                    {{ med.name }}
+                    <button matChipRemove [attr.aria-label]="'remove ' + med.name">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip-row>
+                }
+              </mat-chip-grid>
+              <input
+                placeholder="Search medication to add..."
+                #medInput
+                (input)="medSearchQuery.set(medInput.value)"
+                [matAutocomplete]="medAuto"
+                [matChipInputFor]="chipGrid"
+              />
+              <mat-autocomplete
+                #medAuto="matAutocomplete"
+                (optionSelected)="
+                  addMedication($event.option.value); medInput.value = ''; medSearchQuery.set('')
+                "
+              >
+                @for (med of filteredMedications(); track med.id) {
+                  <mat-option [value]="med">{{ med.name }}</mat-option>
+                }
+              </mat-autocomplete>
+              <mat-hint>Choose from standard formulary medications</mat-hint>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button type="button" matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon> Back
+              </button>
+              <button
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="treatmentForm().invalid() || isSubmitting()"
+              >
+                @if (isSubmitting()) {
+                  <div class="inline-loading">
+                    <mat-spinner diameter="18"></mat-spinner>
+                    <span>Saving...</span>
+                  </div>
+                } @else {
+                  <span>Complete Treatment</span>
+                }
+              </button>
+            </div>
+          </form>
         }
       </div>
     </mat-step>

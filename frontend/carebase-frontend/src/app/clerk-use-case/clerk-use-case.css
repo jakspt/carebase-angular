@@ -282,7 +282,6 @@
   border-color: var(--mat-sys-outline);
 }
 
-
 .selected-entity-card {
   gap: 1rem;
   padding: 1rem 1.25rem;
@@ -308,7 +307,6 @@
   flex: 1;
   min-width: 0;
 }
-
 
 .clinical-summary-strip {
   display: flex;
