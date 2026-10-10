@@ -272,5 +272,35 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       expect(workflow.isSubmitting()).toBe(false);
     });
   });
+
+  describe('Signal Forms in Review Step (Ticket 03)', () => {
+    it('should initialize bookingModel and bookingForm with empty reason', () => {
+      expect(workflow.bookingModel().reason).toBe('');
+      expect(workflow.bookingForm.reason().value()).toBe('');
+      expect(workflow.bookingForm().valid()).toBe(true);
+    });
+
+    it('should update reason when bookingModel changes', () => {
+      workflow.bookingModel.set({ reason: 'Follow-up consultation' });
+      expect(workflow.reason()).toBe('Follow-up consultation');
+    });
+
+    it('should validate reason length schema (max 500 chars)', () => {
+      const longText = 'a'.repeat(501);
+      workflow.bookingModel.set({ reason: longText });
+      expect(workflow.bookingForm().invalid()).toBe(true);
+      expect(workflow.bookingForm.reason().errors().length).toBeGreaterThan(0);
+
+      workflow.bookingModel.set({ reason: 'Valid short reason' });
+      expect(workflow.bookingForm().valid()).toBe(true);
+    });
+
+    it('should reset bookingModel on workflow reset', () => {
+      workflow.bookingModel.set({ reason: 'Some notes' });
+      workflow.reset();
+      expect(workflow.bookingModel().reason).toBe('');
+      expect(workflow.reason()).toBe('');
+    });
+  });
 });
 

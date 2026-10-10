@@ -4,14 +4,19 @@
 
 **Blocked by:** 01: Extract Headless AppointmentIntakeWorkflow Core State Machine
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] Define `BookingNotesModel` interface (e.g. `{ reason: string }`).
-- [ ] Implement Signal Form using `form()` with schema validation if required.
-- [ ] Connect form submission via `submit()` to trigger booking.
-- [ ] Form state is reset when the intake workflow is reset.
-- [ ] Unit tests verify Signal Form integration and validation.
+- [x] Define `BookingNotesModel` interface (e.g. `{ reason: string }`).
+- [x] Implement Signal Form using `form()` with schema validation if required.
+- [x] Connect form submission via `submit()` to trigger booking.
+- [x] Form state is reset when the intake workflow is reset.
+- [x] Unit tests verify Signal Form integration and validation.
 
 ## Comments
+
+- Defined `BookingNotesModel` interface and added `bookingModel`, `bookingForm` using `form()` and `maxLength()` from `@angular/forms/signals`.
+- Updated workflow `submit()` and `reset()` to synchronize with the Signal Form model.
+- Added comprehensive unit tests in `src/app/clerk-use-case/appointment-intake-workflow.spec.ts`.
+- All tests and `ng build` cleanly pass.

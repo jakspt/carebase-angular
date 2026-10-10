@@ -18,6 +18,11 @@ import {
 } from 'rxjs';
 import { Clerk, CreateAppointmentRequest, Doctor, Patient, TimeSlot } from '../models/models';
 import { ClerkService } from '../services/clerk-service';
+import { form, maxLength } from '@angular/forms/signals';
+
+export interface BookingNotesModel {
+  reason: string;
+}
 
 export type BookingResult =
   | { status: 'success'; appointmentId?: number }
@@ -272,6 +277,16 @@ export class AppointmentIntakeWorkflow {
   }
 
   // ── Step 4: Submission & State ──
+  readonly bookingModel = signal<BookingNotesModel>({
+    reason: '',
+  });
+
+  readonly bookingForm = form(this.bookingModel, (schema) => {
+    maxLength(schema.reason, 500, { message: 'Reason cannot exceed 500 characters.' });
+  });
+
+  readonly reason = computed(() => this.bookingModel().reason);
+
   readonly isSubmitting = signal(false);
   readonly bookingSuccess = signal(false);
   readonly createdAppointmentId = signal<number | null>(null);
@@ -290,12 +305,14 @@ export class AppointmentIntakeWorkflow {
       };
     }
 
+    const consultationReason = (reason !== undefined ? reason : this.bookingModel().reason).trim();
+
     const payload: CreateAppointmentRequest = {
       patientSsn: String(patient.ssn),
       doctorSsn: String(doctor.ssn),
       date,
       time,
-      reason: (reason ?? '').trim(),
+      reason: consultationReason,
       clerkSsn: activeClerk ? String(activeClerk.ssn) : undefined,
     };
 
@@ -337,6 +354,7 @@ export class AppointmentIntakeWorkflow {
     this.selectedDoctor.set(null);
     this.selectedDate.set(this.minDate);
     this.selectedTimeSlot.set(null);
+    this.bookingModel.set({ reason: '' });
     this.bookingSuccess.set(false);
     this.createdAppointmentId.set(null);
     this.isSubmitting.set(false);
