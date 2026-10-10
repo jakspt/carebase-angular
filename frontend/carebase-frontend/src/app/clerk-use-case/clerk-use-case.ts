@@ -2,13 +2,11 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  computed,
   inject,
-  signal,
   viewChild,
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormField, submit } from '@angular/forms/signals';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatInputModule } from '@angular/material/input';
@@ -24,24 +22,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import {
-  Subject,
-  debounceTime,
-  distinctUntilChanged,
-  firstValueFrom,
-  map,
-  of,
-  switchMap,
-  timer,
-} from 'rxjs';
-import { Clerk, CreateAppointmentRequest, Doctor, Patient, TimeSlot } from '../models/models';
-import { ClerkService } from '../services/clerk-service';
+import { Clerk, Doctor, Patient } from '../models/models';
+import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 
 @Component({
   imports: [
     CommonModule,
-    FormsModule,
+    FormField,
     MatAutocompleteModule,
     MatStepperModule,
     MatInputModule,
@@ -58,200 +45,70 @@ import { ClerkService } from '../services/clerk-service';
     MatTooltipModule,
     DatePipe,
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [provideNativeDateAdapter(), AppointmentIntakeWorkflow],
   selector: 'app-clerk-use-case',
   styleUrl: './clerk-use-case.css',
   templateUrl: './clerk-use-case.html',
 })
 export class ClerkUseCase {
-  private readonly clerkService = inject(ClerkService);
+  readonly workflow = inject(AppointmentIntakeWorkflow);
   private readonly snackBar = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
 
   // ── Clerk Profile ──
-  readonly activeClerk = this.clerkService.getActiveClerk();
-  readonly clerkSearchQuery = signal('');
+  readonly activeClerk = this.workflow.activeClerk;
+  readonly clerkSearchQuery = this.workflow.clerkSearchQuery;
   readonly clerkInput = viewChild<ElementRef<HTMLInputElement>>('clerkInput');
-  readonly clerkSearchResults = this.clerkService.searchClerks(this.clerkSearchQuery);
-  readonly availableClerks = computed<Clerk[]>(() => {
-    if (this.clerkSearchResults.hasValue()) {
-      return this.clerkSearchResults.value()?.clerks ?? [];
-    }
-    return [];
-  });
+  readonly availableClerks = this.workflow.availableClerks;
 
   // ── Step 1: Patient Search ──
-  readonly patientSearchQuery = signal('');
-  readonly patientInputValue = signal('');
-  private readonly patientSearchSubject$ = new Subject<string>();
-  readonly patientSearchResults = this.clerkService.searchPatients(this.patientSearchQuery);
-
-  private readonly spinnerDelayMs = 250;
-  readonly showPatientSpinner = toSignal(
-    toObservable(this.patientSearchResults.isLoading).pipe(
-      switchMap((loading) =>
-        loading ? timer(this.spinnerDelayMs).pipe(map(() => true)) : of(false),
-      ),
-    ),
-    { initialValue: false },
-  );
-
-  readonly patients = computed<Patient[]>(() => {
-    if (this.patientSearchResults.hasValue()) {
-      return this.patientSearchResults.value()?.patients ?? [];
-    }
-    return [];
-  });
-  readonly selectedPatient = signal<Patient | null>(null);
-
-  constructor() {
-    this.patientSearchSubject$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
-      .subscribe((query) => {
-        this.patientSearchQuery.set(query);
-      });
-  }
+  readonly patientSearchQuery = this.workflow.patientSearchQuery;
+  readonly patientInputValue = this.workflow.patientInputValue;
+  readonly patientSearchResults = this.workflow.patientSearchResults;
+  readonly showPatientSpinner = this.workflow.showPatientSpinner;
+  readonly patients = this.workflow.patients;
+  readonly selectedPatient = this.workflow.selectedPatient;
 
   // ── Step 2: Department & Doctor Selection ──
-  readonly doctorsResource = this.clerkService.getDoctors();
-  // Signal used for tests or live data
-  readonly allDoctorsSignal = signal<Doctor[] | null>(null);
-  readonly allDoctors = computed<Doctor[]>(() => {
-    if (this.allDoctorsSignal()) {
-      return this.allDoctorsSignal()!;
-    }
-    if (this.doctorsResource.hasValue()) {
-      return this.doctorsResource.value()?.doctors ?? [];
-    }
-    return [];
-  });
-
-  readonly departments = computed<string[]>(() => {
-    const list = this.allDoctors();
-    const depts = new Set<string>();
-    for (const d of list) {
-      if (d.department) depts.add(d.department);
-    }
-    return Array.from(depts).sort();
-  });
-
-  readonly selectedDepartment = signal<string>('');
-  readonly filteredDoctors = computed<Doctor[]>(() => {
-    const dept = this.selectedDepartment();
-    const all = this.allDoctors();
-    if (!dept) return all;
-    return all.filter((d) => d.department === dept);
-  });
-
-  readonly selectedDoctor = signal<Doctor | null>(null);
+  readonly allDoctors = this.workflow.allDoctors;
+  readonly departments = this.workflow.departments;
+  readonly selectedDepartment = this.workflow.selectedDepartment;
+  readonly filteredDoctors = this.workflow.filteredDoctors;
+  readonly selectedDoctor = this.workflow.selectedDoctor;
 
   // ── Step 3: Date & Time Slot Selection ──
-  readonly minDate = (() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })();
-  readonly selectedDate = signal<Date | null>(this.minDate);
-  readonly formattedDate = computed<string>(() => {
-    const raw = this.selectedDate();
-    if (!raw) return '';
-    const d = raw instanceof Date ? raw : new Date(raw);
-    if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  });
-
-  readonly selectedTimeSlot = signal<string | null>(null);
-
-  // Query parameter signal for slot loading
-  readonly slotParams = computed(() => {
-    const date = this.formattedDate();
-    const doctor = this.selectedDoctor();
-    const patient = this.selectedPatient();
-    if (!date || !doctor) return undefined;
-    return {
-      date,
-      doctorSsn: doctor.ssn,
-      patientSsn: patient?.ssn,
-    };
-  });
-
-  readonly timeSlotsResource = this.clerkService.getTimeSlots(this.slotParams);
-
-  // Debounced spinner for slots (<250ms threshold)
-  readonly showSlotSpinner = toSignal(
-    toObservable(this.timeSlotsResource.isLoading).pipe(
-      switchMap((loading) =>
-        loading ? timer(this.spinnerDelayMs).pipe(map(() => true)) : of(false),
-      ),
-    ),
-    { initialValue: false },
-  );
-
-  // Signal used for tests or explicit mock data
-  readonly timeSlotsSignal = signal<TimeSlot[] | null>(null);
-  readonly timeSlots = computed<TimeSlot[]>(() => {
-    if (this.timeSlotsSignal()) {
-      return this.timeSlotsSignal()!;
-    }
-    if (this.timeSlotsResource.hasValue()) {
-      return this.timeSlotsResource.value()?.slots ?? [];
-    }
-    return [];
-  });
-
-  readonly hasAvailableSlots = computed<boolean>(() => {
-    return this.timeSlots().some((s) => s.available);
-  });
-
-  // Signal used for tests or proactive guidance override
-  readonly nextAvailableDateSignal = signal<string | null>(null);
-  readonly nextAvailableDate = computed<string | null>(() => {
-    if (this.nextAvailableDateSignal() !== null) {
-      return this.nextAvailableDateSignal();
-    }
-    if (this.timeSlotsResource.hasValue()) {
-      return this.timeSlotsResource.value()?.nextAvailableDate ?? null;
-    }
-    return null;
-  });
-
-  readonly parsedNextAvailableDate = computed<Date | null>(() => {
-    const dateStr = this.nextAvailableDate();
-    if (!dateStr) return null;
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      return new Date(year, month, day, 12, 0, 0);
-    }
-    return new Date(dateStr);
-  });
+  readonly minDate = this.workflow.minDate;
+  readonly selectedDate = this.workflow.selectedDate;
+  readonly formattedDate = this.workflow.formattedDate;
+  readonly selectedTimeSlot = this.workflow.selectedTimeSlot;
+  readonly timeSlotsResource = this.workflow.timeSlotsResource;
+  readonly showSlotSpinner = this.workflow.showSlotSpinner;
+  readonly timeSlots = this.workflow.timeSlots;
+  readonly hasAvailableSlots = this.workflow.hasAvailableSlots;
+  readonly nextAvailableDate = this.workflow.nextAvailableDate;
+  readonly parsedNextAvailableDate = this.workflow.parsedNextAvailableDate;
 
   // ── Step 4: Reason & Booking Review ──
-  readonly reason = signal<string>('');
-  readonly isSubmitting = signal<boolean>(false);
-  readonly bookingSuccess = signal<boolean>(false);
-  readonly createdAppointmentId = signal<number | null>(null);
+  readonly bookingModel = this.workflow.bookingModel;
+  readonly bookingForm = this.workflow.bookingForm;
+  readonly reason = this.workflow.reason;
+  readonly isSubmitting = this.workflow.isSubmitting;
+  readonly bookingSuccess = this.workflow.bookingSuccess;
+  readonly createdAppointmentId = this.workflow.createdAppointmentId;
 
   // ── Methods & Handlers ──
 
   onClerkSearchInput(event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.clerkSearchQuery.set(val);
+    this.workflow.setClerkSearchInput(val);
   }
 
   selectClerk(clerk: Clerk): void {
-    this.clerkService.setActiveClerk(clerk);
-    this.clerkSearchQuery.set('');
+    this.workflow.selectClerk(clerk);
   }
 
   clearClerk(): void {
-    this.clerkService.setActiveClerk(null);
-    this.clerkSearchQuery.set('');
+    this.workflow.clearClerk();
     this.cdr.detectChanges();
     const inputEl = this.clerkInput()?.nativeElement;
     if (inputEl) {
@@ -263,15 +120,11 @@ export class ClerkUseCase {
 
   onPatientSearchInput(event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.patientInputValue.set(val);
-    this.patientSearchSubject$.next(val);
+    this.workflow.setPatientSearchInput(val);
   }
 
   selectPatient(patient: Patient, stepper?: MatStepper): void {
-    this.selectedPatient.set(patient);
-    this.patientInputValue.set(this.displayPatient(patient));
-    this.patientSearchQuery.set(patient ? patient.name : '');
-    this.selectedTimeSlot.set(null);
+    this.workflow.selectPatient(patient);
   }
 
   displayPatient(patient: Patient | null): string {
@@ -296,128 +149,62 @@ export class ClerkUseCase {
   }
 
   onDepartmentChange(dept: string): void {
-    this.selectedDepartment.set(dept);
-    this.selectedDoctor.set(null);
-    this.selectedTimeSlot.set(null);
+    this.workflow.selectDepartment(dept);
   }
 
   onDoctorChange(doctor: Doctor): void {
-    this.selectedDoctor.set(doctor);
-    this.selectedTimeSlot.set(null);
+    this.workflow.selectDoctor(doctor);
   }
 
   selectDoctor(doctor: Doctor, stepper?: MatStepper): void {
-    this.selectedDoctor.set(doctor);
-    this.selectedTimeSlot.set(null);
+    this.workflow.selectDoctor(doctor);
   }
 
   onDateChange(date: Date | null): void {
-    this.selectedDate.set(date);
-    this.selectedTimeSlot.set(null);
+    this.workflow.selectDate(date);
   }
 
   selectNextAvailableDate(dateVal?: string | Date | null): void {
-    const target = dateVal ?? this.parsedNextAvailableDate() ?? this.nextAvailableDate();
-    if (!target) return;
-    let targetDate: Date;
-    if (typeof target === 'string') {
-      const parts = target.split('-');
-      if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        targetDate = new Date(year, month, day);
-      } else {
-        targetDate = new Date(target);
-      }
-    } else {
-      targetDate = new Date(target);
-    }
-    targetDate.setHours(0, 0, 0, 0);
-    this.nextAvailableDateSignal.set(null);
-    this.timeSlotsSignal.set(null);
-    this.onDateChange(targetDate);
+    this.workflow.selectNextAvailableDate(dateVal);
   }
 
   selectTimeSlot(time: string, stepper?: MatStepper): void {
-    if (this.selectedTimeSlot() === time) {
-      this.selectedTimeSlot.set(null);
-    } else {
-      this.selectedTimeSlot.set(time);
-    }
+    this.workflow.selectTimeSlot(time);
   }
 
   async confirmBooking(stepper?: MatStepper): Promise<void> {
-    const patient = this.selectedPatient();
-    const doctor = this.selectedDoctor();
-    const date = this.formattedDate();
-    const time = this.selectedTimeSlot();
-    const activeClerk = this.activeClerk();
-
-    if (!patient || !doctor || !date || !time) {
-      this.snackBar.open('Please fill in all required appointment details.', 'Close', {
-        duration: 4000,
-      });
-      return;
-    }
-
-    const payload: CreateAppointmentRequest = {
-      patientSsn: String(patient.ssn),
-      doctorSsn: String(doctor.ssn),
-      date,
-      time,
-      reason: this.reason().trim(),
-      clerkSsn: activeClerk ? String(activeClerk.ssn) : undefined,
-    };
-
-    this.isSubmitting.set(true);
-
-    try {
-      const response = await firstValueFrom(this.clerkService.bookAppointment(payload));
-      if (response.success) {
-        this.bookingSuccess.set(true);
-        this.createdAppointmentId.set(response.appointmentId ?? null);
-        this.snackBar.open(
-          `Appointment successfully scheduled (ID: ${response.appointmentId ?? 'N/A'})`,
-          'Close',
-          { duration: 5000 },
-        );
+    await submit(this.bookingForm, async () => {
+      const result = await this.workflow.submit();
+      switch (result.status) {
+        case 'success':
+          this.snackBar.open(
+            `Appointment successfully scheduled (ID: ${result.appointmentId ?? 'N/A'})`,
+            'Close',
+            { duration: 5000 },
+          );
+          break;
+        case 'conflict':
+          this.snackBar.open(
+            'Selected slot was just booked by another user. Please choose an alternate slot.',
+            'Close',
+            { duration: 6000 },
+          );
+          if (stepper) {
+            stepper.selectedIndex = 2;
+          }
+          break;
+        case 'validation_error':
+          this.snackBar.open(result.message, 'Close', { duration: 4000 });
+          break;
+        case 'error':
+          this.snackBar.open(result.message, 'Close', { duration: 5000 });
+          break;
       }
-    } catch (err: any) {
-      if (err?.status === 409) {
-        this.snackBar.open(
-          'Selected slot was just booked by another user. Please choose an alternate slot.',
-          'Close',
-          { duration: 6000 },
-        );
-        this.selectedTimeSlot.set(null);
-        this.timeSlotsResource.reload();
-        if (stepper) {
-          stepper.selectedIndex = 2;
-        }
-      } else {
-        const errorMsg =
-          err?.error?.error || 'Failed to schedule appointment. Please check your data and retry.';
-        this.snackBar.open(errorMsg, 'Close', { duration: 5000 });
-      }
-    } finally {
-      this.isSubmitting.set(false);
-    }
+    });
   }
 
   resetWorkflow(stepper?: MatStepper): void {
-    this.selectedPatient.set(null);
-    this.selectedDepartment.set('');
-    this.selectedDoctor.set(null);
-    this.selectedDate.set(this.minDate);
-    this.selectedTimeSlot.set(null);
-    this.timeSlotsSignal.set(null);
-    this.nextAvailableDateSignal.set(null);
-    this.reason.set('');
-    this.bookingSuccess.set(false);
-    this.createdAppointmentId.set(null);
-    this.patientInputValue.set('');
-    this.patientSearchQuery.set('');
+    this.workflow.reset();
     if (stepper) {
       stepper.reset();
     }

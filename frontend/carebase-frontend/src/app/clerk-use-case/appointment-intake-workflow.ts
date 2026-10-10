@@ -132,20 +132,22 @@ export class AppointmentIntakeWorkflow {
     return `${year}-${month}-${day}`;
   });
 
-  // Declarative dependent state: time slot resets to null whenever doctor or date changes
+  // Declarative dependent state: time slot resets to null whenever doctor, date, or department changes
   readonly selectedTimeSlot = linkedSignal<
-    { doctorSsn: string | undefined; date: string },
+    { doctorSsn: string | undefined; date: string; department: string },
     string | null
   >({
     source: () => ({
       doctorSsn: this.selectedDoctor()?.ssn,
       date: this.formattedDate(),
+      department: this.selectedDepartment(),
     }),
     computation: (current, previous) => {
       if (
         previous &&
         (current.doctorSsn !== previous.source.doctorSsn ||
-          current.date !== previous.source.date)
+          current.date !== previous.source.date ||
+          current.department !== previous.source.department)
       ) {
         return null;
       }

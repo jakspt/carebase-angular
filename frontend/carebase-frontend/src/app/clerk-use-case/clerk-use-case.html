@@ -249,8 +249,8 @@
         <!-- Datepicker -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Appointment Date</mat-label>
-          <input matInput [matDatepicker]="picker" [min]="minDate" [ngModel]="selectedDate()"
-            (ngModelChange)="onDateChange($event)" placeholder="Choose consultation date" />
+          <input matInput [matDatepicker]="picker" [min]="minDate" [value]="selectedDate()"
+            (dateChange)="onDateChange($event.value)" placeholder="Choose consultation date" />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
           <mat-hint>Appointments must be scheduled today or in the future</mat-hint>
@@ -369,7 +369,10 @@
           <mat-label>Consultation Reason (Optional)</mat-label>
           <textarea matInput rows="3"
             placeholder="e.g. Routine cardiac checkup, Follow-up consultation, Symptoms discussion..."
-            [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
+            [formField]="bookingForm.reason"></textarea>
+          @if (bookingForm.reason().touched() && bookingForm.reason().errors().length) {
+          <mat-error>{{ bookingForm.reason().errors()[0].message }}</mat-error>
+          }
           <mat-hint>Clinical notes or patient concern</mat-hint>
         </mat-form-field>
 

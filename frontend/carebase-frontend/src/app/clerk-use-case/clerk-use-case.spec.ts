@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { signal, WritableSignal } from '@angular/core';
 import { ClerkUseCase } from './clerk-use-case';
 import { ClerkService } from '../services/clerk-service';
 import { of, throwError } from 'rxjs';
-import { Clerk, Doctor, Patient } from '../models/models';
+import { Clerk, Doctor, Patient, TimeSlotsResponse } from '../models/models';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
 
@@ -13,6 +13,7 @@ describe('ClerkUseCase', () => {
   let component: ClerkUseCase;
   let fixture: ComponentFixture<ClerkUseCase>;
   let clerkService: ClerkService;
+  let mockSlotsSignal: WritableSignal<TimeSlotsResponse | undefined>;
 
   const mockClerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
   const mockPatient: Patient = {
@@ -42,6 +43,13 @@ describe('ClerkUseCase', () => {
   ];
 
   beforeEach(async () => {
+    mockSlotsSignal = signal<TimeSlotsResponse | undefined>({
+      date: '2026-10-15',
+      doctorSsn: '3011',
+      slots: [],
+      nextAvailableDate: null,
+    });
+
     await TestBed.configureTestingModule({
       imports: [ClerkUseCase],
       providers: [provideHttpClient(), provideNativeDateAdapter(), ClerkService],
@@ -49,6 +57,22 @@ describe('ClerkUseCase', () => {
 
     clerkService = TestBed.inject(ClerkService);
     clerkService.setActiveClerk(mockClerk);
+
+    vi.spyOn(clerkService, 'getDoctors').mockReturnValue({
+      value: signal({ doctors: mockDoctors }),
+      hasValue: signal(true),
+      isLoading: signal(false),
+      error: signal(undefined),
+      reload: vi.fn(),
+    } as any);
+
+    vi.spyOn(clerkService, 'getTimeSlots').mockReturnValue({
+      value: mockSlotsSignal,
+      hasValue: signal(true),
+      isLoading: signal(false),
+      error: signal(undefined),
+      reload: vi.fn(),
+    } as any);
 
     fixture = TestBed.createComponent(ClerkUseCase);
     component = fixture.componentInstance;
@@ -70,9 +94,7 @@ describe('ClerkUseCase', () => {
   });
 
   it('should filter doctors by selected department', () => {
-    // Mock doctor list in component
-    (component as any).allDoctorsSignal.set(mockDoctors);
-    component.selectedDepartment.set('Cardiology');
+    component.onDepartmentChange('Cardiology');
 
     expect(component.filteredDoctors().length).toBe(1);
     expect(component.filteredDoctors()[0].name).toBe('Dr. Sarah Connor');
@@ -109,7 +131,7 @@ describe('ClerkUseCase', () => {
     component.selectDoctor(mockDoctors[0]);
     component.selectedDate.set(new Date(2026, 9, 15));
     component.selectedTimeSlot.set('09:00');
-    component.reason.set('Routine checkup');
+    component.bookingModel.set({ reason: 'Routine checkup' });
 
     await component.confirmBooking();
 
@@ -163,8 +185,8 @@ describe('ClerkUseCase', () => {
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     component.selectedTimeSlot.set('09:00');
-    component.reason.set('Routine checkup');
-    (component as any).bookingSuccess.set(true);
+    component.bookingModel.set({ reason: 'Routine checkup' });
+    component.workflow.bookingSuccess.set(true);
 
     component.resetWorkflow();
 
@@ -406,10 +428,15 @@ describe('ClerkUseCase', () => {
       .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.timeSlotsSignal.set([
-      { time: '08:00', available: false },
-      { time: '08:30', available: false },
-    ]);
+    mockSlotsSignal.set({
+      date: '2026-10-15',
+      doctorSsn: '3011',
+      slots: [
+        { time: '08:00', available: false },
+        { time: '08:30', available: false },
+      ],
+      nextAvailableDate: null,
+    });
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();
@@ -428,11 +455,15 @@ describe('ClerkUseCase', () => {
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     // 2025-10-16 is Thursday, Oct 16
-    component.nextAvailableDateSignal.set('2025-10-16');
-    component.timeSlotsSignal.set([
-      { time: '08:00', available: false },
-      { time: '08:30', available: false },
-    ]);
+    mockSlotsSignal.set({
+      date: '2026-10-15',
+      doctorSsn: '3011',
+      slots: [
+        { time: '08:00', available: false },
+        { time: '08:30', available: false },
+      ],
+      nextAvailableDate: '2025-10-16',
+    });
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();
@@ -458,8 +489,12 @@ describe('ClerkUseCase', () => {
       .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.nextAvailableDateSignal.set(null);
-    component.timeSlotsSignal.set([{ time: '08:00', available: false }]);
+    mockSlotsSignal.set({
+      date: '2026-10-15',
+      doctorSsn: '3011',
+      slots: [{ time: '08:00', available: false }],
+      nextAvailableDate: null,
+    });
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();
