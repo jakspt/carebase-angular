@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { ClerkReport } from './clerk-report';
-import { ClerkService } from '../services/clerk-service';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
 import { PatientVisitRecord } from '../models/models';
 
 describe('ClerkReport', () => {
@@ -47,10 +47,9 @@ describe('ClerkReport', () => {
     await TestBed.configureTestingModule({
       imports: [ClerkReport],
       providers: [
-        provideHttpClient(),
         provideAnimationsAsync(),
         provideNativeDateAdapter(),
-        ClerkService,
+        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
       ],
     }).compileComponents();
 

@@ -1,15 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 import { ClerkService } from '../services/clerk-service';
 import { Clerk, Doctor, Patient, TimeSlot } from '../models/models';
 import { of, throwError } from 'rxjs';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;
   let clerkService: ClerkService;
-  let httpTesting: HttpTestingController;
 
   const mockClerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
   const mockPatient: Patient = {
@@ -41,19 +40,13 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       providers: [
         AppointmentIntakeWorkflow,
         ClerkService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
+        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
       ],
     });
 
     workflow = TestBed.inject(AppointmentIntakeWorkflow);
     clerkService = TestBed.inject(ClerkService);
-    httpTesting = TestBed.inject(HttpTestingController);
     clerkService.setActiveClerk(mockClerk);
-  });
-
-  afterEach(() => {
-    httpTesting.verify();
   });
 
   it('should be created and reflect active clerk from ClerkService', () => {

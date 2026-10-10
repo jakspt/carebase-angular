@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { signal, WritableSignal } from '@angular/core';
 import { ClerkUseCase } from './clerk-use-case';
@@ -8,6 +7,8 @@ import { of, throwError } from 'rxjs';
 import { Clerk, Doctor, Patient, TimeSlotsResponse } from '../models/models';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
 
 describe('ClerkUseCase', () => {
   let component: ClerkUseCase;
@@ -52,21 +53,26 @@ describe('ClerkUseCase', () => {
 
     await TestBed.configureTestingModule({
       imports: [ClerkUseCase],
-      providers: [provideHttpClient(), provideNativeDateAdapter(), ClerkService],
+      providers: [
+        provideNativeDateAdapter(),
+        ClerkService,
+        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+      ],
     }).compileComponents();
 
     clerkService = TestBed.inject(ClerkService);
     clerkService.setActiveClerk(mockClerk);
+    const dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
 
-    vi.spyOn(clerkService, 'getDoctors').mockReturnValue({
-      value: signal({ doctors: mockDoctors }),
+    vi.spyOn(dataAccess, 'getDoctors').mockReturnValue({
+      value: signal(mockDoctors),
       hasValue: signal(true),
       isLoading: signal(false),
       error: signal(undefined),
       reload: vi.fn(),
     } as any);
 
-    vi.spyOn(clerkService, 'getTimeSlots').mockReturnValue({
+    vi.spyOn(dataAccess, 'getTimeSlots').mockReturnValue({
       value: mockSlotsSignal,
       hasValue: signal(true),
       isLoading: signal(false),

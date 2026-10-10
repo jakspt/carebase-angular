@@ -22,6 +22,7 @@ import {
 } from '../models/models';
 import { ClerkService } from '../services/clerk-service';
 import { ActorSession } from '../services/actor-session';
+import { BookingConflictError, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import { form, maxLength } from '@angular/forms/signals';
 
 export type { AppointmentNotes, AppointmentResult, BookingResult };
@@ -59,15 +60,17 @@ function parseIsoDate(target: string | Date): Date {
 @Injectable()
 export class AppointmentIntakeWorkflow {
   private readonly actorSession = inject(ActorSession);
-  private readonly clerkService = inject(ClerkService);
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly clerkService = inject(ClerkService, { optional: true });
 
   // ── Clerk Profile ──
   readonly activeClerk = this.actorSession.activeClerk;
   readonly clerkSearchQuery = signal('');
-  readonly clerkSearchResults = this.clerkService.searchClerks(this.clerkSearchQuery);
+  readonly clerkSearchResults = this.hospitalDataAccess.searchClerks(this.clerkSearchQuery);
   readonly availableClerks = computed<Clerk[]>(() => {
     if (this.clerkSearchResults.hasValue()) {
-      return this.clerkSearchResults.value()?.clerks ?? [];
+      const val = this.clerkSearchResults.value();
+      return Array.isArray(val) ? val : (val as any)?.clerks ?? [];
     }
     return [];
   });
@@ -80,13 +83,14 @@ export class AppointmentIntakeWorkflow {
   readonly patientInputValue = this._patientInputValue.asReadonly();
 
   private readonly patientSearchSubject$ = new Subject<string>();
-  readonly patientSearchResults = this.clerkService.searchPatients(this.patientSearchQuery);
+  readonly patientSearchResults = this.hospitalDataAccess.searchPatients(this.patientSearchQuery);
 
   readonly showPatientSpinner = createDebouncedLoadingSignal(this.patientSearchResults.isLoading);
 
   readonly patients = computed<Patient[]>(() => {
     if (this.patientSearchResults.hasValue()) {
-      return this.patientSearchResults.value()?.patients ?? [];
+      const val = this.patientSearchResults.value();
+      return Array.isArray(val) ? val : (val as any)?.patients ?? [];
     }
     return [];
   });
@@ -103,10 +107,11 @@ export class AppointmentIntakeWorkflow {
   }
 
   // ── Step 2: Department & Doctor Selection ──
-  readonly doctorsResource = this.clerkService.getDoctors();
+  readonly doctorsResource = this.hospitalDataAccess.getDoctors();
   readonly allDoctors = computed<Doctor[]>(() => {
     if (this.doctorsResource.hasValue()) {
-      return this.doctorsResource.value()?.doctors ?? [];
+      const val = this.doctorsResource.value();
+      return Array.isArray(val) ? val : (val as any)?.doctors ?? [];
     }
     return [];
   });
@@ -206,7 +211,7 @@ export class AppointmentIntakeWorkflow {
     };
   });
 
-  readonly timeSlotsResource = this.clerkService.getTimeSlots(this.slotParams);
+  readonly timeSlotsResource = this.hospitalDataAccess.getTimeSlots(this.slotParams);
 
   readonly showSlotSpinner = createDebouncedLoadingSignal(this.timeSlotsResource.isLoading);
 
@@ -353,7 +358,9 @@ export class AppointmentIntakeWorkflow {
     this._isSubmitting.set(true);
 
     try {
-      const response = await firstValueFrom(this.clerkService.bookAppointment(payload));
+      const response = this.clerkService
+        ? await firstValueFrom(this.clerkService.bookAppointment(payload))
+        : await this.hospitalDataAccess.bookAppointment(payload);
       if (response.success) {
         this._appointmentSuccess.set(true);
         this._createdAppointmentId.set(response.appointmentId ?? null);
@@ -366,14 +373,17 @@ export class AppointmentIntakeWorkflow {
         status: 'error',
         message: response.message || 'Failed to schedule appointment.',
       };
-    } catch (err: any) {
-      if (err?.status === 409) {
+    } catch (err: unknown) {
+      if (err instanceof BookingConflictError || (err as any)?.status === 409) {
         this._selectedTimeSlot.set(null);
         this.timeSlotsResource.reload();
         return { status: 'conflict' };
       }
       const errorMsg =
-        err?.error?.error || 'Failed to schedule appointment. Please check your data and retry.';
+        err instanceof Error
+          ? err.message
+          : (err as any)?.error?.error ||
+            'Failed to schedule appointment. Please check your data and retry.';
       return { status: 'error', message: errorMsg };
     } finally {
       this._isSubmitting.set(false);

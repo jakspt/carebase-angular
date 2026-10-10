@@ -1,47 +1,42 @@
-import { HttpClient, httpResource } from '@angular/common/http';
-import { Service, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, from } from 'rxjs';
 import { DoctorEarnings, Medication, Patient, Treatment } from '../models/models';
+import {
+  AddTreatmentResponse,
+  DoctorEarningsReport,
+  HOSPITAL_DATA_ACCESS,
+} from './hospital-data-access';
 
-@Service()
+@Injectable({
+  providedIn: 'root',
+})
 export class DoctorService {
-  private readonly http = inject(HttpClient);
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
 
   searchPatients(query: () => string) {
-    return httpResource<{ patients: Patient[] }>(() => {
-      const q = query()?.trim();
-      if (!q) return undefined;
-      return `/api/doctor/patients/search?q=${encodeURIComponent(q)}`;
-    });
+    return this.hospitalDataAccess.searchPatients(query);
   }
 
   getPatientDetails(patientId: () => string | number | null | undefined) {
-    return httpResource<Patient>(() => {
+    return this.hospitalDataAccess.getPatientDetails(() => {
       const id = patientId();
-      if (!id) return undefined;
-      return `/api/doctor/patients/${id}`;
+      return id ?? null;
     });
   }
 
   getMedications() {
-    return httpResource<{ medications: Medication[] }>(() => '/api/doctor/medications');
+    return this.hospitalDataAccess.getMedications();
   }
 
   addTreatment(
     patientId: string | number,
     appointmentId: number,
     treatment: Treatment,
-  ): Observable<{ success: boolean }> {
-    return this.http.post<{ success: boolean }>(
-      `/api/doctor/patients/${patientId}/appointments/${appointmentId}/treatments`,
-      treatment,
-    );
+  ): Observable<AddTreatmentResponse> {
+    return from(this.hospitalDataAccess.addTreatment(patientId, appointmentId, treatment));
   }
 
   getReport(year: () => number) {
-    return httpResource<{ year: number; data: DoctorEarnings[] }>(() => {
-      const y = year();
-      return `/api/doctor/report?year=${y}`;
-    });
+    return this.hospitalDataAccess.getDoctorEarningsReport(year);
   }
 }

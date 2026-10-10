@@ -1,23 +1,21 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { firstValueFrom } from 'rxjs';
 import { ClerkService } from './clerk-service';
 import { Clerk, CreateAppointmentRequest } from '../models/models';
+import { HOSPITAL_DATA_ACCESS } from './hospital-data-access';
+import { InMemoryHospitalDataAdapter } from './in-memory-hospital-data-adapter';
 
 describe('ClerkService', () => {
   let service: ClerkService;
-  let httpTesting: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ClerkService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        ClerkService,
+        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+      ],
     });
     service = TestBed.inject(ClerkService);
-    httpTesting = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpTesting.verify();
   });
 
   it('should be created', () => {
@@ -40,29 +38,19 @@ describe('ClerkService', () => {
     expect(freshClerkService.getActiveClerk()()).toBeNull();
   });
 
-  it('should book an appointment via POST /api/clerk/appointments', () => {
+  it('should book an appointment via delegated bookAppointment', async () => {
     const request: CreateAppointmentRequest = {
-      patientSsn: '2041',
-      doctorSsn: '3011',
-      date: '2026-10-15',
-      time: '09:00',
+      patientSsn: '2001',
+      doctorSsn: '3001',
+      date: '2026-11-20',
+      time: '14:00',
       reason: 'Checkup',
       clerkSsn: '1001',
     };
 
-    service.bookAppointment(request).subscribe((res) => {
-      expect(res.success).toBe(true);
-      expect(res.appointmentId).toBe(42);
-    });
-
-    const req = httpTesting.expectOne('/api/clerk/appointments');
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(request);
-    req.flush({
-      success: true,
-      appointmentId: 42,
-      message: 'Appointment successfully scheduled',
-    });
+    const res = await firstValueFrom(service.bookAppointment(request));
+    expect(res.success).toBe(true);
+    expect(res.appointmentId).toBeDefined();
   });
 
   it('should initialize resource query handlers', () => {
@@ -75,7 +63,7 @@ describe('ClerkService', () => {
     const doctorsRes = service.getDoctors();
     expect(doctorsRes).toBeTruthy();
 
-    const slotsRes = service.getTimeSlots(() => ({ date: '2026-10-15', doctorSsn: '3011' }));
+    const slotsRes = service.getTimeSlots(() => ({ date: '2026-10-15', doctorSsn: '3001' }));
     expect(slotsRes).toBeTruthy();
 
     const reportRes = service.getPatientVisitsReport(() => ({
