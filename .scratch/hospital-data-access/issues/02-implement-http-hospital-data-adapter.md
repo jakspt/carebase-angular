@@ -4,13 +4,21 @@
 
 **Blocked by:** 01: Define HospitalDataAccess Port, Token, and Domain Error Hierarchy
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] `HttpHospitalDataAdapter` implements `HospitalDataAccess` and is marked `@Injectable({ providedIn: 'root' })`.
-- [ ] Uses `httpResource` with `parse` to unwrap `{ doctors: Doctor[] }`, `{ patients: Patient[] }`, `{ medications: Medication[] }`, and `{ clerks: Clerk[] }` into unwrapped arrays.
-- [ ] Centralizes query string formatting and URL construction for patient search, clerk search, time slots, doctor earnings, and patient visit reports.
-- [ ] Encapsulates `Injector` internally so callers can invoke query methods without supplying an external injection context.
-- [ ] `bookAppointment` and `addTreatment` return Promises and translate 409 status codes to `BookingConflictError` and network/server errors to `HospitalDataError`.
-- [ ] Unit tests using `provideHttpClientTesting()` verify URL formatting, query serialization, parse unwrapping, and error translation.
+- [x] `HttpHospitalDataAdapter` implements `HospitalDataAccess` and is marked `@Injectable({ providedIn: 'root' })`.
+- [x] Uses `httpResource` with `parse` to unwrap `{ doctors: Doctor[] }`, `{ patients: Patient[] }`, `{ medications: Medication[] }`, and `{ clerks: Clerk[] }` into unwrapped arrays.
+- [x] Centralizes query string formatting and URL construction for patient search, clerk search, time slots, doctor earnings, and patient visit reports.
+- [x] Encapsulates `Injector` internally so callers can invoke query methods without supplying an external injection context.
+- [x] `bookAppointment` and `addTreatment` return Promises and translate 409 status codes to `BookingConflictError` and network/server errors to `HospitalDataError`.
+- [x] Unit tests using `provideHttpClientTesting()` verify URL formatting, query serialization, parse unwrapping, and error translation.
+
+## Comments
+
+- Implemented `HttpHospitalDataAdapter` in `src/app/services/http-hospital-data-adapter.ts`.
+- Configured Angular v22 `httpResource` with `parse` transformation to unwrap envelope objects (`doctors`, `patients`, `medications`, `clerks`).
+- Handled query formatting, parameter encoding, and injection context encapsulation.
+- Implemented `bookAppointment` and `addTreatment` with promise resolution and mapping of 409 status codes to `BookingConflictError` and network errors to `HospitalDataError`.
+- Added comprehensive unit tests in `src/app/services/http-hospital-data-adapter.spec.ts` covering 16 scenarios, all passing cleanly.

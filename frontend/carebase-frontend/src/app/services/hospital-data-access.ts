@@ -69,14 +69,14 @@ export interface HospitalDataAccess {
   searchClerks(query: Signal<string> | (() => string)): ResourceRef<Clerk[]>;
   getTimeSlots(
     params: Signal<TimeSlotQueryParams | undefined> | (() => TimeSlotQueryParams | undefined),
-  ): ResourceRef<TimeSlotsResult>;
+  ): ResourceRef<TimeSlotsResult | undefined>;
   getMedications(): ResourceRef<Medication[]>;
   getDoctorEarningsReport(
     year: Signal<number> | (() => number),
-  ): ResourceRef<DoctorEarningsReport>;
+  ): ResourceRef<DoctorEarningsReport | undefined>;
   getPatientVisitsReport(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
-  ): ResourceRef<PatientVisitsReport>;
+  ): ResourceRef<PatientVisitsReport | undefined>;
   bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse>;
   addTreatment(
     patientId: string | number,
