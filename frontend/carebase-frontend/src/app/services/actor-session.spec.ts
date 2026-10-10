@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActorSession, ActorRole } from './actor-session';
+import { ActorSession } from './actor-session';
 import { Clerk, Doctor } from '../models/models';
 
 describe('ActorSession (Ticket 01)', () => {
@@ -11,9 +11,17 @@ describe('ActorSession (Ticket 01)', () => {
     name: 'Dr. Sarah Connor',
     ssn: '3011',
     specialty: 'Cardiology',
-    position: 'Chief Physician',
+    position: 'Chief Doctor',
     department: 'Cardiology',
   };
+
+  function createHydratedSession(): ActorSession {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [ActorSession],
+    });
+    return TestBed.inject(ActorSession);
+  }
 
   beforeEach(() => {
     sessionStorage.clear();
@@ -37,7 +45,7 @@ describe('ActorSession (Ticket 01)', () => {
   });
 
   describe('Role Transitions & State Updates', () => {
-    it('should set admin role and persist to sessionStorage', () => {
+    it('should set admin role and persist across rehydration', () => {
       session.setRole('admin');
 
       expect(session.role()).toBe('admin');
@@ -45,15 +53,14 @@ describe('ActorSession (Ticket 01)', () => {
       expect(session.activeDoctor()).toBeNull();
       expect(session.isAuthenticated()).toBe(true);
 
-      const raw = sessionStorage.getItem('carebase_actor_session');
-      expect(raw).toBeTruthy();
-      const stored = JSON.parse(raw!);
-      expect(stored.role).toBe('admin');
-      expect(stored.activeClerk).toBeNull();
-      expect(stored.activeDoctor).toBeNull();
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('admin');
+      expect(hydrated.activeClerk()).toBeNull();
+      expect(hydrated.activeDoctor()).toBeNull();
+      expect(hydrated.isAuthenticated()).toBe(true);
     });
 
-    it('should set doctor role with active doctor and persist', () => {
+    it('should set doctor role with active doctor and persist across rehydration', () => {
       session.setRole('doctor', mockDoctor);
 
       expect(session.role()).toBe('doctor');
@@ -61,12 +68,13 @@ describe('ActorSession (Ticket 01)', () => {
       expect(session.activeClerk()).toBeNull();
       expect(session.isAuthenticated()).toBe(true);
 
-      const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-      expect(stored.role).toBe('doctor');
-      expect(stored.activeDoctor).toEqual(mockDoctor);
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('doctor');
+      expect(hydrated.activeDoctor()).toEqual(mockDoctor);
+      expect(hydrated.isAuthenticated()).toBe(true);
     });
 
-    it('should set clerk role with active clerk and persist', () => {
+    it('should set clerk role with active clerk and persist across rehydration', () => {
       session.setRole('clerk', mockClerk);
 
       expect(session.role()).toBe('clerk');
@@ -74,9 +82,24 @@ describe('ActorSession (Ticket 01)', () => {
       expect(session.activeDoctor()).toBeNull();
       expect(session.isAuthenticated()).toBe(true);
 
-      const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-      expect(stored.role).toBe('clerk');
-      expect(stored.activeClerk).toEqual(mockClerk);
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('clerk');
+      expect(hydrated.activeClerk()).toEqual(mockClerk);
+      expect(hydrated.isAuthenticated()).toBe(true);
+    });
+
+    it('should preserve active clerk when setRole is called with clerk and no actor argument', () => {
+      session.setRole('clerk', mockClerk);
+      expect(session.activeClerk()).toEqual(mockClerk);
+
+      // Re-invoking clerk without actor argument must not wipe activeClerk
+      session.setRole('clerk');
+      expect(session.role()).toBe('clerk');
+      expect(session.activeClerk()).toEqual(mockClerk);
+
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('clerk');
+      expect(hydrated.activeClerk()).toEqual(mockClerk);
     });
 
     it('should support updating active clerk while retaining clerk role', () => {
@@ -85,31 +108,37 @@ describe('ActorSession (Ticket 01)', () => {
       expect(session.activeClerk()).toBeNull();
 
       session.setActiveClerk(mockClerk);
+      expect(session.role()).toBe('clerk');
       expect(session.activeClerk()).toEqual(mockClerk);
 
-      const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-      expect(stored.activeClerk).toEqual(mockClerk);
+      let hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('clerk');
+      expect(hydrated.activeClerk()).toEqual(mockClerk);
 
       session.setActiveClerk(null);
+      expect(session.role()).toBe('clerk');
       expect(session.activeClerk()).toBeNull();
-      const storedAfter = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-      expect(storedAfter.activeClerk).toBeNull();
+
+      hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('clerk');
+      expect(hydrated.activeClerk()).toBeNull();
     });
 
     it('should support updating active doctor while retaining doctor role', () => {
       session.setRole('doctor');
       session.setActiveDoctor(mockDoctor);
+      expect(session.role()).toBe('doctor');
       expect(session.activeDoctor()).toEqual(mockDoctor);
 
-      const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-      expect(stored.activeDoctor).toEqual(mockDoctor);
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBe('doctor');
+      expect(hydrated.activeDoctor()).toEqual(mockDoctor);
     });
   });
 
   describe('Session Clearance', () => {
     it('should reset all signals and purge storage on clearSession()', () => {
       session.setRole('clerk', mockClerk);
-      sessionStorage.setItem('carebase_active_clerk', JSON.stringify(mockClerk));
 
       session.clearSession();
 
@@ -118,84 +147,46 @@ describe('ActorSession (Ticket 01)', () => {
       expect(session.activeDoctor()).toBeNull();
       expect(session.isAuthenticated()).toBe(false);
 
-      expect(sessionStorage.getItem('carebase_actor_session')).toBeNull();
-      expect(sessionStorage.getItem('carebase_active_clerk')).toBeNull();
+      const hydrated = createHydratedSession();
+      expect(hydrated.role()).toBeNull();
+      expect(hydrated.activeClerk()).toBeNull();
+      expect(hydrated.activeDoctor()).toBeNull();
+      expect(hydrated.isAuthenticated()).toBe(false);
     });
   });
 
   describe('Hydration on Instantiation', () => {
-    it('should hydrate clerk role and activeClerk from existing sessionStorage', () => {
-      sessionStorage.setItem(
-        'carebase_actor_session',
-        JSON.stringify({
-          role: 'clerk',
-          activeClerk: mockClerk,
-          activeDoctor: null,
-        }),
-      );
+    it('should hydrate clerk role and activeClerk across reload', () => {
+      session.setRole('clerk', mockClerk);
 
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [ActorSession],
-      });
-      const reloadedSession = TestBed.inject(ActorSession);
-
+      const reloadedSession = createHydratedSession();
       expect(reloadedSession.role()).toBe('clerk');
       expect(reloadedSession.activeClerk()).toEqual(mockClerk);
       expect(reloadedSession.activeDoctor()).toBeNull();
       expect(reloadedSession.isAuthenticated()).toBe(true);
     });
 
-    it('should hydrate doctor role and activeDoctor from existing sessionStorage', () => {
-      sessionStorage.setItem(
-        'carebase_actor_session',
-        JSON.stringify({
-          role: 'doctor',
-          activeClerk: null,
-          activeDoctor: mockDoctor,
-        }),
-      );
+    it('should hydrate doctor role and activeDoctor across reload', () => {
+      session.setRole('doctor', mockDoctor);
 
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [ActorSession],
-      });
-      const reloadedSession = TestBed.inject(ActorSession);
-
+      const reloadedSession = createHydratedSession();
       expect(reloadedSession.role()).toBe('doctor');
       expect(reloadedSession.activeDoctor()).toEqual(mockDoctor);
       expect(reloadedSession.isAuthenticated()).toBe(true);
     });
 
-    it('should hydrate admin role from existing sessionStorage', () => {
-      sessionStorage.setItem(
-        'carebase_actor_session',
-        JSON.stringify({
-          role: 'admin',
-          activeClerk: null,
-          activeDoctor: null,
-        }),
-      );
+    it('should hydrate admin role across reload', () => {
+      session.setRole('admin');
 
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [ActorSession],
-      });
-      const reloadedSession = TestBed.inject(ActorSession);
-
+      const reloadedSession = createHydratedSession();
       expect(reloadedSession.role()).toBe('admin');
       expect(reloadedSession.isAuthenticated()).toBe(true);
     });
 
-    it('should handle corrupted JSON in sessionStorage gracefully', () => {
+    it('should handle corrupted JSON in storage gracefully', () => {
       sessionStorage.setItem('carebase_actor_session', 'INVALID_JSON{{{');
 
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [ActorSession],
-      });
-      const reloadedSession = TestBed.inject(ActorSession);
-
+      const reloadedSession = createHydratedSession();
       expect(reloadedSession.role()).toBeNull();
       expect(reloadedSession.isAuthenticated()).toBe(false);
     });

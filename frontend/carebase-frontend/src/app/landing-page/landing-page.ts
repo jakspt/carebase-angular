@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ActionCard } from '../action-card/action-card';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { ActorSession } from '../services/actor-session';
+import { ActorRole, ActorSession } from '../services/actor-session';
 
 @Component({
   imports: [ActionCard, MatIconModule],
@@ -14,18 +14,20 @@ export class LandingPage {
   private readonly router = inject(Router);
   private readonly actorSession = inject(ActorSession);
 
-  visitDoctorSite() {
-    this.actorSession.setRole('doctor');
-    this.router.navigate(['doctor']);
+  private navigateToRole(role: ActorRole): void {
+    this.actorSession.setRole(role);
+    this.router.navigate([role]);
   }
 
-  visitClerkSite() {
-    this.actorSession.setRole('clerk');
-    this.router.navigate(['clerk']);
+  visitDoctorSite(): void {
+    this.navigateToRole('doctor');
   }
 
-  visitAdminSite() {
-    this.actorSession.setRole('admin');
-    this.router.navigate(['admin']);
+  visitClerkSite(): void {
+    this.navigateToRole('clerk');
+  }
+
+  visitAdminSite(): void {
+    this.navigateToRole('admin');
   }
 }

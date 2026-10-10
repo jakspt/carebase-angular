@@ -31,7 +31,8 @@ export class HeaderLayout {
   private readonly adminService = inject(AdminService);
   private readonly router = inject(Router);
 
-  currentUser = this.actorSession.role;
+  readonly activeRole = this.actorSession.role;
+  readonly currentUser = this.activeRole;
 
   dbStatus = computed(() => {
     if (this.adminService.statusResource.hasValue()) {

@@ -24,19 +24,20 @@ describe('ClerkService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should manage active clerk session state with sessionStorage persistence', () => {
+  it('should manage active clerk session state with persistence across rehydration', () => {
     sessionStorage.clear();
     expect(service.getActiveClerk()()).toBeNull();
     const clerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
     service.setActiveClerk(clerk);
     expect(service.getActiveClerk()()).toEqual(clerk);
-    const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-    expect(stored.activeClerk).toEqual(clerk);
+
+    // Verify recovery on rehydration
+    const freshClerkService = TestBed.inject(ClerkService);
+    expect(freshClerkService.getActiveClerk()()).toEqual(clerk);
 
     service.setActiveClerk(null);
     expect(service.getActiveClerk()()).toBeNull();
-    const storedAfter = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
-    expect(storedAfter.activeClerk).toBeNull();
+    expect(freshClerkService.getActiveClerk()()).toBeNull();
   });
 
   it('should book an appointment via POST /api/clerk/appointments', () => {

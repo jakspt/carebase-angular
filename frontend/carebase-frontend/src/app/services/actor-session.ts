@@ -10,7 +10,6 @@ export interface ActorSessionState {
 }
 
 export const SESSION_STORAGE_KEY = 'carebase_actor_session';
-const LEGACY_CLERK_KEY = 'carebase_active_clerk';
 
 @Injectable({
   providedIn: 'root',
@@ -34,9 +33,17 @@ export class ActorSession {
     let nextDoctor: Doctor | null = null;
 
     if (role === 'clerk') {
-      nextClerk = (actor as Clerk) ?? null;
+      if (actor !== undefined) {
+        nextClerk = (actor as Clerk) ?? null;
+      } else {
+        nextClerk = this._role() === 'clerk' ? this._activeClerk() : null;
+      }
     } else if (role === 'doctor') {
-      nextDoctor = (actor as Doctor) ?? null;
+      if (actor !== undefined) {
+        nextDoctor = (actor as Doctor) ?? null;
+      } else {
+        nextDoctor = this._role() === 'doctor' ? this._activeDoctor() : null;
+      }
     }
 
     this._role.set(role);
@@ -47,13 +54,11 @@ export class ActorSession {
   }
 
   setActiveClerk(clerk: Clerk | null): void {
-    this._activeClerk.set(clerk);
-    this.persist();
+    this.setRole('clerk', clerk);
   }
 
   setActiveDoctor(doctor: Doctor | null): void {
-    this._activeDoctor.set(doctor);
-    this.persist();
+    this.setRole('doctor', doctor);
   }
 
   clearSession(): void {
@@ -64,7 +69,6 @@ export class ActorSession {
     try {
       if (typeof window !== 'undefined' && window.sessionStorage) {
         window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        window.sessionStorage.removeItem(LEGACY_CLERK_KEY);
       }
     } catch {
       // Ignore storage errors in SSR or restricted environments
