@@ -1,6 +1,6 @@
 # Appointment Intake Workflow Refactoring
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
