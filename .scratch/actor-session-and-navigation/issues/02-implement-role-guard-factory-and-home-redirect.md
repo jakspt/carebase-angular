@@ -4,20 +4,23 @@
 
 **Blocked by:** 01: Implement Core ActorSession Service with Storage Persistence
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] `createRoleGuard(requiredRole: ActorRole): CanActivateFn` is implemented and returns `true` if `actorSession.role() === requiredRole`.
-- [ ] `createRoleGuard` returns `router.createUrlTree(['/'])` if no active session or role mismatch.
-- [ ] `homeRedirectGuard: CanActivateFn` is implemented and redirects authenticated actors to `/admin`, `/doctor`, or `/clerk`, or returns `true` for unauthenticated visitors.
-- [ ] The four duplicate guard files are permanently deleted:
+- [x] `createRoleGuard(requiredRole: ActorRole): CanActivateFn` is implemented and returns `true` if `actorSession.role() === requiredRole`.
+- [x] `createRoleGuard` returns `router.createUrlTree(['/'])` if no active session or role mismatch.
+- [x] `homeRedirectGuard: CanActivateFn` is implemented and redirects authenticated actors to `/admin`, `/doctor`, or `/clerk`, or returns `true` for unauthenticated visitors.
+- [x] The four duplicate guard files are permanently deleted:
   - `src/app/guards/admin-guard.ts`
   - `src/app/guards/clerk-guard.ts`
   - `src/app/guards/doctor-guard.ts`
   - `src/app/guards/home-redirect-guard-guard.ts`
-- [ ] Headless unit tests verify authorized access, unauthorized redirects, and landing page redirection behavior across all three roles using `TestBed.runInInjectionContext()`.
+- [x] Headless unit tests verify authorized access, unauthorized redirects, and landing page redirection behavior across all three roles using `TestBed.runInInjectionContext()`.
 
 ## Comments
 
-- Replaces duplicated boilerplate across four separate guard files with one DRY functional factory.
+- Implemented `createRoleGuard` and `homeRedirectGuard` in `src/app/guards/role-guard.ts`.
+- Deleted four legacy guard files and replaced `clerk-guard.spec.ts` with `src/app/guards/role-guard.spec.ts` covering 14 guard scenarios.
+- Updated `src/app/app.routes.ts` to wire new guards.
+- Verified all unit tests and `ng build` pass with 0 errors.

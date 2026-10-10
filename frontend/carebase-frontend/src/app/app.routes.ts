@@ -1,13 +1,10 @@
 import { Routes } from '@angular/router';
 import { LandingPage } from './landing-page/landing-page';
 import { HeaderLayout } from './header-layout/header-layout';
-import { homeRedirectGuardGuard } from './guards/home-redirect-guard-guard';
-import { doctorGuard } from './guards/doctor-guard';
-import { adminGuard } from './guards/admin-guard';
-import { clerkGuard } from './guards/clerk-guard';
+import { createRoleGuard, homeRedirectGuard } from './guards/role-guard';
 
 export const routes: Routes = [
-  { path: '', component: LandingPage, canActivate: [homeRedirectGuardGuard] },
+  { path: '', component: LandingPage, canActivate: [homeRedirectGuard] },
   {
     path: '',
     component: HeaderLayout,
@@ -15,11 +12,11 @@ export const routes: Routes = [
       {
         path: 'admin',
         loadComponent: () => import('./admin-page/admin-page').then((m) => m.AdminPage),
-        canActivate: [adminGuard],
+        canActivate: [createRoleGuard('admin')],
       },
       {
         path: 'doctor',
-        canActivateChild: [doctorGuard],
+        canActivateChild: [createRoleGuard('doctor')],
         children: [
           {
             path: '',
@@ -39,7 +36,7 @@ export const routes: Routes = [
       },
       {
         path: 'clerk',
-        canActivateChild: [clerkGuard],
+        canActivateChild: [createRoleGuard('clerk')],
         children: [
           {
             path: '',
