@@ -21,6 +21,7 @@ import {
   TimeSlot,
 } from '../models/models';
 import { ClerkService } from '../services/clerk-service';
+import { ActorSession } from '../services/actor-session';
 import { form, maxLength } from '@angular/forms/signals';
 
 export type { AppointmentNotes, AppointmentResult, BookingResult };
@@ -57,10 +58,11 @@ function parseIsoDate(target: string | Date): Date {
 
 @Injectable()
 export class AppointmentIntakeWorkflow {
+  private readonly actorSession = inject(ActorSession);
   private readonly clerkService = inject(ClerkService);
 
   // ── Clerk Profile ──
-  readonly activeClerk = this.clerkService.getActiveClerk();
+  readonly activeClerk = this.actorSession.activeClerk;
   readonly clerkSearchQuery = signal('');
   readonly clerkSearchResults = this.clerkService.searchClerks(this.clerkSearchQuery);
   readonly availableClerks = computed<Clerk[]>(() => {
@@ -266,12 +268,12 @@ export class AppointmentIntakeWorkflow {
   }
 
   selectClerk(clerk: Clerk): void {
-    this.clerkService.setActiveClerk(clerk);
+    this.actorSession.setActiveClerk(clerk);
     this.clerkSearchQuery.set('');
   }
 
   clearClerk(): void {
-    this.clerkService.setActiveClerk(null);
+    this.actorSession.setActiveClerk(null);
     this.clerkSearchQuery.set('');
   }
 

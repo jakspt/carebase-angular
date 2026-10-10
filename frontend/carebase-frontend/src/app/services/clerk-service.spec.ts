@@ -30,11 +30,13 @@ describe('ClerkService', () => {
     const clerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
     service.setActiveClerk(clerk);
     expect(service.getActiveClerk()()).toEqual(clerk);
-    expect(sessionStorage.getItem('carebase_active_clerk')).toBe(JSON.stringify(clerk));
+    const stored = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
+    expect(stored.activeClerk).toEqual(clerk);
 
     service.setActiveClerk(null);
     expect(service.getActiveClerk()()).toBeNull();
-    expect(sessionStorage.getItem('carebase_active_clerk')).toBeNull();
+    const storedAfter = JSON.parse(sessionStorage.getItem('carebase_actor_session')!);
+    expect(storedAfter.activeClerk).toBeNull();
   });
 
   it('should book an appointment via POST /api/clerk/appointments', () => {

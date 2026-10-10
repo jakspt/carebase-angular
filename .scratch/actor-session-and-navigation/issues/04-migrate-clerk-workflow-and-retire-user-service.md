@@ -4,18 +4,19 @@
 
 **Blocked by:** 01: Implement Core ActorSession Service with Storage Persistence, 02: Implement Parameterized createRoleGuard Factory and Unified homeRedirectGuard, 03: Wire Application Routes, HeaderLayout, and LandingPage to ActorSession
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] `AppointmentIntakeWorkflow` resolves active Clerk identity directly from `ActorSession.activeClerk()`.
-- [ ] `ClerkService` delegates `getActiveClerk()` and `setActiveClerk()` to `ActorSession`, or callers are migrated to use `ActorSession` directly.
-- [ ] Legacy `UserService` (`src/app/services/user-service.ts`) and its spec file (`user-service.spec.ts`) are deleted.
-- [ ] Any lingering imports of `UserService` across the codebase are migrated to `ActorSession`.
-- [ ] All existing unit tests pass cleanly (`npm test` / Vitest).
-- [ ] Production build succeeds without errors (`ng build`).
+- [x] `AppointmentIntakeWorkflow` resolves active Clerk identity directly from `ActorSession.activeClerk()`.
+- [x] `ClerkService` delegates `getActiveClerk()` and `setActiveClerk()` to `ActorSession`, or callers are migrated to use `ActorSession` directly.
+- [x] Legacy `UserService` (`src/app/services/user-service.ts`) and its spec file (`user-service.spec.ts`) are deleted.
+- [x] Any lingering imports of `UserService` across the codebase are migrated to `ActorSession`.
+- [x] All existing unit tests pass cleanly (`npm test` / Vitest).
+- [x] Production build succeeds without errors (`ng build`).
 
 ## Comments
 
-- Completes the consolidation of actor identity into a single deep module.
-- Fully fulfills Candidate 4 of the architectural review.
+- Migrated `AppointmentIntakeWorkflow` and `ClerkService` to resolve active Clerk identity via `ActorSession`.
+- Permanently deleted legacy `UserService` (`user-service.ts`) and its spec file (`user-service.spec.ts`).
+- Verified all 117 tests pass in `npm test` and production build succeeds with 0 errors.

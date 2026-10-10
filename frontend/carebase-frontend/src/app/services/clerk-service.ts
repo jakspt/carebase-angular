@@ -1,5 +1,5 @@
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Service, Injector, inject, signal } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   Clerk,
@@ -11,44 +11,22 @@ import {
   CreateAppointmentResponse,
   PatientVisitsReportResponse,
 } from '../models/models';
+import { ActorSession } from './actor-session';
 
-const CLERK_SESSION_KEY = 'carebase_active_clerk';
-
-@Service()
+@Injectable({
+  providedIn: 'root',
+})
 export class ClerkService {
   private readonly http = inject(HttpClient);
   private readonly injector = inject(Injector);
-  private readonly activeClerk = signal<Clerk | null>(this.getInitialClerk());
-
-  private getInitialClerk(): Clerk | null {
-    try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        const stored = window.sessionStorage.getItem(CLERK_SESSION_KEY);
-        return stored ? JSON.parse(stored) : null;
-      }
-    } catch {
-      // In SSR or restricted environments
-    }
-    return null;
-  }
+  private readonly actorSession = inject(ActorSession);
 
   getActiveClerk() {
-    return this.activeClerk.asReadonly();
+    return this.actorSession.activeClerk;
   }
 
   setActiveClerk(clerk: Clerk | null): void {
-    this.activeClerk.set(clerk);
-    try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        if (clerk) {
-          window.sessionStorage.setItem(CLERK_SESSION_KEY, JSON.stringify(clerk));
-        } else {
-          window.sessionStorage.removeItem(CLERK_SESSION_KEY);
-        }
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    this.actorSession.setActiveClerk(clerk);
   }
 
   searchClerks(query: () => string) {
