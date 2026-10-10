@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 import { ClerkService } from '../services/clerk-service';
 import { Clerk, Doctor, Patient, TimeSlot } from '../models/models';
+import { of, throwError } from 'rxjs';
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;
@@ -186,4 +187,90 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
     expect(workflow.selectedDate()).toEqual(workflow.minDate);
     expect(workflow.activeClerk()).toEqual(mockClerk);
   });
+
+  describe('Submission & 409 Conflict Handling (Ticket 02)', () => {
+    it('should return validation_error when required fields are missing', async () => {
+      const result = await workflow.submit('Routine checkup');
+      expect(result).toEqual({
+        status: 'validation_error',
+        message: 'Please fill in all required appointment details.',
+      });
+      expect(workflow.isSubmitting()).toBe(false);
+      expect(workflow.bookingSuccess()).toBe(false);
+    });
+
+    it('should submit successfully and return success status with appointmentId', async () => {
+      const bookSpy = vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
+        of({
+          success: true,
+          appointmentId: 42,
+          message: 'Appointment successfully scheduled',
+        }),
+      );
+
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 15));
+      workflow.selectTimeSlot('09:00');
+
+      const result = await workflow.submit('Routine checkup');
+
+      expect(bookSpy).toHaveBeenCalledWith({
+        patientSsn: '2041',
+        doctorSsn: '3011',
+        date: '2026-10-15',
+        time: '09:00',
+        reason: 'Routine checkup',
+        clerkSsn: '1001',
+      });
+      expect(result).toEqual({ status: 'success', appointmentId: 42 });
+      expect(workflow.bookingSuccess()).toBe(true);
+      expect(workflow.createdAppointmentId()).toBe(42);
+      expect(workflow.isSubmitting()).toBe(false);
+    });
+
+    it('should handle HTTP 409 conflict: reset selectedTimeSlot, reload slots, and return conflict status', async () => {
+      vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
+        throwError(() => ({
+          status: 409,
+          error: { error: 'The doctor already has an appointment scheduled at this time.' },
+        })),
+      );
+      const reloadSpy = vi.spyOn(workflow.timeSlotsResource, 'reload').mockReturnValue(true);
+
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 15));
+      workflow.selectTimeSlot('09:00');
+
+      const result = await workflow.submit();
+
+      expect(result).toEqual({ status: 'conflict' });
+      expect(workflow.selectedTimeSlot()).toBeNull();
+      expect(reloadSpy).toHaveBeenCalled();
+      expect(workflow.bookingSuccess()).toBe(false);
+      expect(workflow.isSubmitting()).toBe(false);
+    });
+
+    it('should handle general error and return error status with message', async () => {
+      vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
+        throwError(() => ({
+          status: 500,
+          error: { error: 'Database connection failed' },
+        })),
+      );
+
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 15));
+      workflow.selectTimeSlot('09:00');
+
+      const result = await workflow.submit();
+
+      expect(result).toEqual({ status: 'error', message: 'Database connection failed' });
+      expect(workflow.bookingSuccess()).toBe(false);
+      expect(workflow.isSubmitting()).toBe(false);
+    });
+  });
 });
+

@@ -14,9 +14,16 @@ import {
   timer,
   debounceTime,
   distinctUntilChanged,
+  firstValueFrom,
 } from 'rxjs';
-import { Clerk, Doctor, Patient, TimeSlot } from '../models/models';
+import { Clerk, CreateAppointmentRequest, Doctor, Patient, TimeSlot } from '../models/models';
 import { ClerkService } from '../services/clerk-service';
+
+export type BookingResult =
+  | { status: 'success'; appointmentId?: number }
+  | { status: 'conflict' }
+  | { status: 'validation_error'; message: string }
+  | { status: 'error'; message: string };
 
 @Service()
 export class AppointmentIntakeWorkflow {
@@ -264,6 +271,64 @@ export class AppointmentIntakeWorkflow {
     }
   }
 
+  // ── Step 4: Submission & State ──
+  readonly isSubmitting = signal(false);
+  readonly bookingSuccess = signal(false);
+  readonly createdAppointmentId = signal<number | null>(null);
+
+  async submit(reason?: string): Promise<BookingResult> {
+    const patient = this.selectedPatient();
+    const doctor = this.selectedDoctor();
+    const date = this.formattedDate();
+    const time = this.selectedTimeSlot();
+    const activeClerk = this.activeClerk();
+
+    if (!patient || !doctor || !date || !time) {
+      return {
+        status: 'validation_error',
+        message: 'Please fill in all required appointment details.',
+      };
+    }
+
+    const payload: CreateAppointmentRequest = {
+      patientSsn: String(patient.ssn),
+      doctorSsn: String(doctor.ssn),
+      date,
+      time,
+      reason: (reason ?? '').trim(),
+      clerkSsn: activeClerk ? String(activeClerk.ssn) : undefined,
+    };
+
+    this.isSubmitting.set(true);
+
+    try {
+      const response = await firstValueFrom(this.clerkService.bookAppointment(payload));
+      if (response.success) {
+        this.bookingSuccess.set(true);
+        this.createdAppointmentId.set(response.appointmentId ?? null);
+        return {
+          status: 'success',
+          appointmentId: response.appointmentId,
+        };
+      }
+      return {
+        status: 'error',
+        message: response.message || 'Failed to schedule appointment.',
+      };
+    } catch (err: any) {
+      if (err?.status === 409) {
+        this.selectedTimeSlot.set(null);
+        this.timeSlotsResource.reload();
+        return { status: 'conflict' };
+      }
+      const errorMsg =
+        err?.error?.error || 'Failed to schedule appointment. Please check your data and retry.';
+      return { status: 'error', message: errorMsg };
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
   reset(): void {
     this.selectedPatient.set(null);
     this.patientInputValue.set('');
@@ -272,5 +337,8 @@ export class AppointmentIntakeWorkflow {
     this.selectedDoctor.set(null);
     this.selectedDate.set(this.minDate);
     this.selectedTimeSlot.set(null);
+    this.bookingSuccess.set(false);
+    this.createdAppointmentId.set(null);
+    this.isSubmitting.set(false);
   }
 }

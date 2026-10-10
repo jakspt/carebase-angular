@@ -4,11 +4,11 @@
 
 **Blocked by:** 01: Extract Headless AppointmentIntakeWorkflow Core State Machine
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] Define discrete domain union `BookingResult`:
+- [x] Define discrete domain union `BookingResult`:
   ```ts
   export type BookingResult =
     | { status: 'success'; appointmentId?: number }
@@ -16,10 +16,15 @@
     | { status: 'validation_error'; message: string }
     | { status: 'error'; message: string };
   ```
-- [ ] `submit(reason?: string)` performs validation and submits appointment request to `ClerkService`.
-- [ ] On HTTP 409 conflict, `selectedTimeSlot` is cleared, `timeSlotsResource.reload()` is called, and `{ status: 'conflict' }` is returned.
-- [ ] On successful submission, workflow state reflects booking success and stores created appointment ID.
-- [ ] `reset()` cleanly restores all workflow state to initial defaults while preserving the active clerk session.
-- [ ] Headless unit tests verify successful booking, validation error, HTTP 409 recovery, and HTTP 500 error handling.
+- [x] `submit(reason?: string)` performs validation and submits appointment request to `ClerkService`.
+- [x] On HTTP 409 conflict, `selectedTimeSlot` is cleared, `timeSlotsResource.reload()` is called, and `{ status: 'conflict' }` is returned.
+- [x] On successful submission, workflow state reflects booking success and stores created appointment ID.
+- [x] `reset()` cleanly restores all workflow state to initial defaults while preserving the active clerk session.
+- [x] Headless unit tests verify successful booking, validation error, HTTP 409 recovery, and HTTP 500 error handling.
 
 ## Comments
+
+- Added `BookingResult` union type in `src/app/clerk-use-case/appointment-intake-workflow.ts`.
+- Implemented `submit(reason?: string)` method and updated `reset()`.
+- Added unit tests for validation, successful booking, 409 conflict recovery, and 500 error in `src/app/clerk-use-case/appointment-intake-workflow.spec.ts`.
+- All 81 tests passing.
