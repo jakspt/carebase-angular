@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ActionCard } from '../action-card/action-card';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { UserService } from '../services/user-service';
+import { ActorSession } from '../services/actor-session';
 
 @Component({
   imports: [ActionCard, MatIconModule],
@@ -11,21 +11,21 @@ import { UserService } from '../services/user-service';
   templateUrl: './landing-page.html',
 })
 export class LandingPage {
-  private router = inject(Router);
-  private userService = inject(UserService);
+  private readonly router = inject(Router);
+  private readonly actorSession = inject(ActorSession);
 
   visitDoctorSite() {
-    this.userService.setUser('doctor');
+    this.actorSession.setRole('doctor');
     this.router.navigate(['doctor']);
   }
 
   visitClerkSite() {
-    this.userService.setUser('clerk');
+    this.actorSession.setRole('clerk');
     this.router.navigate(['clerk']);
   }
 
   visitAdminSite() {
-    this.userService.setUser('admin');
+    this.actorSession.setRole('admin');
     this.router.navigate(['admin']);
   }
 }

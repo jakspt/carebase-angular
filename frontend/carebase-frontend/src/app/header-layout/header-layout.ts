@@ -1,13 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
-import { RouterOutlet, RouterLinkWithHref, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLinkWithHref, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatAnchor } from '@angular/material/button';
-import { User, UserService } from '../services/user-service';
+import { ActorRole, ActorSession } from '../services/actor-session';
 import { AdminService } from '../services/admin-service';
-import { TitleCasePipe, UpperCasePipe } from '@angular/common';
+import { UpperCasePipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
@@ -27,11 +27,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   templateUrl: './header-layout.html',
 })
 export class HeaderLayout {
-  private userService = inject(UserService);
-  private adminService = inject(AdminService);
-  private router = inject(Router);
+  private readonly actorSession = inject(ActorSession);
+  private readonly adminService = inject(AdminService);
+  private readonly router = inject(Router);
 
-  currentUser = this.userService.getCurrentUser();
+  currentUser = this.actorSession.role;
 
   dbStatus = computed(() => {
     if (this.adminService.statusResource.hasValue()) {
@@ -50,11 +50,13 @@ export class HeaderLayout {
     );
   });
 
-  switchRole(user: User) {
-    this.userService.setUser(user);
+  switchRole(role: ActorRole) {
+    this.actorSession.setRole(role);
     this.router.navigate(['/']);
   }
+
   logout() {
-    this.switchRole(undefined);
+    this.actorSession.clearSession();
+    this.router.navigate(['/']);
   }
 }
