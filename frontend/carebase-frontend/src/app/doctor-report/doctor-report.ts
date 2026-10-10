@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { BarChartModule } from '@swimlane/ngx-charts';
-import { DoctorService } from '../services/doctor-service';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import { DoctorEarnings } from '../models/models';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, of, switchMap, timer } from 'rxjs';
@@ -37,7 +37,7 @@ interface ChartDataItem {
   templateUrl: './doctor-report.html',
 })
 export class DoctorReport {
-  private readonly doctorService = inject(DoctorService);
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
 
   readonly currentYear = new Date().getFullYear();
   readonly availableYears: number[] = Array.from(
@@ -47,7 +47,7 @@ export class DoctorReport {
 
   readonly selectedYear = signal<number>(this.currentYear);
 
-  readonly reportResource = this.doctorService.getReport(this.selectedYear);
+  readonly reportResource = this.hospitalDataAccess.getDoctorEarningsReport(this.selectedYear);
 
   private readonly spinnerDelayMs = 250;
   readonly showSpinner = toSignal(

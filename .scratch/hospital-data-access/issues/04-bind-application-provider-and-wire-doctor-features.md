@@ -4,13 +4,21 @@
 
 **Blocked by:** 02: Implement Production HttpHospitalDataAdapter with httpResource and Envelope Unwrapping, 03: Implement Deterministic InMemoryHospitalDataAdapter for Test Suites
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 ## Acceptance Criteria
 
-- [ ] `app.config.ts` binds `{ provide: HOSPITAL_DATA_ACCESS, useClass: HttpHospitalDataAdapter }`.
-- [ ] `DoctorUseCase` injects `HOSPITAL_DATA_ACCESS` and consumes unwrapped `Patient[]`, `Patient | null`, and `Medication[]` directly.
-- [ ] `DoctorReport` injects `HOSPITAL_DATA_ACCESS` to retrieve the earnings report.
-- [ ] `doctor-use-case.spec.ts` and `doctor-report.spec.ts` use `providers: [{ provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter }]`.
-- [ ] All doctor component tests pass cleanly without `HttpTestingController` or mock spies.
-- [ ] Production build succeeds without errors (`ng build`).
+- [x] `app.config.ts` binds `{ provide: HOSPITAL_DATA_ACCESS, useClass: HttpHospitalDataAdapter }`.
+- [x] `DoctorUseCase` injects `HOSPITAL_DATA_ACCESS` and consumes unwrapped `Patient[]`, `Patient | null`, and `Medication[]` directly.
+- [x] `DoctorReport` injects `HOSPITAL_DATA_ACCESS` to retrieve the earnings report.
+- [x] `doctor-use-case.spec.ts` and `doctor-report.spec.ts` use `providers: [{ provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter }]`.
+- [x] All doctor component tests pass cleanly without `HttpTestingController` or mock spies.
+- [x] Production build succeeds without errors (`ng build`).
+
+## Comments
+
+- Bound `HOSPITAL_DATA_ACCESS` to `HttpHospitalDataAdapter` in `src/app/app.config.ts`.
+- Refactored `DoctorUseCase` to inject `HOSPITAL_DATA_ACCESS`, consuming unwrapped domain models directly and utilizing asynchronous `addTreatment` promise resolution.
+- Refactored `DoctorReport` to inject `HOSPITAL_DATA_ACCESS.getDoctorEarningsReport()`.
+- Updated `doctor-use-case.spec.ts` and `doctor-report.spec.ts` to run against `InMemoryHospitalDataAdapter` with zero HTTP controller mocking.
+- All doctor feature tests and `ng build` cleanly passed with 0 errors.

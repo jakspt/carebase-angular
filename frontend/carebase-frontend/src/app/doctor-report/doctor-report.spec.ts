@@ -1,16 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { DoctorReport } from './doctor-report';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
 
 describe('DoctorReport', () => {
   let component: DoctorReport;
   let fixture: ComponentFixture<DoctorReport>;
 
+  const settle = () => new Promise((r) => setTimeout(r, 20));
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DoctorReport],
-      providers: [provideHttpClient(), provideAnimationsAsync()],
+      providers: [
+        provideAnimationsAsync(),
+        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DoctorReport);
@@ -20,5 +26,16 @@ describe('DoctorReport', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should load earnings report data via InMemoryHospitalDataAdapter without HTTP mocking', async () => {
+    component.selectedYear.set(2026);
+    await settle();
+    await fixture.whenStable();
+
+    const data = component.reportData();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty('totalCosts');
   });
 });

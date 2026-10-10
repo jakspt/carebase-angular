@@ -13,9 +13,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { form, FormField, max, min, required, submit } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Appointment, Medication, Patient } from '../models/models';
-import { DoctorService } from '../services/doctor-service';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 
 interface TreatmentFormModel {
   description: string;
@@ -44,24 +44,24 @@ interface TreatmentFormModel {
   templateUrl: './doctor-use-case.html',
 })
 export class DoctorUseCase {
-  private readonly doctorService = inject(DoctorService);
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
   private readonly snackBar = inject(MatSnackBar);
 
   // ── Step 1: Patient Search (Debounced) ──
   readonly searchQuery = signal('');
   readonly searchInputValue = signal('');
   private readonly searchSubject$ = new Subject<string>();
-  readonly searchResults = this.doctorService.searchPatients(this.searchQuery);
+  readonly searchResults = this.hospitalDataAccess.searchPatients(this.searchQuery);
   readonly patients = computed(() => {
     if (this.searchResults.hasValue()) {
-      return this.searchResults.value()?.patients ?? [];
+      return this.searchResults.value() ?? [];
     }
     return [];
   });
 
   readonly selectedPatient = signal<Patient | null>(null);
   readonly selectedPatientId = computed(() => this.selectedPatient()?.id ?? null);
-  readonly patientDetailsResource = this.doctorService.getPatientDetails(this.selectedPatientId);
+  readonly patientDetailsResource = this.hospitalDataAccess.getPatientDetails(this.selectedPatientId);
 
   constructor() {
     this.searchSubject$
@@ -114,11 +114,11 @@ export class DoctorUseCase {
   });
 
   // Medications autocomplete
-  readonly medicationsResource = this.doctorService.getMedications();
+  readonly medicationsResource = this.hospitalDataAccess.getMedications();
   readonly medSearchQuery = signal('');
   readonly filteredMedications = computed(() => {
     const all = this.medicationsResource.hasValue()
-      ? (this.medicationsResource.value()?.medications ?? [])
+      ? (this.medicationsResource.value() ?? [])
       : [];
     const q = this.medSearchQuery().toLowerCase().trim();
     const selectedIds = new Set(this.treatmentModel().medications.map((m) => m.id));
@@ -180,8 +180,10 @@ export class DoctorUseCase {
           medications: this.treatmentModel().medications,
         };
 
-        const res = await firstValueFrom(
-          this.doctorService.addTreatment(patient.id, appt.id, payload),
+        const res = await this.hospitalDataAccess.addTreatment(
+          patient.id,
+          appt.id,
+          payload,
         );
 
         if (res.success) {
@@ -192,8 +194,9 @@ export class DoctorUseCase {
         }
       } catch (err: unknown) {
         const errorMsg =
-          (err as { error?: { error?: string } })?.error?.error ||
-          'Failed to add treatment. Please try again.';
+          err instanceof Error
+            ? err.message
+            : 'Failed to add treatment. Please try again.';
         this.snackBar.open(errorMsg, 'Close', { duration: 5000 });
       } finally {
         this.isSubmitting.set(false);
