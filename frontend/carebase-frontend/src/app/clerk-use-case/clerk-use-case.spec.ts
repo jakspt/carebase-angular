@@ -44,12 +44,7 @@ describe('ClerkUseCase', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ClerkUseCase],
-      providers: [
-        provideHttpClient(),
-        provideAnimationsAsync(),
-        provideNativeDateAdapter(),
-        ClerkService,
-      ],
+      providers: [provideHttpClient(), provideNativeDateAdapter(), ClerkService],
     }).compileComponents();
 
     clerkService = TestBed.inject(ClerkService);
@@ -266,7 +261,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should render the persistent clinical summary strip in Step 2 with patient details and unselected doctor placeholder', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectedPatient.set(mockPatient);
     fixture.detectChanges();
     stepper.selectedIndex = 1;
@@ -287,7 +283,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should eliminate the Step 3 memory bridge by displaying both patient and doctor context persistently', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectedPatient.set(mockPatient);
     component.selectedDoctor.set(mockDoctors[0]);
     fixture.detectChanges();
@@ -312,7 +309,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should maintain the persistent clinical summary strip in Step 4', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectedPatient.set(mockPatient);
     component.selectedDoctor.set(mockDoctors[0]);
     component.selectedTimeSlot.set('09:00');
@@ -330,7 +328,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should remove clinical summary strip when workflow is reset', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectedPatient.set(mockPatient);
     component.selectedDoctor.set(mockDoctors[0]);
     fixture.detectChanges();
@@ -348,7 +347,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should not auto-advance stepper on patient selection', () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     stepper.selectedIndex = 0;
     component.selectPatient(mockPatient, stepper);
     expect(stepper.selectedIndex).toBe(0);
@@ -402,7 +402,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should render neutralized no-slots banner when all slots are booked', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     component.timeSlotsSignal.set([
@@ -422,7 +423,8 @@ describe('ClerkUseCase', () => {
   });
 
   it('should display proactive guidance with next available date and allow one-click selection', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     // 2025-10-16 is Thursday, Oct 16
@@ -452,13 +454,12 @@ describe('ClerkUseCase', () => {
   });
 
   it('should display neutral fallback guidance when no next available date is specified', async () => {
-    const stepper = fixture.debugElement.query(By.directive(MatStepper)).componentInstance as MatStepper;
+    const stepper = fixture.debugElement.query(By.directive(MatStepper))
+      .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     component.nextAvailableDateSignal.set(null);
-    component.timeSlotsSignal.set([
-      { time: '08:00', available: false },
-    ]);
+    component.timeSlotsSignal.set([{ time: '08:00', available: false }]);
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();
@@ -563,7 +564,9 @@ describe('ClerkUseCase', () => {
     const updatedCard = fixture.nativeElement.querySelector('.active-clerk-card');
     expect(updatedCard).toBeTruthy();
     expect(updatedCard.querySelector('.clerk-name')?.textContent).toContain('Max Mustermann');
-    expect(updatedCard.querySelector('.clerk-name')?.getAttribute('title')).toBe('Max Mustermann (SSN: 1002)');
+    expect(updatedCard.querySelector('.clerk-name')?.getAttribute('title')).toBe(
+      'Max Mustermann (SSN: 1002)',
+    );
   });
 
   it('should display full clerk name and SSN in title tooltip for long clerk names', async () => {

@@ -183,48 +183,22 @@ p,
   backface-visibility: hidden;
 }
 
-/* Reduced motion support:
-   Honors user motion sensitivity by eliminating disorienting spatial movement,
-   transform translations, and decorative animation loops, while preserving
-   intentional opacity, color, and state feedback for clear interaction legibility. */
+/* styles.css */
+:root {
+  --motion-duration-state: 150ms;
+  --motion-duration-spatial: 250ms;
+  --motion-transform-hover: translateY(-4px);
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-spatial: 0.01ms;
+    --motion-transform-hover: none;
+    --motion-duration-state: 150ms;
+  }
+
   html {
-    scroll-behavior: auto !important;
-  }
-
-  /* Suppress non-essential keyframe animations while preserving critical loading indicators */
-  :not(
-    mat-progress-bar,
-    mat-progress-bar *,
-    mat-spinner,
-    mat-spinner *,
-    mat-progress-spinner,
-    mat-progress-spinner *,
-    .mat-mdc-progress-bar,
-    .mat-mdc-progress-bar *,
-    .mat-mdc-progress-spinner,
-    .mat-mdc-progress-spinner *
-  ) {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-  }
-
-  /* Suppress spatial translations, hover lifts, and scale shifts */
-  .action-card:hover,
-  .action-card:active,
-  .action-card:hover .card-icon-container,
-  .action-card:hover .action-btn .action-btn-arrow,
-  .appointment-card:hover,
-  .kpi-card:hover {
-    transform: none !important;
-  }
-
-  /* Maintain a calm, gentle duration for state transitions (opacity, color, border, elevation)
-     so interactive feedback remains legible without disorienting motion */
-  *,
-  *::before,
-  *::after {
-    transition-duration: 150ms !important;
-    transition-delay: 0s !important;
+    scroll-behavior: auto;
   }
 }
