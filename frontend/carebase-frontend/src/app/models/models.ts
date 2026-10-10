@@ -66,6 +66,18 @@ export interface CreateAppointmentResponse {
   error?: string;
 }
 
+export interface AppointmentNotes {
+  reason: string;
+}
+
+export type AppointmentResult =
+  | { status: 'success'; appointmentId?: number }
+  | { status: 'conflict' }
+  | { status: 'validation_error'; message: string }
+  | { status: 'error'; message: string };
+
+export type BookingResult = AppointmentResult;
+
 export interface PatientVisitRecord {
   patientSsn: string;
   patientName: string;

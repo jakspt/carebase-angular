@@ -101,11 +101,11 @@ describe('ClerkUseCase', () => {
   });
 
   it('should clear selected time slot when doctor or department changes', () => {
-    component.selectedTimeSlot.set('09:00');
+    component.selectTimeSlot('09:00');
     component.onDepartmentChange('Cardiology');
     expect(component.selectedTimeSlot()).toBeNull();
 
-    component.selectedTimeSlot.set('09:00');
+    component.selectTimeSlot('09:00');
     component.onDoctorChange(mockDoctors[0]);
     expect(component.selectedTimeSlot()).toBeNull();
   });
@@ -129,9 +129,9 @@ describe('ClerkUseCase', () => {
 
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.selectedDate.set(new Date(2026, 9, 15));
-    component.selectedTimeSlot.set('09:00');
-    component.bookingModel.set({ reason: 'Routine checkup' });
+    component.onDateChange(new Date(2026, 9, 15));
+    component.selectTimeSlot('09:00');
+    component.workflow.setReason('Routine checkup');
 
     await component.confirmBooking();
 
@@ -184,9 +184,8 @@ describe('ClerkUseCase', () => {
   it('should reset workflow state while preserving active clerk profile', () => {
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.selectedTimeSlot.set('09:00');
-    component.bookingModel.set({ reason: 'Routine checkup' });
-    component.workflow.bookingSuccess.set(true);
+    component.selectTimeSlot('09:00');
+    component.workflow.setReason('Routine checkup');
 
     component.resetWorkflow();
 
@@ -210,8 +209,8 @@ describe('ClerkUseCase', () => {
 
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.selectedDate.set(new Date(2026, 9, 15));
-    component.selectedTimeSlot.set('09:00');
+    component.onDateChange(new Date(2026, 9, 15));
+    component.selectTimeSlot('09:00');
 
     await component.confirmBooking(mockStepper);
 
@@ -244,8 +243,7 @@ describe('ClerkUseCase', () => {
   });
 
   it('should clear patientInputValue and patientSearchQuery on workflow reset', () => {
-    component.patientInputValue.set('Johann');
-    component.patientSearchQuery.set('Johann');
+    component.onPatientSearchInput({ target: { value: 'Johann' } } as any);
     component.resetWorkflow();
     expect(component.patientInputValue()).toBe('');
     expect(component.patientSearchQuery()).toBe('');
@@ -285,7 +283,7 @@ describe('ClerkUseCase', () => {
   it('should render the persistent clinical summary strip in Step 2 with patient details and unselected doctor placeholder', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
-    component.selectedPatient.set(mockPatient);
+    component.selectPatient(mockPatient);
     fixture.detectChanges();
     stepper.selectedIndex = 1;
     fixture.detectChanges();
@@ -307,8 +305,8 @@ describe('ClerkUseCase', () => {
   it('should eliminate the Step 3 memory bridge by displaying both patient and doctor context persistently', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
-    component.selectedPatient.set(mockPatient);
-    component.selectedDoctor.set(mockDoctors[0]);
+    component.selectPatient(mockPatient);
+    component.selectDoctor(mockDoctors[0]);
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();
@@ -333,9 +331,9 @@ describe('ClerkUseCase', () => {
   it('should maintain the persistent clinical summary strip in Step 4', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
-    component.selectedPatient.set(mockPatient);
-    component.selectedDoctor.set(mockDoctors[0]);
-    component.selectedTimeSlot.set('09:00');
+    component.selectPatient(mockPatient);
+    component.selectDoctor(mockDoctors[0]);
+    component.selectTimeSlot('09:00');
     fixture.detectChanges();
     stepper.selectedIndex = 3;
     fixture.detectChanges();
@@ -352,8 +350,8 @@ describe('ClerkUseCase', () => {
   it('should remove clinical summary strip when workflow is reset', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
-    component.selectedPatient.set(mockPatient);
-    component.selectedDoctor.set(mockDoctors[0]);
+    component.selectPatient(mockPatient);
+    component.selectDoctor(mockDoctors[0]);
     fixture.detectChanges();
     stepper.selectedIndex = 2;
     fixture.detectChanges();

@@ -157,6 +157,16 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       workflow.selectDate(new Date(2026, 9, 16));
       expect(workflow.selectedTimeSlot()).toBeNull();
     });
+
+    it('should reset selectedTimeSlot to null when selectedPatient changes via linkedSignal', () => {
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectTimeSlot('09:00');
+      expect(workflow.selectedTimeSlot()).toBe('09:00');
+
+      // Change patient -> slot must reset to null declaratively
+      workflow.selectPatient(mockPatient);
+      expect(workflow.selectedTimeSlot()).toBeNull();
+    });
   });
 
   it('should update selected date via selectNextAvailableDate', () => {
@@ -190,13 +200,32 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
 
   describe('Submission & 409 Conflict Handling (Ticket 02)', () => {
     it('should return validation_error when required fields are missing', async () => {
-      const result = await workflow.submit('Routine checkup');
+      workflow.setReason('Routine checkup');
+      const result = await workflow.submit();
       expect(result).toEqual({
         status: 'validation_error',
         message: 'Please fill in all required appointment details.',
       });
       expect(workflow.isSubmitting()).toBe(false);
       expect(workflow.bookingSuccess()).toBe(false);
+    });
+
+    it('should return validation_error and prevent HTTP call if schema is invalid', async () => {
+      const bookSpy = vi.spyOn(clerkService, 'bookAppointment');
+
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 15));
+      workflow.selectTimeSlot('09:00');
+      workflow.setReason('a'.repeat(501));
+
+      const result = await workflow.submit();
+
+      expect(result.status).toBe('validation_error');
+      if (result.status === 'validation_error') {
+        expect(result.message).toContain('500');
+      }
+      expect(bookSpy).not.toHaveBeenCalled();
     });
 
     it('should submit successfully and return success status with appointmentId', async () => {
@@ -212,8 +241,9 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       workflow.selectDoctor(mockCardioDoc);
       workflow.selectDate(new Date(2026, 9, 15));
       workflow.selectTimeSlot('09:00');
+      workflow.setReason('Routine checkup');
 
-      const result = await workflow.submit('Routine checkup');
+      const result = await workflow.submit();
 
       expect(bookSpy).toHaveBeenCalledWith({
         patientSsn: '2041',
