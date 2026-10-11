@@ -44,15 +44,12 @@ describe('ClerkReport', () => {
   ];
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ClerkReport],
+    TestBed.configureTestingModule({
       providers: [
-        provideAnimationsAsync(),
         provideNativeDateAdapter(),
         { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
       ],
-    }).compileComponents();
-
+    });
     fixture = TestBed.createComponent(ClerkReport);
     component = fixture.componentInstance;
     await fixture.whenStable();

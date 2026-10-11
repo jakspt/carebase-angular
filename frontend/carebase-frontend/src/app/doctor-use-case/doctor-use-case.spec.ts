@@ -12,13 +12,10 @@ describe('DoctorUseCase', () => {
   const settle = () => new Promise((r) => setTimeout(r, 20));
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [DoctorUseCase],
-      providers: [
-        provideAnimationsAsync(),
-        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
-      ],
-    }).compileComponents();
+      providers: [{ provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter }],
+    });
 
     fixture = TestBed.createComponent(DoctorUseCase);
     component = fixture.componentInstance;

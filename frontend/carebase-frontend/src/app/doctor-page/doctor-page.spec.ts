@@ -7,14 +7,13 @@ describe('DoctorPage', () => {
   let fixture: ComponentFixture<DoctorPage>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [DoctorPage],
       providers: [provideRouter([])],
-    }).compileComponents();
+    });
 
     fixture = TestBed.createComponent(DoctorPage);
     component = fixture.componentInstance;
-    await fixture.whenStable();
   });
 
   it('should create', () => {

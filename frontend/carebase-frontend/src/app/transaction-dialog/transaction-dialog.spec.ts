@@ -8,7 +8,7 @@ describe('TransactionDialog', () => {
   let fixture: ComponentFixture<TransactionDialog>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [TransactionDialog],
       providers: [
         {
@@ -24,7 +24,7 @@ describe('TransactionDialog', () => {
           useValue: { close: () => {}, disableClose: false },
         },
       ],
-    }).compileComponents();
+    });
 
     fixture = TestBed.createComponent(TransactionDialog);
     component = fixture.componentInstance;

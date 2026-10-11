@@ -40,7 +40,11 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       providers: [
         AppointmentIntakeWorkflow,
         ClerkService,
-        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+        {
+          provide: HOSPITAL_DATA_ACCESS,
+          useClass: InMemoryHospitalDataAdapter,
+          teardown: { destroyAfterEach: true },
+        },
       ],
     });
 

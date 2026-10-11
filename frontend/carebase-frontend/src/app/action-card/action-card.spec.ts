@@ -6,14 +6,10 @@ describe('ActionCard', () => {
   let fixture: ComponentFixture<ActionCard>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ActionCard],
-    }).compileComponents();
-
     fixture = TestBed.createComponent(ActionCard);
+    component = fixture.componentInstance;
     fixture.componentRef.setInput('title', 'Test Action');
     fixture.componentRef.setInput('buttonText', 'Execute');
-    component = fixture.componentInstance;
     await fixture.whenStable();
   });
 

@@ -51,14 +51,16 @@ describe('ClerkUseCase', () => {
       nextAvailableDate: null,
     });
 
-    await TestBed.configureTestingModule({
-      imports: [ClerkUseCase],
+    TestBed.configureTestingModule({
       providers: [
         provideNativeDateAdapter(),
         ClerkService,
-        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+        {
+          provide: HOSPITAL_DATA_ACCESS,
+          useClass: InMemoryHospitalDataAdapter,
+        },
       ],
-    }).compileComponents();
+    });
 
     clerkService = TestBed.inject(ClerkService);
     clerkService.setActiveClerk(mockClerk);

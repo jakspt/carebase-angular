@@ -7,14 +7,8 @@ describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [AdminPage],
-      providers: [provideHttpClient()],
-    }).compileComponents();
-
     fixture = TestBed.createComponent(AdminPage);
     component = fixture.componentInstance;
-    await fixture.whenStable();
   });
 
   it('should create', () => {
