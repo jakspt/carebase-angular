@@ -7,5 +7,6 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     pool: 'threads',
+    isolate: false,
   },
 });
