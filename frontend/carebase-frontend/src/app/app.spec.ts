@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -7,20 +7,12 @@ import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { App } from './app';
 import { HeaderLayout } from './header-layout/header-layout';
 import { ActorSession } from './services/actor-session';
-import { AdminService } from './services/admin-service';
+import { provideTestAdminService } from './services/admin-service';
 
 @Component({ selector: 'stub-child', template: '<p>Child Content</p>' })
 class StubChildComponent {}
 
 describe('App', () => {
-  const mockAdminService = {
-    statusResource: {
-      value: signal(undefined),
-      isLoading: signal(false),
-      hasValue: signal(false),
-    },
-  };
-
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [App],
@@ -34,7 +26,7 @@ describe('App', () => {
           },
         ]),
         ActorSession,
-        { provide: AdminService, useValue: mockAdminService },
+        provideTestAdminService(),
       ],
     });
   });

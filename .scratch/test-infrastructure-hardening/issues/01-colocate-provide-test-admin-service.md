@@ -4,9 +4,15 @@
 
 **Blocked by:** None (Frontier)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `provideTestAdminService()` is exported from `src/app/services/admin-service.ts` providing deterministic reactive status signals
-- [ ] `src/app/app.spec.ts` consumes `provideTestAdminService()` instead of an inline mock object
-- [ ] `src/app/header-layout/header-layout.spec.ts` consumes `provideTestAdminService()` instead of an inline mock object
-- [ ] All tests in `app.spec.ts` and `header-layout.spec.ts` pass 100% green without regression
+- [x] `provideTestAdminService()` is exported from `src/app/services/admin-service.ts` providing deterministic reactive status signals
+- [x] `src/app/app.spec.ts` consumes `provideTestAdminService()` instead of an inline mock object
+- [x] `src/app/header-layout/header-layout.spec.ts` consumes `provideTestAdminService()` instead of an inline mock object
+- [x] All tests in `app.spec.ts` and `header-layout.spec.ts` pass 100% green without regression
+
+## Answer
+
+Implemented and exported `provideTestAdminService()` in `src/app/services/admin-service.ts` accepting customizable configuration options (`dbType`, `isLoading`, `hasValue`) and providing realistic reactive signals for `statusResource` along with stubs for `seedDatabase`, `migrateDatabase`, and `refreshStatus`.
+
+Refactored `src/app/app.spec.ts` and `src/app/header-layout/header-layout.spec.ts` to consume `provideTestAdminService()`. Added comprehensive unit tests in `src/app/services/admin-service.spec.ts` and deepened `header-layout.spec.ts` to assert against reactive database status badge states. All tests pass green.

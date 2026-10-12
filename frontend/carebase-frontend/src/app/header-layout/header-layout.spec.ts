@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -8,7 +8,7 @@ import { HarnessLoader } from '@angular/cdk/testing';
 import { MatMenuHarness } from '@angular/material/menu/testing';
 import { HeaderLayout } from './header-layout';
 import { ActorSession } from '../services/actor-session';
-import { AdminService } from '../services/admin-service';
+import { provideTestAdminService } from '../services/admin-service';
 
 @Component({ selector: 'stub-home', template: '<span>Home</span>' })
 class StubHomeComponent {}
@@ -18,14 +18,6 @@ describe('HeaderLayout', () => {
   let loader: HarnessLoader;
   let router: Router;
   let session: ActorSession;
-
-  const mockAdminService = {
-    statusResource: {
-      value: signal(undefined),
-      isLoading: signal(false),
-      hasValue: signal(false),
-    },
-  };
 
   beforeEach(async () => {
     sessionStorage.clear();
@@ -38,7 +30,7 @@ describe('HeaderLayout', () => {
           { path: 'doctor', component: HeaderLayout },
         ]),
         ActorSession,
-        { provide: AdminService, useValue: mockAdminService },
+        provideTestAdminService(),
       ],
     });
 
@@ -92,5 +84,55 @@ describe('HeaderLayout', () => {
     expect(session.role()).toBeNull();
     expect(router.url).toBe('/');
     expect(harness.routeNativeElement?.textContent).toContain('Home');
+  });
+
+  it('should render offline database status badge when provideTestAdminService defaults to offline', () => {
+    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent).toContain('Offline');
+    expect(badge.classList.contains('mongo')).toBe(false);
+  });
+});
+
+describe('HeaderLayout with configured AdminService status', () => {
+  it('should render MongoDB badge and apply mongo class when dbType is MongoDB', async () => {
+    sessionStorage.clear();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideNoopAnimations(),
+        provideRouter([{ path: 'doctor', component: HeaderLayout }]),
+        ActorSession,
+        provideTestAdminService({ dbType: 'MongoDB' }),
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/doctor', HeaderLayout);
+
+    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent).toContain('MongoDB');
+    expect(badge.classList.contains('mongo')).toBe(true);
+  });
+
+  it('should render Connecting status when isLoading is true', async () => {
+    sessionStorage.clear();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideNoopAnimations(),
+        provideRouter([{ path: 'doctor', component: HeaderLayout }]),
+        ActorSession,
+        provideTestAdminService({ isLoading: true }),
+      ],
+    });
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/doctor', HeaderLayout);
+
+    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent).toContain('Connecting...');
   });
 });

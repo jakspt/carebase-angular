@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { httpResource } from '@angular/common/http';
-import { Service, inject } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Provider, Service, inject, signal } from '@angular/core';
+import { Observable, of, tap } from 'rxjs';
 import { DbStatus } from '../models/models';
 
 @Service()
@@ -25,4 +25,32 @@ export class AdminService {
   refreshStatus(): void {
     this.statusResource.reload();
   }
+}
+
+export interface TestAdminServiceOptions {
+  dbType?: string;
+  isLoading?: boolean;
+  hasValue?: boolean;
+}
+
+export function provideTestAdminService(options?: TestAdminServiceOptions): Provider[] {
+  const hasValue = options?.hasValue ?? options?.dbType !== undefined;
+  const isLoading = options?.isLoading ?? false;
+  const dbStatus: DbStatus | undefined = hasValue
+    ? { dbType: (options?.dbType ?? 'MariaDB') as 'MariaDB' | 'MongoDB' }
+    : undefined;
+
+  const mockAdminService = {
+    statusResource: {
+      value: signal<DbStatus | undefined>(dbStatus),
+      isLoading: signal(isLoading),
+      hasValue: signal(hasValue),
+      reload: () => {},
+    },
+    seedDatabase: () => of({ success: true, message: 'Database seeded successfully' }),
+    migrateDatabase: () => of({ success: true, message: 'Database migrated successfully' }),
+    refreshStatus: () => {},
+  };
+
+  return [{ provide: AdminService, useValue: mockAdminService }];
 }
