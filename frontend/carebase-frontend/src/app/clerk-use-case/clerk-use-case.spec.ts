@@ -273,7 +273,6 @@ describe('ClerkUseCase', () => {
       nacaScore: 6,
     };
     component.selectPatient(severePatient);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const card = fixture.nativeElement.querySelector('.selected-entity-card');
@@ -292,9 +291,8 @@ describe('ClerkUseCase', () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 1;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(stepper.selectedIndex).toBe(1);
@@ -315,9 +313,8 @@ describe('ClerkUseCase', () => {
       .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 2;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(stepper.selectedIndex).toBe(2);
@@ -342,9 +339,8 @@ describe('ClerkUseCase', () => {
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
     component.selectTimeSlot('09:00');
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 3;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(stepper.selectedIndex).toBe(3);
@@ -360,15 +356,13 @@ describe('ClerkUseCase', () => {
       .componentInstance as MatStepper;
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 2;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('.clinical-summary-strip')).toBeTruthy();
 
     component.resetWorkflow(stepper);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('.clinical-summary-strip')).toBeNull();
@@ -383,7 +377,6 @@ describe('ClerkUseCase', () => {
   });
 
   it('should render canonical bottom action bar in Step 1 with Next button bound to selectedPatient state', async () => {
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const stepContainers = fixture.nativeElement.querySelectorAll('.step-container');
@@ -396,7 +389,6 @@ describe('ClerkUseCase', () => {
     expect(nextBtn.disabled).toBe(true);
 
     component.selectPatient(mockPatient);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(nextBtn.disabled).toBe(false);
@@ -404,7 +396,6 @@ describe('ClerkUseCase', () => {
 
   it('should purge redundant inline Next buttons from entity preview cards in Step 1 and Step 2', async () => {
     component.selectPatient(mockPatient);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const stepContainers = fixture.nativeElement.querySelectorAll('.step-container');
@@ -414,7 +405,6 @@ describe('ClerkUseCase', () => {
 
     // In Step 2
     component.onDoctorChange(mockDoctors[0]);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const step2Card = stepContainers[1].querySelector('.selected-entity-card');
@@ -443,9 +433,8 @@ describe('ClerkUseCase', () => {
       ],
       nextAvailableDate: null,
     });
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 2;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const banner = fixture.nativeElement.querySelector('.no-slots-banner');
@@ -470,9 +459,8 @@ describe('ClerkUseCase', () => {
       ],
       nextAvailableDate: '2025-10-16',
     });
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 2;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const banner = fixture.nativeElement.querySelector('.no-slots-banner');
@@ -484,7 +472,6 @@ describe('ClerkUseCase', () => {
     const nextBtn = banner.querySelector('.next-available-btn') as HTMLButtonElement;
     expect(nextBtn).toBeTruthy();
     nextBtn.click();
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(component.formattedDate()).toBe('2025-10-16');
@@ -501,9 +488,8 @@ describe('ClerkUseCase', () => {
       slots: [{ time: '08:00', available: false }],
       nextAvailableDate: null,
     });
-    fixture.detectChanges();
+    await fixture.whenStable();
     stepper.selectedIndex = 2;
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const banner = fixture.nativeElement.querySelector('.no-slots-banner');
@@ -514,7 +500,6 @@ describe('ClerkUseCase', () => {
   });
 
   it('should render active clerk card with structured entity card grammar and Change action', async () => {
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const clerkCard = fixture.nativeElement.querySelector('.active-clerk-card');
@@ -538,12 +523,10 @@ describe('ClerkUseCase', () => {
   });
 
   it('should shift focus to clerk search input when clearing clerk', async () => {
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(component.activeClerk()).toEqual(mockClerk);
     component.clearClerk();
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const input = fixture.nativeElement.querySelector('.clerk-picker input') as HTMLInputElement;
@@ -552,14 +535,12 @@ describe('ClerkUseCase', () => {
   });
 
   it('should trigger clearClerk and focus input when clicking Change button in active clerk card', async () => {
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const changeBtn = fixture.nativeElement.querySelector('.change-clerk-btn') as HTMLButtonElement;
     expect(changeBtn).toBeTruthy();
 
     changeBtn.click();
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(component.activeClerk()).toBeNull();
@@ -570,7 +551,6 @@ describe('ClerkUseCase', () => {
 
   it('should not contain invalid density attribute on mat-form-field when clerk is unselected', async () => {
     component.clearClerk();
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const formField = fixture.nativeElement.querySelector('.clerk-select-field');
@@ -581,7 +561,6 @@ describe('ClerkUseCase', () => {
   });
 
   it('should support full clerk change cycle: select, clear, and reselect another clerk', async () => {
-    fixture.detectChanges();
     await fixture.whenStable();
 
     // Initially active clerk is mockClerk (1001)
@@ -589,7 +568,6 @@ describe('ClerkUseCase', () => {
 
     // User clicks change
     component.clearClerk();
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(component.activeClerk()).toBeNull();
@@ -598,7 +576,6 @@ describe('ClerkUseCase', () => {
     // User selects a different clerk
     const secondClerk: Clerk = { id: '1002', name: 'Max Mustermann', ssn: '1002' };
     component.selectClerk(secondClerk);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(component.activeClerk()).toEqual(secondClerk);
@@ -617,7 +594,6 @@ describe('ClerkUseCase', () => {
       ssn: '1003',
     };
     component.selectClerk(longNameClerk);
-    fixture.detectChanges();
     await fixture.whenStable();
 
     const clerkCard = fixture.nativeElement.querySelector('.active-clerk-card');
@@ -631,7 +607,6 @@ describe('ClerkUseCase', () => {
 
   it('should preserve .clerk-context-box container in both selected and unselected states', async () => {
     // Selected state
-    fixture.detectChanges();
     await fixture.whenStable();
     const contextBoxSelected = fixture.nativeElement.querySelector('.clerk-context-box');
     expect(contextBoxSelected).toBeTruthy();
@@ -640,7 +615,6 @@ describe('ClerkUseCase', () => {
 
     // Unselected state
     component.clearClerk();
-    fixture.detectChanges();
     await fixture.whenStable();
     const contextBoxUnselected = fixture.nativeElement.querySelector('.clerk-context-box');
     expect(contextBoxUnselected).toBeTruthy();

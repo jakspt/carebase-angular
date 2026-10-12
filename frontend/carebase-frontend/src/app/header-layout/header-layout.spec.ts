@@ -29,7 +29,7 @@ describe('HeaderLayout', () => {
     };
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockRoleSignal = signal<ActorRole>('doctor');
     mockStatusValueSignal = signal(undefined);
     mockIsLoadingSignal = signal(false);
@@ -62,7 +62,7 @@ describe('HeaderLayout', () => {
 
     fixture = TestBed.createComponent(HeaderLayout);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    await fixture.whenStable();
   });
 
   // Tests remain the same; use `router.navigate` instead of `mockRouter.navigate`:
