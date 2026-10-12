@@ -3,7 +3,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { MatStepperHarness, MatStepHarness } from '@angular/material/stepper/testing';
+import { MatStepperHarness } from '@angular/material/stepper/testing';
 import { MatButtonHarness } from '@angular/material/button/testing';
 import { MatInputHarness } from '@angular/material/input/testing';
 import { MatSelectHarness } from '@angular/material/select/testing';
@@ -663,8 +663,12 @@ describe('ClerkUseCase', () => {
       const patientAuto = await steps[0].getHarness(MatAutocompleteHarness);
       await patientAuto.enterText('Johann');
 
-      await vi.waitFor(() => {
+      await vi.waitFor(async () => {
         expect(component.patients().length).toBeGreaterThan(0);
+        if (!(await patientAuto.isOpen())) {
+          await patientAuto.focus();
+        }
+        expect(await patientAuto.isOpen()).toBe(true);
       });
 
       await patientAuto.selectOption({ text: /Johann Schmidt/ });

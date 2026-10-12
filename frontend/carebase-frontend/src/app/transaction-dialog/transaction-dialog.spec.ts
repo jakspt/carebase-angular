@@ -1,10 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonHarness } from '@angular/material/button/testing';
 import { MatProgressBarHarness } from '@angular/material/progress-bar/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { HarnessLoader } from '@angular/cdk/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { TransactionDialog, TransactionDialogData } from './transaction-dialog';
 
@@ -33,14 +32,14 @@ describe('TransactionDialog', () => {
       ...dataOverrides,
     };
 
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [TransactionDialog],
       providers: [
         provideNoopAnimations(),
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: MatDialogRef, useValue: fakeDialogRef },
       ],
-    }).compileComponents();
+    });
 
     const fixture = TestBed.createComponent(TransactionDialog);
     const component = fixture.componentInstance;

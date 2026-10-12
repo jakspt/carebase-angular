@@ -1,7 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import {
   HOSPITAL_DATA_ACCESS,
-  HospitalDataAccess,
   HospitalDataError,
   BookingConflictError,
   PatientNotFoundError,

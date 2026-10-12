@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 import { ClerkService } from '../services/clerk-service';
-import { Clerk, Doctor, Patient, TimeSlot } from '../models/models';
+import { Clerk, Doctor, Patient } from '../models/models';
 import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
 import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
 

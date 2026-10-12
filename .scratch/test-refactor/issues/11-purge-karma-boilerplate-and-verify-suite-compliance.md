@@ -4,11 +4,11 @@
 
 **Blocked by:** 06 (Deepen Admin Page and Transaction Dialog Behavioral Suites), 07 (Deepen Clerk, Doctor Workstation, and Facade Service Behavioral Suites), 09 (Migrate Appointment Intake Wizard to Material Harnesses), 10 (Migrate Reports and Navigation to Material Harnesses)
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] All instances of `compileComponents()` are purged across all test suites (including the root App component spec)
-- [ ] Root App component specification verifies the application shell and header layout are rendered in the DOM
-- [ ] Unused injected variables and testing imports (e.g. unverified `HttpTestingController`, unused `provideAnimationsAsync`, `provideRouter`) are removed across all specs
-- [ ] Test suites using Material dialogs or charting components consistently configure `provideNoopAnimations()`
-- [ ] All 19 test files pass 100% green under Vitest
-- [ ] All 9 test smells identified in the test quality audit are resolved, achieving 100% compliance with repository testing standards
+- [x] All instances of `compileComponents()` are purged across all test suites (including the root App component spec)
+- [x] Root App component specification verifies the application shell and header layout are rendered in the DOM
+- [x] Unused injected variables and testing imports (e.g. unverified `HttpTestingController`, unused `provideAnimationsAsync`, `provideRouter`) are removed across all specs
+- [x] Test suites using Material dialogs or charting components consistently configure `provideNoopAnimations()`
+- [x] All 19 test files pass 100% green under Vitest
+- [x] All 9 test smells identified in the test quality audit are resolved, achieving 100% compliance with repository testing standards

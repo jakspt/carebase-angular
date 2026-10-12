@@ -30,10 +30,10 @@ describe('AdminPage', () => {
   };
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
+    TestBed.configureTestingModule({
       imports: [AdminPage],
       providers: [provideNoopAnimations(), { provide: AdminService, useValue: fakeAdminService }],
-    }).compileComponents();
+    });
 
     fixture = TestBed.createComponent(AdminPage);
     loader = TestbedHarnessEnvironment.loader(fixture);

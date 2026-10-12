@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
 import { MatSnackBarHarness } from '@angular/material/snack-bar/testing';
+import { MatStepperHarness } from '@angular/material/stepper/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
 import { DoctorUseCase } from './doctor-use-case';
@@ -17,6 +20,8 @@ describe('DoctorUseCase', () => {
   let fixture: ComponentFixture<DoctorUseCase>;
   let dataAdapter: InMemoryHospitalDataAdapter;
   let stepper: MatStepper;
+  let loader: HarnessLoader;
+  let stepperHarness: MatStepperHarness;
 
   const samplePatient: Patient = {
     id: '2001',
@@ -44,16 +49,19 @@ describe('DoctorUseCase', () => {
     dataAdapter = TestBed.inject(HOSPITAL_DATA_ACCESS) as InMemoryHospitalDataAdapter;
     await fixture.whenStable();
 
+    loader = TestbedHarnessEnvironment.loader(fixture);
+    stepperHarness = await loader.getHarness(MatStepperHarness);
     const stepperDebug = fixture.debugElement.query(By.directive(MatStepper));
     stepper = stepperDebug.componentInstance as MatStepper;
   });
 
-  it('should create and initialize with default unselected state', () => {
+  it('should create and initialize with default unselected state', async () => {
     expect(component).toBeTruthy();
     expect(component.selectedPatient()).toBeNull();
     expect(component.selectedAppointment()).toBeNull();
     expect(component.treatmentCompleted()).toBe(false);
-    expect(stepper.selectedIndex).toBe(0);
+    const steps = await stepperHarness.getSteps();
+    expect(await steps[0].isSelected()).toBe(true);
   });
 
   it('should search patients and resolve records via InMemoryHospitalDataAdapter', async () => {
@@ -78,13 +86,14 @@ describe('DoctorUseCase', () => {
     component.onPatientSelected(patient, stepper);
     await fixture.whenStable();
 
-    // Click Next button on the selected patient card
-    const nextBtn = fixture.nativeElement.querySelector('.selected-entity-card button');
-    nextBtn.click();
+    // Click Next button on the selected patient card via harness
+    const steps = await stepperHarness.getSteps();
+    const nextBtn = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn.click();
     await fixture.whenStable();
 
     expect(component.selectedPatient()).toEqual(patient);
-    expect(stepper.selectedIndex).toBe(1);
+    expect(await steps[1].isSelected()).toBe(true);
 
     await vi.waitFor(() => {
       expect(component.appointments().length).toBeGreaterThan(0);
@@ -102,8 +111,9 @@ describe('DoctorUseCase', () => {
     component.onPatientSelected(patient, stepper);
     await fixture.whenStable();
 
-    const nextBtn1 = fixture.nativeElement.querySelector('.selected-entity-card button');
-    nextBtn1.click();
+    const steps = await stepperHarness.getSteps();
+    const nextBtn1 = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn1.click();
     await fixture.whenStable();
 
     await vi.waitFor(() => {
@@ -114,12 +124,12 @@ describe('DoctorUseCase', () => {
     component.onSelectAppointment(appointment, stepper);
     await fixture.whenStable();
 
-    const nextBtn2 = fixture.nativeElement.querySelectorAll('.step-actions button')[1];
-    nextBtn2.click();
+    const nextBtn2 = await steps[1].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn2.click();
     await fixture.whenStable();
 
     expect(component.selectedAppointment()).toEqual(appointment);
-    expect(stepper.selectedIndex).toBe(2);
+    expect(await steps[2].isSelected()).toBe(true);
   });
 
   it('should load medications formulary and manage medication list additions and removals', async () => {
@@ -143,6 +153,7 @@ describe('DoctorUseCase', () => {
 
   it('should record treatment and prescribed medications through complete workflow without mock steppers', async () => {
     const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
+    const steps = await stepperHarness.getSteps();
 
     // Step 1: Search and select patient
     component.searchQuery.set('Maria');
@@ -153,10 +164,10 @@ describe('DoctorUseCase', () => {
     component.onPatientSelected(patient, stepper);
     await fixture.whenStable();
 
-    const nextBtn1 = fixture.nativeElement.querySelector('.selected-entity-card button');
-    nextBtn1.click();
+    const nextBtn1 = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn1.click();
     await fixture.whenStable();
-    expect(stepper.selectedIndex).toBe(1);
+    expect(await steps[1].isSelected()).toBe(true);
 
     // Step 2: Select appointment
     await vi.waitFor(() => {
@@ -166,10 +177,10 @@ describe('DoctorUseCase', () => {
     component.onSelectAppointment(appointment, stepper);
     await fixture.whenStable();
 
-    const nextBtn2 = fixture.nativeElement.querySelectorAll('.step-actions button')[1];
-    nextBtn2.click();
+    const nextBtn2 = await steps[1].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn2.click();
     await fixture.whenStable();
-    expect(stepper.selectedIndex).toBe(2);
+    expect(await steps[2].isSelected()).toBe(true);
 
     // Step 3: Populate treatment details and prescribe medication
     await vi.waitFor(() => {
@@ -243,7 +254,8 @@ describe('DoctorUseCase', () => {
       cost: 0,
       medications: [],
     });
-    expect(stepper.selectedIndex).toBe(0);
+    const steps = await stepperHarness.getSteps();
+    expect(await steps[0].isSelected()).toBe(true);
   });
 
   it('should display error snackbar via MatSnackBarHarness when addTreatment fails without port method spying', async () => {

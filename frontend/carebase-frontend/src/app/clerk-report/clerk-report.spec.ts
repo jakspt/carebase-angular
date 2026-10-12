@@ -8,7 +8,10 @@ import { MatSortHarness } from '@angular/material/sort/testing';
 import { vi } from 'vitest';
 import { ClerkReport } from './clerk-report';
 import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
+import {
+  InMemoryHospitalDataAdapter,
+  provideTestHospitalData,
+} from '../services/in-memory-hospital-data-adapter';
 
 describe('ClerkReport', () => {
   let component: ClerkReport;
@@ -18,11 +21,7 @@ describe('ClerkReport', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [
-        provideNoopAnimations(),
-        provideNativeDateAdapter(),
-        { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
-      ],
+      providers: [provideNoopAnimations(), provideNativeDateAdapter(), provideTestHospitalData()],
     });
 
     dataAdapter = TestBed.inject(HOSPITAL_DATA_ACCESS) as InMemoryHospitalDataAdapter;
