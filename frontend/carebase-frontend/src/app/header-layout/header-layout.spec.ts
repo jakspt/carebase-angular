@@ -2,6 +2,10 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
+import { MatMenuHarness } from '@angular/material/menu/testing';
 import { HeaderLayout } from './header-layout';
 import { ActorSession } from '../services/actor-session';
 import { AdminService } from '../services/admin-service';
@@ -11,7 +15,7 @@ class StubHomeComponent {}
 
 describe('HeaderLayout', () => {
   let harness: RouterTestingHarness;
-  let component: HeaderLayout;
+  let loader: HarnessLoader;
   let router: Router;
   let session: ActorSession;
 
@@ -28,6 +32,7 @@ describe('HeaderLayout', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideNoopAnimations(),
         provideRouter([
           { path: '', component: StubHomeComponent },
           { path: 'doctor', component: HeaderLayout },
@@ -42,17 +47,20 @@ describe('HeaderLayout', () => {
     router = TestBed.inject(Router);
 
     harness = await RouterTestingHarness.create();
-    component = await harness.navigateByUrl('/doctor', HeaderLayout);
+    await harness.navigateByUrl('/doctor', HeaderLayout);
+    loader = TestbedHarnessEnvironment.loader(harness.fixture);
   });
 
   afterEach(() => {
     sessionStorage.clear();
   });
 
-  it('should delegate role switching and redirect to "/"', async () => {
+  it('should delegate role switching to administrator via MatMenuHarness and redirect to "/"', async () => {
     expect(router.url).toBe('/doctor');
 
-    component.switchRole('admin');
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+    await menu.clickItem({ text: /System Administrator/ });
     await harness.fixture.whenStable();
 
     expect(session.role()).toBe('admin');
@@ -60,10 +68,25 @@ describe('HeaderLayout', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Home');
   });
 
-  it('should clear session and redirect to "/" on logout', async () => {
+  it('should delegate role switching to hospital clerk via MatMenuHarness and redirect to "/"', async () => {
     expect(router.url).toBe('/doctor');
 
-    component.logout();
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+    await menu.clickItem({ text: /Hospital Clerk/ });
+    await harness.fixture.whenStable();
+
+    expect(session.role()).toBe('clerk');
+    expect(router.url).toBe('/');
+    expect(harness.routeNativeElement?.textContent).toContain('Home');
+  });
+
+  it('should clear session and redirect to "/" on logout via MatMenuHarness', async () => {
+    expect(router.url).toBe('/doctor');
+
+    const menu = await loader.getHarness(MatMenuHarness);
+    await menu.open();
+    await menu.clickItem({ text: /Sign out/ });
     await harness.fixture.whenStable();
 
     expect(session.role()).toBeNull();

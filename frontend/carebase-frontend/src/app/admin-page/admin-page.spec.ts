@@ -7,6 +7,7 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { of } from 'rxjs';
 import { AdminPage } from './admin-page';
+import { ActionCardHarness } from '../action-card/testing';
 import { AdminService } from '../services/admin-service';
 
 describe('AdminPage', () => {
@@ -46,14 +47,21 @@ describe('AdminPage', () => {
     await fixture.whenStable();
   });
 
-  it('should render page header and administrative action cards', () => {
+  it('should render page header and administrative action cards', async () => {
     const heading = fixture.nativeElement.querySelector('.page-title');
     expect(heading?.textContent).toContain('System Administration & Data Operations');
+
+    const cards = await loader.getAllHarnesses(ActionCardHarness);
+    expect(cards.length).toBe(2);
+    expect(await cards[0].getTitleText()).toBe('Seed Test Database');
+    expect(await cards[1].getTitleText()).toBe('Execute NoSQL Migration');
   });
 
   it('should open confirmation dialog and complete seed workflow when Seed Database is clicked', async () => {
-    const seedButton = await loader.getHarness(MatButtonHarness.with({ text: /Seed Database/ }));
-    await seedButton.click();
+    const seedCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Seed Test Database' }),
+    );
+    await seedCard.clickActionButton();
     await fixture.whenStable();
 
     const dialog = await rootLoader.getHarness(MatDialogHarness);
@@ -72,10 +80,10 @@ describe('AdminPage', () => {
   });
 
   it('should open confirmation dialog and complete migration workflow when Run Live Migration is clicked', async () => {
-    const migrateButton = await loader.getHarness(
-      MatButtonHarness.with({ text: /Run Live Migration/ }),
+    const migrateCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Execute NoSQL Migration' }),
     );
-    await migrateButton.click();
+    await migrateCard.clickActionButton();
     await fixture.whenStable();
 
     const dialog = await rootLoader.getHarness(MatDialogHarness);

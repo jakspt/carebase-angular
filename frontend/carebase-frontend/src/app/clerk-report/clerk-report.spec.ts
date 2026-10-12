@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
+import { MatTableHarness } from '@angular/material/table/testing';
+import { MatSortHarness } from '@angular/material/sort/testing';
 import { vi } from 'vitest';
 import { ClerkReport } from './clerk-report';
 import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
@@ -9,6 +13,7 @@ import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data
 describe('ClerkReport', () => {
   let component: ClerkReport;
   let fixture: ComponentFixture<ClerkReport>;
+  let loader: HarnessLoader;
   let dataAdapter: InMemoryHospitalDataAdapter;
 
   beforeEach(async () => {
@@ -53,6 +58,7 @@ describe('ClerkReport', () => {
     });
 
     fixture = TestBed.createComponent(ClerkReport);
+    loader = TestbedHarnessEnvironment.loader(fixture);
     component = fixture.componentInstance;
     await vi.waitFor(() => {
       expect(component.reportData().length).toBeGreaterThan(0);
@@ -62,6 +68,17 @@ describe('ClerkReport', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render table rows matching consultation frequency report data via MatTableHarness', async () => {
+    const table = await loader.getHarness(MatTableHarness);
+    const rows = await table.getRows();
+    expect(rows.length).toBe(3);
+    const cols = await table.getCellTextByColumnName();
+    const patientNames = cols['patientName'].text;
+    expect(patientNames).toContain('Maria Gruber');
+    expect(patientNames).toContain('Johann Schmidt');
+    expect(patientNames).toContain('Anna Fischer');
   });
 
   it('should initialize with current year date bounds (01-01 to 12-31)', () => {
@@ -94,33 +111,62 @@ describe('ClerkReport', () => {
     expect(jenkins?.value).toBe(2);
   });
 
-  it('should filter table rows by search term across patient, doctor, and SSN', () => {
+  it('should filter table rows by search term across patient, doctor, and SSN', async () => {
+    const table = await loader.getHarness(MatTableHarness);
+
     component.searchFilter.set('Johann');
-    expect(component.filteredTableData().length).toBe(1);
-    expect(component.filteredTableData()[0].patientName).toBe('Johann Schmidt');
+    await fixture.whenStable();
+    let rows = await table.getRows();
+    expect(rows.length).toBe(1);
+    let firstRowCells = await rows[0].getCellTextByColumnName();
+    expect(firstRowCells['patientName']).toBe('Johann Schmidt');
 
     component.searchFilter.set('Neurology');
-    expect(component.filteredTableData().length).toBe(1);
-    expect(component.filteredTableData()[0].specialty).toBe('Neurology');
+    await fixture.whenStable();
+    rows = await table.getRows();
+    expect(rows.length).toBe(1);
+    firstRowCells = await rows[0].getCellTextByColumnName();
+    expect(firstRowCells['specialty']).toBe('Neurology');
 
     component.searchFilter.set('3001');
-    expect(component.filteredTableData().length).toBe(2);
+    await fixture.whenStable();
+    rows = await table.getRows();
+    expect(rows.length).toBe(2);
   });
 
-  it('should sort table rows accurately when column header is clicked', () => {
+  it('should sort table rows accurately when column header is clicked', async () => {
+    const sort = await loader.getHarness(MatSortHarness);
+    const table = await loader.getHarness(MatTableHarness);
+    const [visitHeader] = await sort.getSortHeaders({ label: 'Visits' });
+
     // Sort by visitCount ascending
-    component.onSortChange({ active: 'visitCount', direction: 'asc' });
-    expect(component.sortedTableData()[0].visitCount).toBe(1);
-    expect(component.sortedTableData()[2].visitCount).toBe(3);
+    await visitHeader.click();
+    await fixture.whenStable();
+
+    let rows = await table.getRows();
+    let firstRow = await rows[0].getCellTextByColumnName();
+    let lastRow = await rows[2].getCellTextByColumnName();
+    expect(firstRow['visitCount']).toBe('1');
+    expect(lastRow['visitCount']).toBe('3');
 
     // Sort by visitCount descending
-    component.onSortChange({ active: 'visitCount', direction: 'desc' });
-    expect(component.sortedTableData()[0].visitCount).toBe(3);
-    expect(component.sortedTableData()[2].visitCount).toBe(1);
+    await visitHeader.click();
+    await fixture.whenStable();
+
+    rows = await table.getRows();
+    firstRow = await rows[0].getCellTextByColumnName();
+    lastRow = await rows[2].getCellTextByColumnName();
+    expect(firstRow['visitCount']).toBe('3');
+    expect(lastRow['visitCount']).toBe('1');
 
     // Sort by patientName ascending
-    component.onSortChange({ active: 'patientName', direction: 'asc' });
-    expect(component.sortedTableData()[0].patientName).toBe('Anna Fischer');
+    const [patientHeader] = await sort.getSortHeaders({ label: 'Patient' });
+    await patientHeader.click();
+    await fixture.whenStable();
+
+    rows = await table.getRows();
+    firstRow = await rows[0].getCellTextByColumnName();
+    expect(firstRow['patientName']).toBe('Anna Fischer');
   });
 
   it('should reload and update report when generating report with existing date parameters', async () => {
@@ -165,10 +211,15 @@ describe('ClerkReport', () => {
     await vi.waitFor(() => {
       expect(component.totalConsultations()).toBe(1);
     });
+    await fixture.whenStable();
 
+    const table = await loader.getHarness(MatTableHarness);
+    const rows = await table.getRows();
+    expect(rows.length).toBe(1);
+    const rowCells = await rows[0].getCellTextByColumnName();
     expect(component.totalUniquePatients()).toBe(1);
     expect(component.totalActiveDoctors()).toBe(1);
-    expect(component.filteredTableData()[0].patientName).toBe('Johann Schmidt');
+    expect(rowCells['patientName']).toBe('Johann Schmidt');
   });
 
   it('should display 0 for KPIs and clear derivations when no records exist (Exception Scenario A)', async () => {

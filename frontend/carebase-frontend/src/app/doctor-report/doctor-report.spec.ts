@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
+import { MatTableHarness } from '@angular/material/table/testing';
 import { DoctorReport } from './doctor-report';
 import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import {
@@ -10,6 +13,7 @@ import {
 describe('DoctorReport', () => {
   let component: DoctorReport;
   let fixture: ComponentFixture<DoctorReport>;
+  let loader: HarnessLoader;
   let dataAdapter: InMemoryHospitalDataAdapter;
 
   beforeEach(async () => {
@@ -20,6 +24,7 @@ describe('DoctorReport', () => {
 
     dataAdapter = TestBed.inject(HOSPITAL_DATA_ACCESS) as InMemoryHospitalDataAdapter;
     fixture = TestBed.createComponent(DoctorReport);
+    loader = TestbedHarnessEnvironment.loader(fixture);
     component = fixture.componentInstance;
     component.selectedYear.set(2026);
     await fixture.whenStable();
@@ -52,23 +57,21 @@ describe('DoctorReport', () => {
     expect(drWeber?.specialty).toBe('Cardiology');
   });
 
-  it('should render detailed breakdown table with doctor rows and formatted total costs', () => {
-    const table = fixture.nativeElement.querySelector('.report-table');
-    expect(table).toBeTruthy();
-
-    const headers = Array.from(table.querySelectorAll('th')).map((th: any) =>
-      th.textContent.trim(),
-    );
+  it('should render detailed breakdown table with doctor rows and formatted total costs', async () => {
+    const table = await loader.getHarness(MatTableHarness);
+    const headerRows = await table.getHeaderRows();
+    expect(headerRows.length).toBe(1);
+    const headers = await headerRows[0].getCellTextByIndex();
     expect(headers).toEqual(['SSN', 'Doctor', 'Specialty', 'Dept', 'Year', 'Total (€)']);
 
-    const rows = fixture.nativeElement.querySelectorAll('.report-table tbody tr');
+    const rows = await table.getRows();
     expect(rows.length).toBe(3);
 
-    const firstRowText = rows[0].textContent;
-    expect(firstRowText).toContain('Dr. Alexander Weber');
-    expect(firstRowText).toContain('Cardiology');
-    expect(firstRowText).toContain('2026');
-    expect(firstRowText).toMatch(/250[,.]00/);
+    const firstRow = await rows[0].getCellTextByColumnName();
+    expect(firstRow['name']).toContain('Dr. Alexander Weber');
+    expect(firstRow['specialty']).toContain('Cardiology');
+    expect(firstRow['year']).toContain('2026');
+    expect(firstRow['totalCosts']).toMatch(/250[,.]00/);
   });
 
   it('should aggregate and rank practitioners in chartData sorted descending by total expenditures', async () => {

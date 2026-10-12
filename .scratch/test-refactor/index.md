@@ -32,7 +32,7 @@
 | 07 | [07: Deepen Clerk, Doctor Workstation, and Facade Service Behavioral Suites](./issues/07-deepen-clerk-and-doctor-workstation-suites.md) | 04, 05 | 🟢 Complete |
 | 08 | [08: Author ActionCardHarness and Modernize Reusable Component Testing](./issues/08-author-action-card-harness.md) | 01 | 🟢 Complete |
 | 09 | [09: Migrate Appointment Intake Wizard to Material Harnesses](./issues/09-migrate-appointment-intake-wizard-to-material-harnesses.md) | 04, 08 | 🟢 Complete |
-| 10 | [10: Migrate Reports and Navigation to Material Harnesses](./issues/10-migrate-reports-and-navigation-to-material-harnesses.md) | 03, 05, 08 | `ready-for-agent` |
+| 10 | [10: Migrate Reports and Navigation to Material Harnesses](./issues/10-migrate-reports-and-navigation-to-material-harnesses.md) | 03, 05, 08 | 🟢 Complete |
 | 11 | [11: Purge Karma Boilerplate and Verify Suite Compliance](./issues/11-purge-karma-boilerplate-and-verify-suite-compliance.md) | 06, 07, 09, 10 | `ready-for-agent` |
 
 ---
@@ -43,17 +43,17 @@
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 1 | `src/app/app.spec.ts` | 15% | 100% | ⬜ | — | ⬜ | ⬜ | ⏳ Pending |
 | 2 | `src/app/action-card/action-card.spec.ts` | 50% | 100% | ⬜ | — | — | 🟢 | 🟢 Compliant |
-| 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | 🟢 | ⬜ | ⏳ Pending |
-| 4 | `src/app/clerk-page/clerk-page.spec.ts` | 10% | 100% | ⬜ | 🟢 | 🟢 | ⬜ | ⏳ Pending |
-| 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | 🟢 | ⬜ | — | ⬜ | ⏳ Pending |
+| 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | 🟢 | 🟢 | ⏳ Pending |
+| 4 | `src/app/clerk-page/clerk-page.spec.ts` | 10% | 100% | ⬜ | 🟢 | 🟢 | 🟢 | ⏳ Pending |
+| 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | 🟢 | ⬜ | — | 🟢 | ⏳ Pending |
 | 6 | `src/app/clerk-use-case/appointment-intake-workflow.spec.ts` | 60% | 100% | — | 🟢 | — | — | 🟢 Compliant |
 | 7 | `src/app/clerk-use-case/clerk-use-case.spec.ts` | 20% | 100% | 🟢 | 🟢 | — | 🟢 | 🟢 Compliant |
-| 8 | `src/app/doctor-page/doctor-page.spec.ts` | 10% | 100% | ⬜ | 🟢 | 🟢 | ⬜ | ⏳ Pending |
-| 9 | `src/app/doctor-report/doctor-report.spec.ts` | 25% | 100% | 🟢 | — | 🟢 | ⬜ | ⏳ Pending |
+| 8 | `src/app/doctor-page/doctor-page.spec.ts` | 10% | 100% | ⬜ | 🟢 | 🟢 | 🟢 | ⏳ Pending |
+| 9 | `src/app/doctor-report/doctor-report.spec.ts` | 25% | 100% | 🟢 | — | 🟢 | 🟢 | ⏳ Pending |
 | 10 | `src/app/doctor-use-case/doctor-use-case.spec.ts` | 25% | 100% | 🟢 | 🟢 | 🟢 | ⬜ | ⏳ Pending |
 | 11 | `src/app/guards/role-guard.spec.ts` | 65% | 100% | — | 🟢 | — | ⬜ | ⏳ Pending |
-| 12 | `src/app/header-layout/header-layout.spec.ts` | 20% | 100% | 🟢 | 🟢 | — | ⬜ | ⏳ Pending |
-| 13 | `src/app/landing-page/landing-page.spec.ts` | 25% | 100% | — | 🟢 | ⬜ | ⬜ | ⏳ Pending |
+| 12 | `src/app/header-layout/header-layout.spec.ts` | 20% | 100% | 🟢 | 🟢 | — | 🟢 | ⏳ Pending |
+| 13 | `src/app/landing-page/landing-page.spec.ts` | 25% | 100% | — | 🟢 | ⬜ | 🟢 | ⏳ Pending |
 | 14 | `src/app/services/actor-session.spec.ts` | 95% | 100% | — | — | — | — | 🟢 Compliant |
 | 15 | `src/app/services/clerk-service.spec.ts` | 70% | 100% | — | — | 🟢 | — | ⏳ Pending |
 | 16 | `src/app/services/hospital-data-access.spec.ts` | 100% | 100% | — | — | — | — | 🟢 Compliant |

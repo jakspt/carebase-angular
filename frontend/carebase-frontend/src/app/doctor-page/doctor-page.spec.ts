@@ -3,7 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
 import { DoctorPage } from './doctor-page';
+import { ActionCardHarness } from '../action-card/testing';
 
 @Component({
   selector: 'stub-doctor-usecase',
@@ -19,6 +22,7 @@ class StubDoctorReportComponent {}
 
 describe('DoctorPage', () => {
   let harness: RouterTestingHarness;
+  let loader: HarnessLoader;
   let router: Router;
 
   beforeEach(async () => {
@@ -37,21 +41,25 @@ describe('DoctorPage', () => {
     router = TestBed.inject(Router);
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/doctor', DoctorPage);
+    loader = TestbedHarnessEnvironment.loader(harness.fixture);
   });
 
-  it('should render page header and doctor workstation action cards', () => {
+  it('should render page header and doctor workstation action cards', async () => {
     const heading = harness.fixture.nativeElement.querySelector('.page-title');
     expect(heading?.textContent).toContain('Doctor Workstation');
 
     const subtitle = harness.fixture.nativeElement.querySelector('.page-subtitle');
     expect(subtitle?.textContent).toContain('Document patient encounters');
+
+    const cards = await loader.getAllHarnesses(ActionCardHarness);
+    expect(cards.length).toBe(2);
+    expect(await cards[0].getTitleText()).toBe('Document Treatment');
+    expect(await cards[1].getTitleText()).toBe('Treatment Expenditure Analytics');
   });
 
   it('should navigate to treatment documentation workflow when Record Treatment action is triggered', async () => {
-    const actionButtons = harness.fixture.nativeElement.querySelectorAll('.action-btn');
-    expect(actionButtons.length).toBe(2);
-
-    actionButtons[0].click();
+    const card = await loader.getHarness(ActionCardHarness.with({ title: 'Document Treatment' }));
+    await card.clickActionButton();
     await harness.fixture.whenStable();
 
     expect(router.url).toBe('/doctor/usecase');
@@ -59,10 +67,10 @@ describe('DoctorPage', () => {
   });
 
   it('should navigate to expenditure analytics report when View Cost Report action is triggered', async () => {
-    const actionButtons = harness.fixture.nativeElement.querySelectorAll('.action-btn');
-    expect(actionButtons.length).toBe(2);
-
-    actionButtons[1].click();
+    const card = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Treatment Expenditure Analytics' }),
+    );
+    await card.clickActionButton();
     await harness.fixture.whenStable();
 
     expect(router.url).toBe('/doctor/report');

@@ -3,7 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { HarnessLoader } from '@angular/cdk/testing';
 import { ClerkPage } from './clerk-page';
+import { ActionCardHarness } from '../action-card/testing';
 
 @Component({
   selector: 'stub-clerk-usecase',
@@ -19,6 +22,7 @@ class StubClerkReportComponent {}
 
 describe('ClerkPage', () => {
   let harness: RouterTestingHarness;
+  let loader: HarnessLoader;
   let router: Router;
 
   beforeEach(async () => {
@@ -37,21 +41,25 @@ describe('ClerkPage', () => {
     router = TestBed.inject(Router);
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/clerk', ClerkPage);
+    loader = TestbedHarnessEnvironment.loader(harness.fixture);
   });
 
-  it('should render page header and administrative action cards', () => {
+  it('should render page header and administrative action cards', async () => {
     const heading = harness.fixture.nativeElement.querySelector('.page-title');
     expect(heading?.textContent).toContain('Hospital Clerk Workspace');
 
     const subtitle = harness.fixture.nativeElement.querySelector('.page-subtitle');
     expect(subtitle?.textContent).toContain('Coordinate patient intakes');
+
+    const cards = await loader.getAllHarnesses(ActionCardHarness);
+    expect(cards.length).toBe(2);
+    expect(await cards[0].getTitleText()).toBe('Schedule Appointment');
+    expect(await cards[1].getTitleText()).toBe('Visit Frequency Analytics');
   });
 
   it('should navigate to Appointment intake workflow when Schedule Appointment action is triggered', async () => {
-    const actionButtons = harness.fixture.nativeElement.querySelectorAll('.action-btn');
-    expect(actionButtons.length).toBe(2);
-
-    actionButtons[0].click();
+    const card = await loader.getHarness(ActionCardHarness.with({ title: 'Schedule Appointment' }));
+    await card.clickActionButton();
     await harness.fixture.whenStable();
 
     expect(router.url).toBe('/clerk/usecase');
@@ -59,10 +67,10 @@ describe('ClerkPage', () => {
   });
 
   it('should navigate to Consultation Frequency Report when View Frequency Report action is triggered', async () => {
-    const actionButtons = harness.fixture.nativeElement.querySelectorAll('.action-btn');
-    expect(actionButtons.length).toBe(2);
-
-    actionButtons[1].click();
+    const card = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Visit Frequency Analytics' }),
+    );
+    await card.clickActionButton();
     await harness.fixture.whenStable();
 
     expect(router.url).toBe('/clerk/report');
