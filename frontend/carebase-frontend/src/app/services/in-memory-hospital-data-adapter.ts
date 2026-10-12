@@ -14,7 +14,6 @@ import {
   Patient,
   Medication,
   Treatment,
-  Appointment,
   CreateAppointmentRequest,
   CreateAppointmentResponse,
   TimeSlot,
