@@ -25,7 +25,7 @@
 |---|---|---|:---:|
 | 01 | [01: Eradicate Manual fixture.detectChanges and Enforce Zoneless Stability](./issues/01-eradicate-fixture-detect-changes.md) | None (Frontier) | `ready-for-agent` |
 | 02 | [02: Replace settle setTimeout Sleeps with Deterministic vi.waitFor](./issues/02-replace-settle-sleeps-with-vi-waitfor.md) | None (Frontier) | 🟢 Complete |
-| 03 | [03: Eliminate Private Signal Mutations in Consultation Frequency Report](./issues/03-eliminate-private-signal-mutations-in-clerk-report.md) | 01 | `ready-for-agent` |
+| 03 | [03: Eliminate Private Signal Mutations in Consultation Frequency Report](./issues/03-eliminate-private-signal-mutations-in-clerk-report.md) | 01 | 🟢 Complete |
 | 04 | [04: Implement provideTestHospitalData and Eliminate Collaborator Spies](./issues/04-implement-provide-test-hospital-data-and-eliminate-collaborator-spies.md) | 02 | `ready-for-agent` |
 | 05 | [05: Adopt RouterTestingHarness and Eliminate Router Spies](./issues/05-adopt-router-testing-harness-and-eliminate-router-spies.md) | 01 | `ready-for-agent` |
 | 06 | [06: Deepen Admin Page and Transaction Dialog Behavioral Suites](./issues/06-deepen-admin-page-and-transaction-dialog-suites.md) | 04 | `ready-for-agent` |
@@ -45,7 +45,7 @@
 | 2 | `src/app/action-card/action-card.spec.ts` | 50% | 100% | ⬜ | — | — | ⬜ | ⏳ Pending |
 | 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | ⬜ | ⬜ | ⏳ Pending |
 | 4 | `src/app/clerk-page/clerk-page.spec.ts` | 10% | 100% | ⬜ | ⬜ | ⬜ | ⬜ | ⏳ Pending |
-| 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | ⬜ | ⬜ | — | ⬜ | ⏳ Pending |
+| 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | 🟢 | ⬜ | — | ⬜ | ⏳ Pending |
 | 6 | `src/app/clerk-use-case/appointment-intake-workflow.spec.ts` | 60% | 100% | — | ⬜ | — | — | ⏳ Pending |
 | 7 | `src/app/clerk-use-case/clerk-use-case.spec.ts` | 20% | 100% | ⬜ | ⬜ | — | ⬜ | ⏳ Pending |
 | 8 | `src/app/doctor-page/doctor-page.spec.ts` | 10% | 100% | ⬜ | ⬜ | ⬜ | ⬜ | ⏳ Pending |

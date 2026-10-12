@@ -4,9 +4,9 @@
 
 **Blocked by:** 01 (Eradicate Manual fixture.detectChanges and Enforce Zoneless Stability)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] All instances of `(component as any)` mutating private signals in the Consultation Frequency Report test suite are removed
-- [ ] Test records are provided through the in-memory hospital data adapter configured in the test module
-- [ ] Unique patient totals, consultation frequency metrics, and date range filters are asserted against the component's public outputs and reactive derivations
-- [ ] Method and resource reload spying on the component's internal resources is removed in favor of observing resolved data state
+- [x] All instances of `(component as any)` mutating private signals in the Consultation Frequency Report test suite are removed
+- [x] Test records are provided through the in-memory hospital data adapter configured in the test module
+- [x] Unique patient totals, consultation frequency metrics, and date range filters are asserted against the component's public outputs and reactive derivations
+- [x] Method and resource reload spying on the component's internal resources is removed in favor of observing resolved data state
