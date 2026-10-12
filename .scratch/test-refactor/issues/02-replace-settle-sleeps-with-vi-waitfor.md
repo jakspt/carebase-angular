@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] All ad-hoc `settle()` `setTimeout` helper functions in the HTTP hospital data adapter test suite are replaced with deterministic `vi.waitFor` expectations for reactive resource and HTTP verification
-- [ ] All `settle()` calls in the in-memory hospital data adapter test suite are replaced with deterministic `vi.waitFor` expectations
-- [ ] Hardcoded `setTimeout` delays in the Doctor expenditure report and Doctor treatment documentation suites are replaced with `await fixture.whenStable()`
-- [ ] All affected test suites run deterministically without arbitrary timer pauses or sleep race conditions
+- [x] All ad-hoc `settle()` `setTimeout` helper functions in the HTTP hospital data adapter test suite are replaced with deterministic `vi.waitFor` expectations for reactive resource and HTTP verification
+- [x] All `settle()` calls in the in-memory hospital data adapter test suite are replaced with deterministic `vi.waitFor` expectations
+- [x] Hardcoded `setTimeout` delays in the Doctor expenditure report and Doctor treatment documentation suites are replaced with `await fixture.whenStable()`
+- [x] All affected test suites run deterministically without arbitrary timer pauses or sleep race conditions

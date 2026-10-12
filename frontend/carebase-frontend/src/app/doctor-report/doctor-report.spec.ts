@@ -8,8 +8,6 @@ describe('DoctorReport', () => {
   let component: DoctorReport;
   let fixture: ComponentFixture<DoctorReport>;
 
-  const settle = () => new Promise((r) => setTimeout(r, 20));
-
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [DoctorReport],
@@ -27,7 +25,6 @@ describe('DoctorReport', () => {
 
   it('should load earnings report data via InMemoryHospitalDataAdapter without HTTP mocking', async () => {
     component.selectedYear.set(2026);
-    await settle();
     await fixture.whenStable();
 
     const data = component.reportData();

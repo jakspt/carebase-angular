@@ -1,11 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { InMemoryHospitalDataAdapter } from './in-memory-hospital-data-adapter';
-import {
-  BookingConflictError,
-  TimeSlotQueryParams,
-  DateRange,
-} from './hospital-data-access';
+import { BookingConflictError, TimeSlotQueryParams, DateRange } from './hospital-data-access';
 import { CreateAppointmentRequest, Treatment } from '../models/models';
 
 describe('InMemoryHospitalDataAdapter', () => {
@@ -18,14 +14,13 @@ describe('InMemoryHospitalDataAdapter', () => {
     adapter = TestBed.inject(InMemoryHospitalDataAdapter);
   });
 
-  const settle = () => new Promise((r) => setTimeout(r, 10));
-
   it('should return seeded doctors', async () => {
     const res = adapter.getDoctors();
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value().length).toBeGreaterThan(0);
+    });
 
     const doctors = res.value();
-    expect(doctors.length).toBeGreaterThan(0);
     expect(doctors[0]).toHaveProperty('specialty');
     expect(doctors[0]).toHaveProperty('department');
   });
@@ -33,28 +28,30 @@ describe('InMemoryHospitalDataAdapter', () => {
   it('should search patients by name or SSN', async () => {
     const q = signal('Maria');
     const res = adapter.searchPatients(q);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value().length).toBeGreaterThan(0);
+    });
 
     const results = res.value();
-    expect(results.length).toBeGreaterThan(0);
     expect(results.every((p) => p.name.includes('Maria') || p.ssn.includes('Maria'))).toBe(true);
   });
 
   it('should not search patients if query is shorter than 2 characters', async () => {
     const q = signal('M');
     const res = adapter.searchPatients(q);
-    await settle();
-
-    expect(res.value()).toEqual([]);
+    await vi.waitFor(() => {
+      expect(res.value()).toEqual([]);
+    });
   });
 
   it('should return patient details including appointments', async () => {
     const id = signal<string | number | null>('2001');
     const res = adapter.getPatientDetails(id);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value()).not.toBeNull();
+    });
 
     const patient = res.value();
-    expect(patient).not.toBeNull();
     expect(patient?.name).toBeDefined();
     expect(patient?.appointments).toBeDefined();
   });
@@ -62,10 +59,11 @@ describe('InMemoryHospitalDataAdapter', () => {
   it('should search clerks by name or SSN', async () => {
     const q = signal('Erika');
     const res = adapter.searchClerks(q);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value().length).toBeGreaterThan(0);
+    });
 
     const clerks = res.value();
-    expect(clerks.length).toBeGreaterThan(0);
     expect(clerks[0].name).toContain('Erika');
   });
 
@@ -75,10 +73,11 @@ describe('InMemoryHospitalDataAdapter', () => {
       doctorSsn: '3001',
     });
     const res = adapter.getTimeSlots(params);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value()).toBeDefined();
+    });
 
     const slotsResult = res.value();
-    expect(slotsResult).toBeDefined();
     expect(slotsResult?.slots.length).toBeGreaterThan(0);
     // Standard operating hours from 08:00 to 17:00
     expect(slotsResult?.slots[0].time).toBe('08:00');
@@ -103,7 +102,9 @@ describe('InMemoryHospitalDataAdapter', () => {
       doctorSsn: '3001',
     });
     const slotsRes = adapter.getTimeSlots(params);
-    await settle();
+    await vi.waitFor(() => {
+      expect(slotsRes.value()).toBeDefined();
+    });
 
     const slot = slotsRes.value()?.slots.find((s) => s.time === '10:00');
     expect(slot?.available).toBe(false);
@@ -154,10 +155,11 @@ describe('InMemoryHospitalDataAdapter', () => {
 
   it('should return medications formulary', async () => {
     const res = adapter.getMedications();
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value().length).toBeGreaterThan(0);
+    });
 
     const meds = res.value();
-    expect(meds.length).toBeGreaterThan(0);
     expect(meds[0]).toHaveProperty('id');
     expect(meds[0]).toHaveProperty('name');
   });
@@ -165,10 +167,11 @@ describe('InMemoryHospitalDataAdapter', () => {
   it('should aggregate doctor earnings report for a given year', async () => {
     const year = signal(2026);
     const res = adapter.getDoctorEarningsReport(year);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value()).toBeDefined();
+    });
 
     const report = res.value();
-    expect(report).toBeDefined();
     expect(report?.year).toBe(2026);
     expect(Array.isArray(report?.data)).toBe(true);
   });
@@ -179,10 +182,11 @@ describe('InMemoryHospitalDataAdapter', () => {
       endDate: '2026-12-31',
     });
     const res = adapter.getPatientVisitsReport(range);
-    await settle();
+    await vi.waitFor(() => {
+      expect(res.value()).toBeDefined();
+    });
 
     const report = res.value();
-    expect(report).toBeDefined();
     expect(report?.startDate).toBe('2026-01-01');
     expect(report?.endDate).toBe('2026-12-31');
     expect(Array.isArray(report?.results)).toBe(true);

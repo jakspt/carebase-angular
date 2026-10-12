@@ -9,8 +9,6 @@ describe('DoctorUseCase', () => {
   let fixture: ComponentFixture<DoctorUseCase>;
   let dataAdapter: InMemoryHospitalDataAdapter;
 
-  const settle = () => new Promise((r) => setTimeout(r, 20));
-
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [DoctorUseCase],
@@ -29,7 +27,6 @@ describe('DoctorUseCase', () => {
 
   it('should search patients and resolve unwrapped records via InMemoryHospitalDataAdapter', async () => {
     component.searchQuery.set('Maria');
-    await settle();
     await fixture.whenStable();
 
     expect(component.patients().length).toBeGreaterThan(0);
@@ -37,7 +34,6 @@ describe('DoctorUseCase', () => {
   });
 
   it('should load medications formulary directly into filteredMedications', async () => {
-    await settle();
     await fixture.whenStable();
 
     expect(component.filteredMedications().length).toBeGreaterThan(0);
@@ -68,7 +64,6 @@ describe('DoctorUseCase', () => {
 
     const mockStepper: any = { next: vi.fn() };
     component.onSubmitTreatment(mockStepper);
-    await settle();
     await fixture.whenStable();
 
     expect(component.treatmentCompleted()).toBe(true);

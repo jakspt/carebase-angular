@@ -17,11 +17,7 @@ describe('HttpHospitalDataAdapter', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        HttpHospitalDataAdapter,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [HttpHospitalDataAdapter, provideHttpClient(), provideHttpClientTesting()],
     });
 
     adapter = TestBed.inject(HttpHospitalDataAdapter);
@@ -31,8 +27,6 @@ describe('HttpHospitalDataAdapter', () => {
   afterEach(() => {
     httpTesting.verify();
   });
-
-  const settle = () => new Promise((r) => setTimeout(r, 10));
 
   describe('getDoctors', () => {
     it('should query /api/clerk/doctors and unwrap response envelope via parse', async () => {
@@ -54,18 +48,18 @@ describe('HttpHospitalDataAdapter', () => {
           },
         ],
       });
-      await settle();
-
-      expect(res.value()).toEqual([
-        {
-          id: '1001',
-          name: 'Dr. Jane Smith',
-          ssn: '1001',
-          specialty: 'Cardiology',
-          position: 'Chief',
-          department: 'Cardiology',
-        },
-      ]);
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual([
+          {
+            id: '1001',
+            name: 'Dr. Jane Smith',
+            ssn: '1001',
+            specialty: 'Cardiology',
+            position: 'Chief',
+            department: 'Cardiology',
+          },
+        ]);
+      });
     });
   });
 
@@ -79,15 +73,13 @@ describe('HttpHospitalDataAdapter', () => {
       expect(req.request.method).toBe('GET');
 
       req.flush({
-        patients: [
-          { id: '1', name: 'Jane Doe', ssn: '1234', insurance: 'HealthCare' },
-        ],
+        patients: [{ id: '1', name: 'Jane Doe', ssn: '1234', insurance: 'HealthCare' }],
       });
-      await settle();
-
-      expect(res.value()).toEqual([
-        { id: '1', name: 'Jane Doe', ssn: '1234', insurance: 'HealthCare' },
-      ]);
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual([
+          { id: '1', name: 'Jane Doe', ssn: '1234', insurance: 'HealthCare' },
+        ]);
+      });
     });
 
     it('should not query when search string is fewer than 2 characters', async () => {
@@ -96,8 +88,9 @@ describe('HttpHospitalDataAdapter', () => {
       TestBed.tick();
 
       httpTesting.expectNone((r) => r.url.includes('/api/clerk/patients/search'));
-      await settle();
-      expect(res.value()).toEqual([]);
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual([]);
+      });
     });
   });
 
@@ -117,14 +110,14 @@ describe('HttpHospitalDataAdapter', () => {
         insurance: 'TestCo',
         appointments: [],
       });
-      await settle();
-
-      expect(res.value()).toEqual({
-        id: '42',
-        name: 'John Doe',
-        ssn: '42',
-        insurance: 'TestCo',
-        appointments: [],
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual({
+          id: '42',
+          name: 'John Doe',
+          ssn: '42',
+          insurance: 'TestCo',
+          appointments: [],
+        });
       });
     });
 
@@ -134,8 +127,9 @@ describe('HttpHospitalDataAdapter', () => {
       TestBed.tick();
 
       httpTesting.expectNone((r) => r.url.includes('/api/doctor/patients'));
-      await settle();
-      expect(res.value()).toBeNull();
+      await vi.waitFor(() => {
+        expect(res.value()).toBeNull();
+      });
     });
   });
 
@@ -151,11 +145,9 @@ describe('HttpHospitalDataAdapter', () => {
       req.flush({
         clerks: [{ id: '9001', name: 'Alice Smith', ssn: '9001' }],
       });
-      await settle();
-
-      expect(res.value()).toEqual([
-        { id: '9001', name: 'Alice Smith', ssn: '9001' },
-      ]);
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual([{ id: '9001', name: 'Alice Smith', ssn: '9001' }]);
+      });
     });
   });
 
@@ -181,18 +173,20 @@ describe('HttpHospitalDataAdapter', () => {
         slots: [{ time: '09:00', available: true }],
         nextAvailableDate: null,
       });
-      await settle();
-
-      expect(res.value()?.slots).toHaveLength(1);
+      await vi.waitFor(() => {
+        expect(res.value()?.slots).toHaveLength(1);
+      });
     });
 
     it('should not query when parameters are incomplete', async () => {
       const params = signal<TimeSlotQueryParams | undefined>(undefined);
-      adapter.getTimeSlots(params);
+      const res = adapter.getTimeSlots(params);
       TestBed.tick();
 
       httpTesting.expectNone((r) => r.url.includes('/api/clerk/time-slots'));
-      await settle();
+      await vi.waitFor(() => {
+        expect(res.value()).toBeUndefined();
+      });
     });
   });
 
@@ -210,12 +204,12 @@ describe('HttpHospitalDataAdapter', () => {
           { id: 2, name: 'Paracetamol' },
         ],
       });
-      await settle();
-
-      expect(res.value()).toEqual([
-        { id: 1, name: 'Aspirin' },
-        { id: 2, name: 'Paracetamol' },
-      ]);
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual([
+          { id: 1, name: 'Aspirin' },
+          { id: 2, name: 'Paracetamol' },
+        ]);
+      });
     });
   });
 
@@ -241,10 +235,10 @@ describe('HttpHospitalDataAdapter', () => {
           },
         ],
       });
-      await settle();
-
-      expect(res.value()?.data).toHaveLength(1);
-      expect(res.value()?.year).toBe(2026);
+      await vi.waitFor(() => {
+        expect(res.value()?.data).toHaveLength(1);
+        expect(res.value()?.year).toBe(2026);
+      });
     });
   });
 
@@ -267,9 +261,9 @@ describe('HttpHospitalDataAdapter', () => {
         endDate: '2026-06-30',
         results: [],
       });
-      await settle();
-
-      expect(res.value()?.startDate).toBe('2026-01-01');
+      await vi.waitFor(() => {
+        expect(res.value()?.startDate).toBe('2026-01-01');
+      });
     });
   });
 
@@ -335,9 +329,7 @@ describe('HttpHospitalDataAdapter', () => {
     it('should POST treatment to doctor endpoint', async () => {
       const promise = adapter.addTreatment('P1', 99, treatment);
 
-      const req = httpTesting.expectOne(
-        '/api/doctor/patients/P1/appointments/99/treatments',
-      );
+      const req = httpTesting.expectOne('/api/doctor/patients/P1/appointments/99/treatments');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(treatment);
 
@@ -350,9 +342,7 @@ describe('HttpHospitalDataAdapter', () => {
     it('should translate network failure into HospitalDataError', async () => {
       const promise = adapter.addTreatment('P1', 99, treatment);
 
-      const req = httpTesting.expectOne(
-        '/api/doctor/patients/P1/appointments/99/treatments',
-      );
+      const req = httpTesting.expectOne('/api/doctor/patients/P1/appointments/99/treatments');
       req.flush('Error', { status: 500, statusText: 'Internal Error' });
 
       await expect(promise).rejects.toThrow(HospitalDataError);
