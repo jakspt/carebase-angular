@@ -6,12 +6,30 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { MatMenuHarness } from '@angular/material/menu/testing';
+import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { HeaderLayout } from './header-layout';
 import { ActorSession } from '../services/actor-session';
-import { provideTestAdminService } from '../services/admin-service';
+import { TestAdminServiceOptions, provideTestAdminService } from '../services/admin-service';
 
 @Component({ selector: 'stub-home', template: '<span>Home</span>' })
 class StubHomeComponent {}
+
+async function createHeaderHarness(adminOptions?: TestAdminServiceOptions) {
+  sessionStorage.clear();
+  TestBed.configureTestingModule({
+    providers: [
+      provideNoopAnimations(),
+      provideRouter([{ path: 'doctor', component: HeaderLayout }]),
+      ActorSession,
+      provideTestAdminService(adminOptions),
+    ],
+  });
+  const customHarness = await RouterTestingHarness.create();
+  await customHarness.navigateByUrl('/doctor', HeaderLayout);
+  const customLoader = TestbedHarnessEnvironment.loader(customHarness.fixture);
+  const customToolbar = await customLoader.getHarness(MatToolbarHarness);
+  return { harness: customHarness, toolbar: customToolbar };
+}
 
 describe('HeaderLayout', () => {
   let harness: RouterTestingHarness;
@@ -86,53 +104,23 @@ describe('HeaderLayout', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Home');
   });
 
-  it('should render offline database status badge when provideTestAdminService defaults to offline', () => {
-    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
-    expect(badge).toBeTruthy();
-    expect(badge.textContent).toContain('Offline');
-    expect(badge.classList.contains('mongo')).toBe(false);
+  it('should render offline database status badge in toolbar when provideTestAdminService defaults to offline', async () => {
+    const toolbar = await loader.getHarness(MatToolbarHarness);
+    const text = await (await toolbar.host()).text();
+    expect(text).toContain('Offline');
   });
 });
 
 describe('HeaderLayout with configured AdminService status', () => {
-  it('should render MongoDB badge and apply mongo class when dbType is MongoDB', async () => {
-    sessionStorage.clear();
-
-    TestBed.configureTestingModule({
-      providers: [
-        provideNoopAnimations(),
-        provideRouter([{ path: 'doctor', component: HeaderLayout }]),
-        ActorSession,
-        provideTestAdminService({ dbType: 'MongoDB' }),
-      ],
-    });
-
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/doctor', HeaderLayout);
-
-    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
-    expect(badge).toBeTruthy();
-    expect(badge.textContent).toContain('MongoDB');
-    expect(badge.classList.contains('mongo')).toBe(true);
+  it('should render MongoDB badge in toolbar when dbType is MongoDB', async () => {
+    const { toolbar } = await createHeaderHarness({ dbType: 'MongoDB' });
+    const text = await (await toolbar.host()).text();
+    expect(text).toContain('MongoDB');
   });
 
-  it('should render Connecting status when isLoading is true', async () => {
-    sessionStorage.clear();
-
-    TestBed.configureTestingModule({
-      providers: [
-        provideNoopAnimations(),
-        provideRouter([{ path: 'doctor', component: HeaderLayout }]),
-        ActorSession,
-        provideTestAdminService({ isLoading: true }),
-      ],
-    });
-
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/doctor', HeaderLayout);
-
-    const badge = harness.fixture.nativeElement.querySelector('.db-badge');
-    expect(badge).toBeTruthy();
-    expect(badge.textContent).toContain('Connecting...');
+  it('should render Connecting status in toolbar when isLoading is true', async () => {
+    const { toolbar } = await createHeaderHarness({ isLoading: true });
+    const text = await (await toolbar.host()).text();
+    expect(text).toContain('Connecting...');
   });
 });

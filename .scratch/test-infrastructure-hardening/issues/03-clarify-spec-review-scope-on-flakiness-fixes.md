@@ -3,7 +3,7 @@
 **What to build:** Update `.agents/skills/code-review/SKILL.md` to refine the Spec Review sub-agent instructions. Clarify that when an originating spec or ticket explicitly mandates passing the entire test suite 100% green, bugfixes that eliminate pre-existing test flakiness or stabilize timing race conditions in modified files are within scope and must not be flagged as scope creep.
 
 **Blocked by:** None (Frontier)
-
+**Type:** task
 **Status:** resolved
 
 - [x] `.agents/skills/code-review/SKILL.md` includes explicit instructions for the Spec Reviewer regarding test stability fixes

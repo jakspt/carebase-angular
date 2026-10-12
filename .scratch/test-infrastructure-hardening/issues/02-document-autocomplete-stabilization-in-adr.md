@@ -3,7 +3,7 @@
 **What to build:** Update `docs/adr/0003-frontend-testing-standards-and-harnesses.md` to document the canonical, deterministic pattern for testing Angular Material autocompletes (`MatAutocompleteHarness`) bound to debounced reactive signals. Detail the necessity of verifying and ensuring open/focused panel state within `vi.waitFor` prior to calling `.selectOption()` to eliminate timing race conditions across CI environments.
 
 **Blocked by:** None (Frontier)
-
+**Type:** task
 **Status:** resolved
 
 - [x] `docs/adr/0003-frontend-testing-standards-and-harnesses.md` includes explicit guidance on `MatAutocompleteHarness` interactions with debounced signals

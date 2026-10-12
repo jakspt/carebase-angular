@@ -28,7 +28,7 @@ export class AdminService {
 }
 
 export interface TestAdminServiceOptions {
-  dbType?: string;
+  dbType?: DbStatus['dbType'];
   isLoading?: boolean;
   hasValue?: boolean;
 }
@@ -37,7 +37,7 @@ export function provideTestAdminService(options?: TestAdminServiceOptions): Prov
   const hasValue = options?.hasValue ?? options?.dbType !== undefined;
   const isLoading = options?.isLoading ?? false;
   const dbStatus: DbStatus | undefined = hasValue
-    ? { dbType: (options?.dbType ?? 'MariaDB') as 'MariaDB' | 'MongoDB' }
+    ? { dbType: options?.dbType ?? 'MariaDB' }
     : undefined;
 
   const mockAdminService = {

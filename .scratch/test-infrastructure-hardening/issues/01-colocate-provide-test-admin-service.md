@@ -3,7 +3,7 @@
 **What to build:** Author and export a reusable `provideTestAdminService()` dependency injection helper function in `src/app/services/admin-service.ts`. Refactor `src/app/app.spec.ts` and `src/app/header-layout/header-layout.spec.ts` to consume this helper instead of defining inline mock `AdminService` objects with duplicate `statusResource` signal structures.
 
 **Blocked by:** None (Frontier)
-
+**Type:** task
 **Status:** resolved
 
 - [x] `provideTestAdminService()` is exported from `src/app/services/admin-service.ts` providing deterministic reactive status signals
