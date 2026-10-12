@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] All manual calls to `fixture.detectChanges()` in the multi-step Appointment intake wizard test suite are replaced with `await fixture.whenStable()`
 - [x] Manual calls to `fixture.detectChanges()` in the header layout test suite are replaced with `await fixture.whenStable()`
