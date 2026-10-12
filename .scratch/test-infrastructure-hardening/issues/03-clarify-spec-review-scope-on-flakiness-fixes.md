@@ -4,7 +4,11 @@
 
 **Blocked by:** None (Frontier)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `.agents/skills/code-review/SKILL.md` includes explicit instructions for the Spec Reviewer regarding test stability fixes
-- [ ] Guidance distinguishes genuine scope creep (unrelated feature additions) from necessary test determinism bugfixes required to satisfy green suite acceptance criteria
+- [x] `.agents/skills/code-review/SKILL.md` includes explicit instructions for the Spec Reviewer regarding test stability fixes
+- [x] Guidance distinguishes genuine scope creep (unrelated feature additions) from necessary test determinism bugfixes required to satisfy green suite acceptance criteria
+
+## Answer
+
+Updated `.agents/skills/code-review/SKILL.md` in the Spec Reviewer brief to explicitly define the boundary around test determinism and flakiness fixes. Specifically, when an originating spec or ticket mandates green test suite criteria, timing race condition fixes and harness stabilization in touched files are defined as within scope, preventing false-positive scope creep warnings while continuing to flag unrequested domain features.
