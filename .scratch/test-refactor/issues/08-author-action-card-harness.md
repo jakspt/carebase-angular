@@ -4,10 +4,10 @@
 
 **Blocked by:** 01 (Eradicate Manual fixture.detectChanges and Enforce Zoneless Stability)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A dedicated `ActionCardHarness` extending `@angular/cdk/testing/ComponentHarness` is created in the action card testing directory
-- [ ] The harness exposes methods for retrieving title text, description text, clicking the action button, and clicking the card body
-- [ ] Action card tests supply inputs via `fixture.componentRef.setInput(...)` and await stability via `await fixture.whenStable()`
-- [ ] Brittle CSS class queries (`.action-btn`, `.action-card`) are eliminated from the action card test suite
-- [ ] Output event emissions are verified through harness interaction
+- [x] A dedicated `ActionCardHarness` extending `@angular/cdk/testing/ComponentHarness` is created in the action card testing directory
+- [x] The harness exposes methods for retrieving title text, description text, clicking the action button, and clicking the card body
+- [x] Action card tests supply inputs via `fixture.componentRef.setInput(...)` and await stability via `await fixture.whenStable()`
+- [x] Brittle CSS class queries (`.action-btn`, `.action-card`) are eliminated from the action card test suite
+- [x] Output event emissions are verified through harness interaction

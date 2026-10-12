@@ -30,7 +30,7 @@
 | 05 | [05: Adopt RouterTestingHarness and Eliminate Router Spies](./issues/05-adopt-router-testing-harness-and-eliminate-router-spies.md) | 01 | 🟢 Complete |
 | 06 | [06: Deepen Admin Page and Transaction Dialog Behavioral Suites](./issues/06-deepen-admin-page-and-transaction-dialog-suites.md) | 04 | 🟢 Complete |
 | 07 | [07: Deepen Clerk, Doctor Workstation, and Facade Service Behavioral Suites](./issues/07-deepen-clerk-and-doctor-workstation-suites.md) | 04, 05 | 🟢 Complete |
-| 08 | [08: Author ActionCardHarness and Modernize Reusable Component Testing](./issues/08-author-action-card-harness.md) | 01 | `ready-for-agent` |
+| 08 | [08: Author ActionCardHarness and Modernize Reusable Component Testing](./issues/08-author-action-card-harness.md) | 01 | 🟢 Complete |
 | 09 | [09: Migrate Appointment Intake Wizard to Material Harnesses](./issues/09-migrate-appointment-intake-wizard-to-material-harnesses.md) | 04, 08 | `ready-for-agent` |
 | 10 | [10: Migrate Reports and Navigation to Material Harnesses](./issues/10-migrate-reports-and-navigation-to-material-harnesses.md) | 03, 05, 08 | `ready-for-agent` |
 | 11 | [11: Purge Karma Boilerplate and Verify Suite Compliance](./issues/11-purge-karma-boilerplate-and-verify-suite-compliance.md) | 06, 07, 09, 10 | `ready-for-agent` |
@@ -42,7 +42,7 @@
 | # | Spec File | Initial Score | Target | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Final Status |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 1 | `src/app/app.spec.ts` | 15% | 100% | ⬜ | — | ⬜ | ⬜ | ⏳ Pending |
-| 2 | `src/app/action-card/action-card.spec.ts` | 50% | 100% | ⬜ | — | — | ⬜ | ⏳ Pending |
+| 2 | `src/app/action-card/action-card.spec.ts` | 50% | 100% | ⬜ | — | — | 🟢 | 🟢 Compliant |
 | 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | 🟢 | ⬜ | ⏳ Pending |
 | 4 | `src/app/clerk-page/clerk-page.spec.ts` | 10% | 100% | ⬜ | 🟢 | 🟢 | ⬜ | ⏳ Pending |
 | 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | 🟢 | ⬜ | — | ⬜ | ⏳ Pending |
