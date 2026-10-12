@@ -28,7 +28,7 @@
 | 03 | [03: Eliminate Private Signal Mutations in Consultation Frequency Report](./issues/03-eliminate-private-signal-mutations-in-clerk-report.md) | 01 | 🟢 Complete |
 | 04 | [04: Implement provideTestHospitalData and Eliminate Collaborator Spies](./issues/04-implement-provide-test-hospital-data-and-eliminate-collaborator-spies.md) | 02 | 🟢 Complete |
 | 05 | [05: Adopt RouterTestingHarness and Eliminate Router Spies](./issues/05-adopt-router-testing-harness-and-eliminate-router-spies.md) | 01 | 🟢 Complete |
-| 06 | [06: Deepen Admin Page and Transaction Dialog Behavioral Suites](./issues/06-deepen-admin-page-and-transaction-dialog-suites.md) | 04 | `ready-for-agent` |
+| 06 | [06: Deepen Admin Page and Transaction Dialog Behavioral Suites](./issues/06-deepen-admin-page-and-transaction-dialog-suites.md) | 04 | 🟢 Complete |
 | 07 | [07: Deepen Clerk, Doctor Workstation, and Facade Service Behavioral Suites](./issues/07-deepen-clerk-and-doctor-workstation-suites.md) | 04, 05 | `ready-for-agent` |
 | 08 | [08: Author ActionCardHarness and Modernize Reusable Component Testing](./issues/08-author-action-card-harness.md) | 01 | `ready-for-agent` |
 | 09 | [09: Migrate Appointment Intake Wizard to Material Harnesses](./issues/09-migrate-appointment-intake-wizard-to-material-harnesses.md) | 04, 08 | `ready-for-agent` |
@@ -43,7 +43,7 @@
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 1 | `src/app/app.spec.ts` | 15% | 100% | ⬜ | — | ⬜ | ⬜ | ⏳ Pending |
 | 2 | `src/app/action-card/action-card.spec.ts` | 50% | 100% | ⬜ | — | — | ⬜ | ⏳ Pending |
-| 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | ⬜ | ⬜ | ⏳ Pending |
+| 3 | `src/app/admin-page/admin-page.spec.ts` | 10% | 100% | ⬜ | — | 🟢 | ⬜ | ⏳ Pending |
 | 4 | `src/app/clerk-page/clerk-page.spec.ts` | 10% | 100% | ⬜ | ⬜ | ⬜ | ⬜ | ⏳ Pending |
 | 5 | `src/app/clerk-report/clerk-report.spec.ts` | 25% | 100% | 🟢 | ⬜ | — | ⬜ | ⏳ Pending |
 | 6 | `src/app/clerk-use-case/appointment-intake-workflow.spec.ts` | 60% | 100% | — | 🟢 | — | — | 🟢 Compliant |
@@ -59,7 +59,8 @@
 | 16 | `src/app/services/hospital-data-access.spec.ts` | 100% | 100% | — | — | — | — | 🟢 Compliant |
 | 17 | `src/app/services/http-hospital-data-adapter.spec.ts` | 85% | 100% | 🟢 | — | — | — | 🟢 Compliant |
 | 18 | `src/app/services/in-memory-hospital-data-adapter.spec.ts` | 85% | 100% | 🟢 | — | — | — | 🟢 Compliant |
-| 19 | `src/app/transaction-dialog/transaction-dialog.spec.ts` | 10% | 100% | — | — | ⬜ | ⬜ | ⏳ Pending |
+| 19 | `src/app/transaction-dialog/transaction-dialog.spec.ts` | 10% | 100% | — | — | 🟢 | ⬜ | ⏳ Pending |
+
 
 **Legend:**
 - ⬜ = Action pending in phase

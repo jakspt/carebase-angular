@@ -4,10 +4,11 @@
 
 **Blocked by:** 04 (Implement provideTestHospitalData and Eliminate Collaborator Spies)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Admin Page tests verify that clicking the database migration and seed actions initiates dialog confirmation with the correct parameters
-- [ ] Transaction Dialog tests verify the state machine transitions from initial confirmation to loading upon execution
-- [ ] Transaction Dialog tests verify progress indicator rendering and dismiss prevention (`disableClose = true`) while an async task is running
-- [ ] Successful completion transitions the dialog state to success and permits modal dismissal
-- [ ] Failure in the async task transitions the dialog state to error with visible failure messaging
+- [x] Admin Page tests verify that clicking the database migration and seed actions initiates dialog confirmation with the correct parameters
+- [x] Transaction Dialog tests verify the state machine transitions from initial confirmation to loading upon execution
+- [x] Transaction Dialog tests verify progress indicator rendering and dismiss prevention (`disableClose = true`) while an async task is running
+- [x] Successful completion transitions the dialog state to success and permits modal dismissal
+- [x] Failure in the async task transitions the dialog state to error with visible failure messaging
+
