@@ -1,4 +1,13 @@
-import { Injectable, Injector, ResourceRef, Signal, inject, resource, signal } from '@angular/core';
+import {
+  Injectable,
+  Injector,
+  Provider,
+  ResourceRef,
+  Signal,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
 import {
   Clerk,
   Doctor,
@@ -17,6 +26,7 @@ import {
   BookingConflictError,
   DateRange,
   DoctorEarningsReport,
+  HOSPITAL_DATA_ACCESS,
   HospitalDataAccess,
   PatientVisitsReport,
   TimeSlotQueryParams,
@@ -164,9 +174,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       loader: async (ctx) => {
         const q = ctx.params?.q?.toLowerCase() ?? '';
         if (!q) return [];
-        return this.patients.filter(
-          (p) => p.name.toLowerCase().includes(q) || p.ssn.includes(q),
-        );
+        return this.patients.filter((p) => p.name.toLowerCase().includes(q) || p.ssn.includes(q));
       },
     });
   }
@@ -186,9 +194,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       loader: async (ctx) => {
         const id = ctx.params?.id;
         if (!id) return null;
-        const patient = this.patients.find(
-          (p) => String(p.id) === id || p.ssn === id,
-        );
+        const patient = this.patients.find((p) => String(p.id) === id || p.ssn === id);
         return patient ? JSON.parse(JSON.stringify(patient)) : null;
       },
     });
@@ -200,14 +206,12 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       defaultValue: [],
       params: () => ({
         version: this.stateVersion(),
-        q: typeof query === 'function' ? query()?.trim() ?? '' : '',
+        q: typeof query === 'function' ? (query()?.trim() ?? '') : '',
       }),
       loader: async (ctx) => {
         const q = ctx.params?.q?.toLowerCase() ?? '';
         if (!q) return [...this.clerks];
-        return this.clerks.filter(
-          (c) => c.name.toLowerCase().includes(q) || c.ssn.includes(q),
-        );
+        return this.clerks.filter((c) => c.name.toLowerCase().includes(q) || c.ssn.includes(q));
       },
     });
   }
@@ -215,7 +219,10 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   getTimeSlots(
     params: Signal<TimeSlotQueryParams | undefined> | (() => TimeSlotQueryParams | undefined),
   ): ResourceRef<TimeSlotsResult | undefined> {
-    return resource<TimeSlotsResult | undefined, { version: number; p: TimeSlotQueryParams } | undefined>({
+    return resource<
+      TimeSlotsResult | undefined,
+      { version: number; p: TimeSlotQueryParams } | undefined
+    >({
       injector: this.injector,
       params: () => {
         const v = this.stateVersion();
@@ -242,7 +249,10 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   getDoctorEarningsReport(
     year: Signal<number> | (() => number),
   ): ResourceRef<DoctorEarningsReport | undefined> {
-    return resource<DoctorEarningsReport | undefined, { version: number; year: number } | undefined>({
+    return resource<
+      DoctorEarningsReport | undefined,
+      { version: number; year: number } | undefined
+    >({
       injector: this.injector,
       params: () => {
         const v = this.stateVersion();
@@ -260,7 +270,10 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   getPatientVisitsReport(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
   ): ResourceRef<PatientVisitsReport | undefined> {
-    return resource<PatientVisitsReport | undefined, { version: number; range: DateRange } | undefined>({
+    return resource<
+      PatientVisitsReport | undefined,
+      { version: number; range: DateRange } | undefined
+    >({
       injector: this.injector,
       params: () => {
         const v = this.stateVersion();
@@ -288,9 +301,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     );
 
     if (conflict) {
-      throw new BookingConflictError(
-        'The selected time slot was already booked by another user.',
-      );
+      throw new BookingConflictError('The selected time slot was already booked by another user.');
     }
 
     const apptId = this.nextAppointmentId++;
@@ -389,12 +400,45 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       }
     }
 
+    let nextAvailableDate: string | null = null;
+    const hasAvailable = slots.some((s) => s.available);
+    if (!hasAvailable) {
+      try {
+        const parts = rawDate.split('-');
+        const curr = new Date(
+          parseInt(parts[0], 10),
+          parseInt(parts[1], 10) - 1,
+          parseInt(parts[2], 10),
+        );
+        const SLOTS_PER_DAY = 19;
+        for (let offset = 1; offset <= 14; offset++) {
+          const candidate = new Date(curr);
+          candidate.setDate(curr.getDate() + offset);
+          const year = candidate.getFullYear();
+          const month = String(candidate.getMonth() + 1).padStart(2, '0');
+          const day = String(candidate.getDate()).padStart(2, '0');
+          const candidateStr = `${year}-${month}-${day}`;
+          const bookedOnCandidate = this.appointments.filter(
+            (a) =>
+              a.date === candidateStr &&
+              (a.doctorSsn === p.doctorSsn || (p.patientSsn && a.patientSsn === p.patientSsn)),
+          ).length;
+          if (bookedOnCandidate < SLOTS_PER_DAY) {
+            nextAvailableDate = candidateStr;
+            break;
+          }
+        }
+      } catch {
+        // ignore date parse issues
+      }
+    }
+
     return {
       date: rawDate,
       doctorSsn: p.doctorSsn,
       patientSsn: p.patientSsn,
       slots,
-      nextAvailableDate: null,
+      nextAvailableDate,
     };
   }
 
@@ -402,11 +446,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     const data: DoctorEarnings[] = this.doctors.map((doctor) => {
       let total = 0;
       for (const appt of this.appointments) {
-        if (
-          appt.doctorSsn === doctor.ssn &&
-          appt.date.startsWith(String(year)) &&
-          appt.treatment
-        ) {
+        if (appt.doctorSsn === doctor.ssn && appt.date.startsWith(String(year)) && appt.treatment) {
           total += appt.treatment.cost;
         }
       }
@@ -467,4 +507,8 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       results,
     };
   }
+}
+
+export function provideTestHospitalData(): Provider[] {
+  return [{ provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter }];
 }

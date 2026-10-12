@@ -1,89 +1,110 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { signal, WritableSignal } from '@angular/core';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ClerkUseCase } from './clerk-use-case';
 import { ClerkService } from '../services/clerk-service';
-import { of, throwError } from 'rxjs';
-import { Clerk, Doctor, Patient, TimeSlotsResponse } from '../models/models';
+import { Clerk, Doctor, Patient } from '../models/models';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
+import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
+import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
 
 describe('ClerkUseCase', () => {
   let component: ClerkUseCase;
   let fixture: ComponentFixture<ClerkUseCase>;
   let clerkService: ClerkService;
-  let mockSlotsSignal: WritableSignal<TimeSlotsResponse | undefined>;
+  let dataAccess: HospitalDataAccess;
 
   const mockClerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
   const mockPatient: Patient = {
-    id: '2041',
+    id: '2002',
     name: 'Johann Schmidt',
-    ssn: '2041',
-    insurance: 'ÖGK',
+    ssn: '2002',
+    insurance: 'BVAEB',
     nacaScore: 2,
   };
   const mockDoctors: Doctor[] = [
     {
-      id: '3011',
-      name: 'Dr. Sarah Connor',
-      ssn: '3011',
+      id: '3001',
+      name: 'Dr. Alexander Weber',
+      ssn: '3001',
       specialty: 'Cardiology',
-      position: 'Chief Physician',
+      position: 'Chief of Department',
       department: 'Cardiology',
     },
     {
-      id: '3012',
-      name: 'Dr. John Smith',
-      ssn: '3012',
+      id: '3002',
+      name: 'Dr. Sarah Jenkins',
+      ssn: '3002',
       specialty: 'Neurology',
-      position: 'Specialist',
+      position: 'Attending',
       department: 'Neurology',
+    },
+    {
+      id: '3003',
+      name: 'Dr. Michael Chen',
+      ssn: '3003',
+      specialty: 'Orthopedics',
+      position: 'Senior Resident',
+      department: 'Orthopedics',
     },
   ];
 
-  beforeEach(async () => {
-    mockSlotsSignal = signal<TimeSlotsResponse | undefined>({
-      date: '2026-10-15',
-      doctorSsn: '3011',
-      slots: [],
-      nextAvailableDate: null,
-    });
+  async function bookAllDaySlots(doctorSsn: string, date: string, patientSsn = '2001') {
+    const times = [
+      '08:00',
+      '08:30',
+      '09:00',
+      '09:30',
+      '10:00',
+      '10:30',
+      '11:00',
+      '11:30',
+      '12:00',
+      '12:30',
+      '13:00',
+      '13:30',
+      '14:00',
+      '14:30',
+      '15:00',
+      '15:30',
+      '16:00',
+      '16:30',
+      '17:00',
+    ];
+    for (const time of times) {
+      try {
+        await dataAccess.bookAppointment({
+          patientSsn,
+          doctorSsn,
+          date,
+          time,
+        });
+      } catch {
+        // already booked
+      }
+    }
+  }
 
+  beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
+        provideNoopAnimations(),
         provideNativeDateAdapter(),
         ClerkService,
-        {
-          provide: HOSPITAL_DATA_ACCESS,
-          useClass: InMemoryHospitalDataAdapter,
-        },
+        provideTestHospitalData(),
       ],
     });
 
     clerkService = TestBed.inject(ClerkService);
     clerkService.setActiveClerk(mockClerk);
-    const dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
-
-    vi.spyOn(dataAccess, 'getDoctors').mockReturnValue({
-      value: signal(mockDoctors),
-      hasValue: signal(true),
-      isLoading: signal(false),
-      error: signal(undefined),
-      reload: vi.fn(),
-    } as any);
-
-    vi.spyOn(dataAccess, 'getTimeSlots').mockReturnValue({
-      value: mockSlotsSignal,
-      hasValue: signal(true),
-      isLoading: signal(false),
-      error: signal(undefined),
-      reload: vi.fn(),
-    } as any);
+    dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
 
     fixture = TestBed.createComponent(ClerkUseCase);
     component = fixture.componentInstance;
+    await vi.waitFor(() => {
+      expect(component.allDoctors().length).toBeGreaterThan(0);
+    });
     await fixture.whenStable();
   });
 
@@ -105,7 +126,7 @@ describe('ClerkUseCase', () => {
     component.onDepartmentChange('Cardiology');
 
     expect(component.filteredDoctors().length).toBe(1);
-    expect(component.filteredDoctors()[0].name).toBe('Dr. Sarah Connor');
+    expect(component.filteredDoctors()[0].name).toBe('Dr. Alexander Weber');
   });
 
   it('should clear selected time slot when doctor or department changes', () => {
@@ -126,34 +147,39 @@ describe('ClerkUseCase', () => {
     expect(component.isSevereNaca(7)).toBe(true);
   });
 
-  it('should book appointment successfully via ClerkService', async () => {
-    const bookSpy = vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
-      of({
-        success: true,
-        appointmentId: 42,
-        message: 'Appointment successfully scheduled',
-      }),
-    );
-
+  it('should book appointment successfully and reflect in data store', async () => {
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 15));
-    component.selectTimeSlot('09:00');
+    component.onDateChange(new Date(2026, 9, 20));
+    component.selectTimeSlot('10:00');
     component.workflow.setReason('Routine checkup');
 
     await component.confirmBooking();
 
-    expect(bookSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        patientSsn: '2041',
-        doctorSsn: '3011',
-        date: '2026-10-15',
-        time: '09:00',
-        reason: 'Routine checkup',
-        clerkSsn: '1001',
-      }),
-    );
     expect(component.bookingSuccess()).toBe(true);
+    const apptId = component.createdAppointmentId();
+    expect(apptId).toBeDefined();
+
+    // Assert Appointment record is created and retrievable in data store
+    const patientRef = dataAccess.getPatientDetails(() => mockPatient.ssn);
+    await vi.waitFor(() => {
+      const patient = patientRef.value();
+      expect(patient?.appointments?.some((a) => a.id === apptId)).toBe(true);
+    });
+    const appt = patientRef.value()?.appointments?.find((a) => a.id === apptId);
+    expect(appt?.reason).toBe('Routine checkup');
+    expect(appt?.time).toBe('10:00');
+    expect(appt?.doctorName).toBe('Dr. Alexander Weber');
+
+    // Assert chosen Time Slot is marked unavailable in data store
+    const slotsRef = dataAccess.getTimeSlots(() => ({
+      date: '2026-10-20',
+      doctorSsn: mockDoctors[0].ssn,
+    }));
+    await vi.waitFor(() => {
+      const slot = slotsRef.value()?.slots.find((s) => s.time === '10:00');
+      expect(slot?.available).toBe(false);
+    });
   });
 
   it('should allow clearing active clerk profile', () => {
@@ -206,26 +232,33 @@ describe('ClerkUseCase', () => {
   });
 
   it('should handle 409 conflict during booking and reload slots', async () => {
-    vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
-      throwError(() => ({
-        status: 409,
-        error: { error: 'The doctor already has an appointment scheduled at this time.' },
-      })),
-    );
-    const reloadSpy = vi.spyOn(component.timeSlotsResource, 'reload').mockReturnValue(true);
+    // Pre-book the slot in data store to induce genuine conflict
+    await dataAccess.bookAppointment({
+      patientSsn: '2001',
+      doctorSsn: mockDoctors[0].ssn,
+      date: '2026-10-20',
+      time: '11:00',
+      reason: 'Colliding booking',
+    });
+
     const mockStepper = { selectedIndex: 3 } as any;
 
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 15));
-    component.selectTimeSlot('09:00');
+    component.onDateChange(new Date(2026, 9, 20));
+    component.selectTimeSlot('11:00');
 
     await component.confirmBooking(mockStepper);
 
     expect(component.bookingSuccess()).toBe(false);
     expect(component.selectedTimeSlot()).toBeNull();
-    expect(reloadSpy).toHaveBeenCalled();
     expect(mockStepper.selectedIndex).toBe(2);
+
+    // Verify slots were reloaded and slot is unavailable
+    await vi.waitFor(() => {
+      const slot = component.timeSlots().find((s) => s.time === '11:00');
+      expect(slot?.available).toBe(false);
+    });
   });
 
   it('should update patientInputValue immediately on typing and debounce search query', async () => {
@@ -246,7 +279,7 @@ describe('ClerkUseCase', () => {
 
   it('should format patient details into patientInputValue when selecting patient', () => {
     component.selectPatient(mockPatient);
-    expect(component.patientInputValue()).toBe('Johann Schmidt (SSN: 2041)');
+    expect(component.patientInputValue()).toBe('Johann Schmidt (SSN: 2002)');
     expect(component.patientSearchQuery()).toBe('Johann Schmidt');
   });
 
@@ -301,8 +334,8 @@ describe('ClerkUseCase', () => {
 
     const patientCol = strip.querySelector('.patient-col');
     expect(patientCol.textContent).toContain('Johann Schmidt');
-    expect(patientCol.textContent).toContain('2041');
-    expect(patientCol.textContent).toContain('ÖGK');
+    expect(patientCol.textContent).toContain('2002');
+    expect(patientCol.textContent).toContain('BVAEB');
 
     const doctorCol = strip.querySelector('.doctor-col');
     expect(doctorCol.textContent).toContain('Not selected');
@@ -324,12 +357,12 @@ describe('ClerkUseCase', () => {
     // Patient context is fully preserved (no memory bridge!)
     const patientCol = strip.querySelector('.patient-col');
     expect(patientCol.textContent).toContain('Johann Schmidt');
-    expect(patientCol.textContent).toContain('2041');
-    expect(patientCol.textContent).toContain('ÖGK');
+    expect(patientCol.textContent).toContain('2002');
+    expect(patientCol.textContent).toContain('BVAEB');
 
     // Doctor context is also visible simultaneously
     const doctorCol = strip.querySelector('.doctor-col');
-    expect(doctorCol.textContent).toContain('Dr. Sarah Connor');
+    expect(doctorCol.textContent).toContain('Dr. Alexander Weber');
     expect(doctorCol.textContent).toContain('Cardiology');
   });
 
@@ -348,7 +381,7 @@ describe('ClerkUseCase', () => {
     expect(strip).toBeTruthy();
 
     expect(strip.querySelector('.patient-col').textContent).toContain('Johann Schmidt');
-    expect(strip.querySelector('.doctor-col').textContent).toContain('Dr. Sarah Connor');
+    expect(strip.querySelector('.doctor-col').textContent).toContain('Dr. Alexander Weber');
   });
 
   it('should remove clinical summary strip when workflow is reset', async () => {
@@ -422,16 +455,14 @@ describe('ClerkUseCase', () => {
   it('should render neutralized no-slots banner when all slots are booked', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
+    await bookAllDaySlots(mockDoctors[0].ssn, '2026-10-15');
+
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    mockSlotsSignal.set({
-      date: '2026-10-15',
-      doctorSsn: '3011',
-      slots: [
-        { time: '08:00', available: false },
-        { time: '08:30', available: false },
-      ],
-      nextAvailableDate: null,
+    component.onDateChange(new Date(2026, 9, 15));
+    await vi.waitFor(() => {
+      expect(component.timeSlots().length).toBe(19);
+      expect(component.hasAvailableSlots()).toBe(false);
     });
     await fixture.whenStable();
     stepper.selectedIndex = 2;
@@ -447,17 +478,13 @@ describe('ClerkUseCase', () => {
   it('should display proactive guidance with next available date and allow one-click selection', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
+    await bookAllDaySlots(mockDoctors[0].ssn, '2026-10-15');
+
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    // 2025-10-16 is Thursday, Oct 16
-    mockSlotsSignal.set({
-      date: '2026-10-15',
-      doctorSsn: '3011',
-      slots: [
-        { time: '08:00', available: false },
-        { time: '08:30', available: false },
-      ],
-      nextAvailableDate: '2025-10-16',
+    component.onDateChange(new Date(2026, 9, 15));
+    await vi.waitFor(() => {
+      expect(component.nextAvailableDate()).toBe('2026-10-16');
     });
     await fixture.whenStable();
     stepper.selectedIndex = 2;
@@ -466,7 +493,7 @@ describe('ClerkUseCase', () => {
     const banner = fixture.nativeElement.querySelector('.no-slots-banner');
     expect(banner).toBeTruthy();
     expect(banner.textContent).toContain('No available slots on this date.');
-    expect(banner.textContent).toContain('Next available: Thursday, Oct 16');
+    expect(banner.textContent).toContain('Next available: Friday, Oct 16');
 
     // Click next available date button
     const nextBtn = banner.querySelector('.next-available-btn') as HTMLButtonElement;
@@ -474,19 +501,25 @@ describe('ClerkUseCase', () => {
     nextBtn.click();
     await fixture.whenStable();
 
-    expect(component.formattedDate()).toBe('2025-10-16');
+    expect(component.formattedDate()).toBe('2026-10-16');
   });
 
   it('should display neutral fallback guidance when no next available date is specified', async () => {
     const stepper = fixture.debugElement.query(By.directive(MatStepper))
       .componentInstance as MatStepper;
+    // Book all slots for this doctor for 15 consecutive days starting 2026-10-15
+    for (let offset = 0; offset <= 14; offset++) {
+      const d = new Date(2026, 9, 15 + offset);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      await bookAllDaySlots(mockDoctors[0].ssn, dateStr);
+    }
+
     component.selectPatient(mockPatient);
     component.selectDoctor(mockDoctors[0]);
-    mockSlotsSignal.set({
-      date: '2026-10-15',
-      doctorSsn: '3011',
-      slots: [{ time: '08:00', available: false }],
-      nextAvailableDate: null,
+    component.onDateChange(new Date(2026, 9, 15));
+    await vi.waitFor(() => {
+      expect(component.hasAvailableSlots()).toBe(false);
+      expect(component.nextAvailableDate()).toBeNull();
     });
     await fixture.whenStable();
     stepper.selectedIndex = 2;

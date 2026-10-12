@@ -2,54 +2,47 @@ import { TestBed } from '@angular/core/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 import { ClerkService } from '../services/clerk-service';
 import { Clerk, Doctor, Patient, TimeSlot } from '../models/models';
-import { of, throwError } from 'rxjs';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { InMemoryHospitalDataAdapter } from '../services/in-memory-hospital-data-adapter';
+import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
+import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;
   let clerkService: ClerkService;
+  let dataAccess: HospitalDataAccess;
 
   const mockClerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
   const mockPatient: Patient = {
-    id: '2041',
+    id: '2002',
     name: 'Johann Schmidt',
-    ssn: '2041',
-    insurance: 'ÖGK',
+    ssn: '2002',
+    insurance: 'BVAEB',
     nacaScore: 2,
   };
   const mockCardioDoc: Doctor = {
-    id: '3011',
-    name: 'Dr. Sarah Connor',
-    ssn: '3011',
+    id: '3001',
+    name: 'Dr. Alexander Weber',
+    ssn: '3001',
     specialty: 'Cardiology',
-    position: 'Chief Physician',
+    position: 'Chief of Department',
     department: 'Cardiology',
   };
   const mockNeuroDoc: Doctor = {
-    id: '3012',
-    name: 'Dr. John Smith',
-    ssn: '3012',
+    id: '3002',
+    name: 'Dr. Sarah Jenkins',
+    ssn: '3002',
     specialty: 'Neurology',
-    position: 'Specialist',
+    position: 'Attending',
     department: 'Neurology',
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        AppointmentIntakeWorkflow,
-        ClerkService,
-        {
-          provide: HOSPITAL_DATA_ACCESS,
-          useClass: InMemoryHospitalDataAdapter,
-          teardown: { destroyAfterEach: true },
-        },
-      ],
+      providers: [AppointmentIntakeWorkflow, ClerkService, provideTestHospitalData()],
     });
 
     workflow = TestBed.inject(AppointmentIntakeWorkflow);
     clerkService = TestBed.inject(ClerkService);
+    dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
     clerkService.setActiveClerk(mockClerk);
   });
 
@@ -90,7 +83,7 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
 
     workflow.selectPatient(mockPatient);
     expect(workflow.selectedPatient()).toEqual(mockPatient);
-    expect(workflow.patientInputValue()).toBe('Johann Schmidt (SSN: 2041)');
+    expect(workflow.patientInputValue()).toBe('Johann Schmidt (SSN: 2002)');
     expect(workflow.patientSearchQuery()).toBe('Johann Schmidt');
     expect(workflow.selectedTimeSlot()).toBeNull();
   });
@@ -207,13 +200,11 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       expect(workflow.bookingSuccess()).toBe(false);
     });
 
-    it('should return validation_error and prevent HTTP call if schema is invalid', async () => {
-      const bookSpy = vi.spyOn(clerkService, 'bookAppointment');
-
+    it('should return validation_error and prevent submission if schema is invalid', async () => {
       workflow.selectPatient(mockPatient);
       workflow.selectDoctor(mockCardioDoc);
-      workflow.selectDate(new Date(2026, 9, 15));
-      workflow.selectTimeSlot('09:00');
+      workflow.selectDate(new Date(2026, 9, 20));
+      workflow.selectTimeSlot('10:00');
       workflow.setReason('a'.repeat(501));
 
       const result = await workflow.submit();
@@ -222,81 +213,110 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       if (result.status === 'validation_error') {
         expect(result.message).toContain('500');
       }
-      expect(bookSpy).not.toHaveBeenCalled();
+      expect(workflow.bookingSuccess()).toBe(false);
+      expect(workflow.createdAppointmentId()).toBeNull();
+
+      // Verify no appointment was booked and slot remains available in data store
+      const patientRef = dataAccess.getPatientDetails(() => mockPatient.ssn);
+      await vi.waitFor(() => {
+        expect(patientRef.value()?.appointments?.length ?? 0).toBe(0);
+      });
+      const slotsRef = dataAccess.getTimeSlots(() => ({
+        date: '2026-10-20',
+        doctorSsn: mockCardioDoc.ssn,
+      }));
+      await vi.waitFor(() => {
+        const slot = slotsRef.value()?.slots.find((s) => s.time === '10:00');
+        expect(slot?.available).toBe(true);
+      });
     });
 
-    it('should submit successfully and return success status with appointmentId', async () => {
-      const bookSpy = vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
-        of({
-          success: true,
-          appointmentId: 42,
-          message: 'Appointment successfully scheduled',
-        }),
-      );
-
+    it('should submit successfully, create retrievable appointment, and mark slot unavailable', async () => {
       workflow.selectPatient(mockPatient);
       workflow.selectDoctor(mockCardioDoc);
-      workflow.selectDate(new Date(2026, 9, 15));
-      workflow.selectTimeSlot('09:00');
+      workflow.selectDate(new Date(2026, 9, 20));
+      workflow.selectTimeSlot('10:00');
       workflow.setReason('Routine checkup');
 
       const result = await workflow.submit();
 
-      expect(bookSpy).toHaveBeenCalledWith({
-        patientSsn: '2041',
-        doctorSsn: '3011',
-        date: '2026-10-15',
-        time: '09:00',
-        reason: 'Routine checkup',
-        clerkSsn: '1001',
-      });
-      expect(result).toEqual({ status: 'success', appointmentId: 42 });
+      expect(result.status).toBe('success');
       expect(workflow.bookingSuccess()).toBe(true);
-      expect(workflow.createdAppointmentId()).toBe(42);
+      expect(workflow.createdAppointmentId()).toBeDefined();
       expect(workflow.isSubmitting()).toBe(false);
+      const apptId = workflow.createdAppointmentId()!;
+
+      // Assert Appointment record is created and retrievable in data store
+      const patientRef = dataAccess.getPatientDetails(() => mockPatient.ssn);
+      await vi.waitFor(() => {
+        const patient = patientRef.value();
+        expect(patient?.appointments?.some((a) => a.id === apptId)).toBe(true);
+      });
+      const appt = patientRef.value()?.appointments?.find((a) => a.id === apptId);
+      expect(appt?.reason).toBe('Routine checkup');
+      expect(appt?.time).toBe('10:00');
+      expect(appt?.doctorName).toBe('Dr. Alexander Weber');
+
+      // Assert chosen Time Slot is marked unavailable in data store
+      const slotsRef = dataAccess.getTimeSlots(() => ({
+        date: '2026-10-20',
+        doctorSsn: mockCardioDoc.ssn,
+      }));
+      await vi.waitFor(() => {
+        const slot = slotsRef.value()?.slots.find((s) => s.time === '10:00');
+        expect(slot?.available).toBe(false);
+      });
     });
 
-    it('should handle HTTP 409 conflict: reset selectedTimeSlot, reload slots, and return conflict status', async () => {
-      vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
-        throwError(() => ({
-          status: 409,
-          error: { error: 'The doctor already has an appointment scheduled at this time.' },
-        })),
-      );
-      const reloadSpy = vi.spyOn(workflow.timeSlotsResource, 'reload').mockReturnValue(true);
+    it('should handle conflict when slot is already booked: reset selectedTimeSlot, reload slots, and return conflict status', async () => {
+      // Pre-book the slot in data store to induce genuine conflict
+      await dataAccess.bookAppointment({
+        patientSsn: '2001',
+        doctorSsn: mockCardioDoc.ssn,
+        date: '2026-10-20',
+        time: '11:00',
+        reason: 'Colliding appointment',
+      });
 
       workflow.selectPatient(mockPatient);
       workflow.selectDoctor(mockCardioDoc);
-      workflow.selectDate(new Date(2026, 9, 15));
-      workflow.selectTimeSlot('09:00');
+      workflow.selectDate(new Date(2026, 9, 20));
+      workflow.selectTimeSlot('11:00');
 
       const result = await workflow.submit();
 
       expect(result).toEqual({ status: 'conflict' });
       expect(workflow.selectedTimeSlot()).toBeNull();
-      expect(reloadSpy).toHaveBeenCalled();
       expect(workflow.bookingSuccess()).toBe(false);
       expect(workflow.isSubmitting()).toBe(false);
+
+      // Verify slots were reloaded and slot is unavailable
+      await vi.waitFor(() => {
+        const slot = workflow.timeSlots().find((s) => s.time === '11:00');
+        expect(slot?.available).toBe(false);
+      });
     });
 
     it('should handle general error and return error status with message', async () => {
-      vi.spyOn(clerkService, 'bookAppointment').mockReturnValue(
-        throwError(() => ({
-          status: 500,
-          error: { error: 'Database connection failed' },
-        })),
-      );
+      const originalBook = dataAccess.bookAppointment;
+      dataAccess.bookAppointment = async () => {
+        throw new Error('Database connection failed');
+      };
 
-      workflow.selectPatient(mockPatient);
-      workflow.selectDoctor(mockCardioDoc);
-      workflow.selectDate(new Date(2026, 9, 15));
-      workflow.selectTimeSlot('09:00');
+      try {
+        workflow.selectPatient(mockPatient);
+        workflow.selectDoctor(mockCardioDoc);
+        workflow.selectDate(new Date(2026, 9, 20));
+        workflow.selectTimeSlot('12:00');
 
-      const result = await workflow.submit();
+        const result = await workflow.submit();
 
-      expect(result).toEqual({ status: 'error', message: 'Database connection failed' });
-      expect(workflow.bookingSuccess()).toBe(false);
-      expect(workflow.isSubmitting()).toBe(false);
+        expect(result).toEqual({ status: 'error', message: 'Database connection failed' });
+        expect(workflow.bookingSuccess()).toBe(false);
+        expect(workflow.isSubmitting()).toBe(false);
+      } finally {
+        dataAccess.bookAppointment = originalBook;
+      }
     });
   });
 

@@ -1,7 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { InMemoryHospitalDataAdapter } from './in-memory-hospital-data-adapter';
-import { BookingConflictError, TimeSlotQueryParams, DateRange } from './hospital-data-access';
+import {
+  InMemoryHospitalDataAdapter,
+  provideTestHospitalData,
+} from './in-memory-hospital-data-adapter';
+import {
+  BookingConflictError,
+  TimeSlotQueryParams,
+  DateRange,
+  HOSPITAL_DATA_ACCESS,
+} from './hospital-data-access';
 import { CreateAppointmentRequest, Treatment } from '../models/models';
 
 describe('InMemoryHospitalDataAdapter', () => {
@@ -190,5 +198,65 @@ describe('InMemoryHospitalDataAdapter', () => {
     expect(report?.startDate).toBe('2026-01-01');
     expect(report?.endDate).toBe('2026-12-31');
     expect(Array.isArray(report?.results)).toBe(true);
+  });
+
+  it('should compute nextAvailableDate when all slots on the requested date are booked', async () => {
+    // Book all 19 operating hours slots for Dr. Alexander Weber (3001) on 2026-10-15
+    const times = [
+      '08:00',
+      '08:30',
+      '09:00',
+      '09:30',
+      '10:00',
+      '10:30',
+      '11:00',
+      '11:30',
+      '12:00',
+      '12:30',
+      '13:00',
+      '13:30',
+      '14:00',
+      '14:30',
+      '15:00',
+      '15:30',
+      '16:00',
+      '16:30',
+      '17:00',
+    ];
+    for (const time of times) {
+      try {
+        await adapter.bookAppointment({
+          patientSsn: '2001',
+          doctorSsn: '3001',
+          date: '2026-10-15',
+          time,
+        });
+      } catch {
+        // already booked (e.g. 09:00 is seeded)
+      }
+    }
+
+    const params = signal<TimeSlotQueryParams | undefined>({
+      date: '2026-10-15',
+      doctorSsn: '3001',
+    });
+    const res = adapter.getTimeSlots(params);
+    await vi.waitFor(() => {
+      expect(res.value()).toBeDefined();
+      expect(res.value()?.slots.every((s) => !s.available)).toBe(true);
+    });
+
+    // 2026-10-16 is the candidate date with open slots
+    expect(res.value()?.nextAvailableDate).toBe('2026-10-16');
+  });
+});
+
+describe('provideTestHospitalData', () => {
+  it('should provide HOSPITAL_DATA_ACCESS as an InMemoryHospitalDataAdapter instance', () => {
+    TestBed.configureTestingModule({
+      providers: [provideTestHospitalData()],
+    });
+    const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
+    expect(instance).toBeInstanceOf(InMemoryHospitalDataAdapter);
   });
 });

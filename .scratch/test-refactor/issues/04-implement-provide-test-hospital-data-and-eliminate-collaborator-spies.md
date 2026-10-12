@@ -4,10 +4,10 @@
 
 **Blocked by:** 02 (Replace settle setTimeout Sleeps with Deterministic vi.waitFor)
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] A reusable `provideTestHospitalData()` dependency injection provider helper is implemented for test modules
-- [ ] Spies on domain methods like `clerkService.bookAppointment`, `dataAccess.getDoctors`, and `dataAccess.getTimeSlots` are removed from the intake workflow and wizard suites
-- [ ] Appointment booking tests assert that an Appointment record is created and retrievable, and that the chosen Time Slot is marked unavailable in the data store
-- [ ] Call-count assertions (`toHaveBeenCalledWith`, `toHaveBeenCalled`) on internal collaborators are eliminated across the migrated suites
-- [ ] Test isolation relies on injector teardown per test rather than custom adapter reset APIs
+- [x] A reusable `provideTestHospitalData()` dependency injection provider helper is implemented for test modules
+- [x] Spies on domain methods like `clerkService.bookAppointment`, `dataAccess.getDoctors`, and `dataAccess.getTimeSlots` are removed from the intake workflow and wizard suites
+- [x] Appointment booking tests assert that an Appointment record is created and retrievable, and that the chosen Time Slot is marked unavailable in the data store
+- [x] Call-count assertions (`toHaveBeenCalledWith`, `toHaveBeenCalled`) on internal collaborators are eliminated across the migrated suites
+- [x] Test isolation relies on injector teardown per test rather than custom adapter reset APIs
