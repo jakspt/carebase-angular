@@ -43,3 +43,8 @@ _Avoid_: SVNr, Social Insurance Number, Tax ID, National ID
 **NACA Score**:
 The National Advisory Committee for Aeronautics scale rating (0 to 7) indicating the medical emergency severity of a patient.
 _Avoid_: Triage level, Emergency score, Severity grade
+
+**Consultation Frequency Report**:
+An administrative analytical report aggregating the frequency of completed patient consultations across doctors and departments over a specified date range.
+_Avoid_: Visit Frequency Report, Visit report, Besuchsbericht, Patient visits report
+
