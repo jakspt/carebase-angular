@@ -1,32 +1,44 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { LandingPage } from './landing-page';
 import { ActorSession } from '../services/actor-session';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
 
-describe('LandingPage (Ticket 03)', () => {
+@Component({ selector: 'stub-doctor', template: '<span>Doctor Workspace</span>' })
+class StubDoctorComponent {}
+
+@Component({ selector: 'stub-clerk', template: '<span>Clerk Workspace</span>' })
+class StubClerkComponent {}
+
+@Component({ selector: 'stub-admin', template: '<span>Admin Workspace</span>' })
+class StubAdminComponent {}
+
+describe('LandingPage', () => {
+  let harness: RouterTestingHarness;
   let component: LandingPage;
-  let fixture: ComponentFixture<LandingPage>;
   let session: ActorSession;
   let router: Router;
-  let httpTesting: HttpTestingController;
 
   beforeEach(async () => {
     sessionStorage.clear();
     TestBed.configureTestingModule({
-      imports: [LandingPage],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ActorSession],
+      providers: [
+        provideRouter([
+          { path: '', component: LandingPage },
+          { path: 'doctor', component: StubDoctorComponent },
+          { path: 'clerk', component: StubClerkComponent },
+          { path: 'admin', component: StubAdminComponent },
+        ]),
+        ActorSession,
+      ],
     });
 
     session = TestBed.inject(ActorSession);
     router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    fixture = TestBed.createComponent(LandingPage);
-    component = fixture.componentInstance;
-    httpTesting = TestBed.inject(HttpTestingController);
-    await fixture.whenStable();
+    harness = await RouterTestingHarness.create();
+    component = await harness.navigateByUrl('/', LandingPage);
   });
 
   afterEach(() => {
@@ -37,21 +49,27 @@ describe('LandingPage (Ticket 03)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set role to doctor and navigate on visitDoctorSite()', () => {
+  it('should set role to doctor and navigate on visitDoctorSite()', async () => {
     component.visitDoctorSite();
+    await harness.fixture.whenStable();
     expect(session.role()).toBe('doctor');
-    expect(router.navigate).toHaveBeenCalledWith(['doctor']);
+    expect(router.url).toBe('/doctor');
+    expect(harness.routeNativeElement?.textContent).toContain('Doctor Workspace');
   });
 
-  it('should set role to clerk and navigate on visitClerkSite()', () => {
+  it('should set role to clerk and navigate on visitClerkSite()', async () => {
     component.visitClerkSite();
+    await harness.fixture.whenStable();
     expect(session.role()).toBe('clerk');
-    expect(router.navigate).toHaveBeenCalledWith(['clerk']);
+    expect(router.url).toBe('/clerk');
+    expect(harness.routeNativeElement?.textContent).toContain('Clerk Workspace');
   });
 
-  it('should set role to admin and navigate on visitAdminSite()', () => {
+  it('should set role to admin and navigate on visitAdminSite()', async () => {
     component.visitAdminSite();
+    await harness.fixture.whenStable();
     expect(session.role()).toBe('admin');
-    expect(router.navigate).toHaveBeenCalledWith(['admin']);
+    expect(router.url).toBe('/admin');
+    expect(harness.routeNativeElement?.textContent).toContain('Admin Workspace');
   });
 });

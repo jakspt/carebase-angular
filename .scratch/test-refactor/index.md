@@ -27,7 +27,7 @@
 | 02 | [02: Replace settle setTimeout Sleeps with Deterministic vi.waitFor](./issues/02-replace-settle-sleeps-with-vi-waitfor.md) | None (Frontier) | 🟢 Complete |
 | 03 | [03: Eliminate Private Signal Mutations in Consultation Frequency Report](./issues/03-eliminate-private-signal-mutations-in-clerk-report.md) | 01 | 🟢 Complete |
 | 04 | [04: Implement provideTestHospitalData and Eliminate Collaborator Spies](./issues/04-implement-provide-test-hospital-data-and-eliminate-collaborator-spies.md) | 02 | 🟢 Complete |
-| 05 | [05: Adopt RouterTestingHarness and Eliminate Router Spies](./issues/05-adopt-router-testing-harness-and-eliminate-router-spies.md) | 01 | `ready-for-agent` |
+| 05 | [05: Adopt RouterTestingHarness and Eliminate Router Spies](./issues/05-adopt-router-testing-harness-and-eliminate-router-spies.md) | 01 | 🟢 Complete |
 | 06 | [06: Deepen Admin Page and Transaction Dialog Behavioral Suites](./issues/06-deepen-admin-page-and-transaction-dialog-suites.md) | 04 | `ready-for-agent` |
 | 07 | [07: Deepen Clerk, Doctor Workstation, and Facade Service Behavioral Suites](./issues/07-deepen-clerk-and-doctor-workstation-suites.md) | 04, 05 | `ready-for-agent` |
 | 08 | [08: Author ActionCardHarness and Modernize Reusable Component Testing](./issues/08-author-action-card-harness.md) | 01 | `ready-for-agent` |
@@ -51,9 +51,9 @@
 | 8 | `src/app/doctor-page/doctor-page.spec.ts` | 10% | 100% | ⬜ | ⬜ | ⬜ | ⬜ | ⏳ Pending |
 | 9 | `src/app/doctor-report/doctor-report.spec.ts` | 25% | 100% | 🟢 | — | ⬜ | ⬜ | ⏳ Pending |
 | 10 | `src/app/doctor-use-case/doctor-use-case.spec.ts` | 25% | 100% | 🟢 | ⬜ | ⬜ | ⬜ | ⏳ Pending |
-| 11 | `src/app/guards/role-guard.spec.ts` | 65% | 100% | — | ⬜ | — | ⬜ | ⏳ Pending |
-| 12 | `src/app/header-layout/header-layout.spec.ts` | 20% | 100% | 🟢 | ⬜ | — | ⬜ | ⏳ Pending |
-| 13 | `src/app/landing-page/landing-page.spec.ts` | 25% | 100% | — | ⬜ | ⬜ | ⬜ | ⏳ Pending |
+| 11 | `src/app/guards/role-guard.spec.ts` | 65% | 100% | — | 🟢 | — | ⬜ | ⏳ Pending |
+| 12 | `src/app/header-layout/header-layout.spec.ts` | 20% | 100% | 🟢 | 🟢 | — | ⬜ | ⏳ Pending |
+| 13 | `src/app/landing-page/landing-page.spec.ts` | 25% | 100% | — | 🟢 | ⬜ | ⬜ | ⏳ Pending |
 | 14 | `src/app/services/actor-session.spec.ts` | 95% | 100% | — | — | — | — | 🟢 Compliant |
 | 15 | `src/app/services/clerk-service.spec.ts` | 70% | 100% | — | — | ⬜ | — | ⏳ Pending |
 | 16 | `src/app/services/hospital-data-access.spec.ts` | 100% | 100% | — | — | — | — | 🟢 Compliant |

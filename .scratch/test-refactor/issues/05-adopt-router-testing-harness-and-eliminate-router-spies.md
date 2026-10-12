@@ -4,10 +4,10 @@
 
 **Blocked by:** 01 (Eradicate Manual fixture.detectChanges and Enforce Zoneless Stability)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] All instances of `vi.spyOn(router, 'navigate')` in the landing page test suite are replaced with `RouterTestingHarness.create()` and assertions on `router.url`
-- [ ] Header layout role switching and sign-out tests verify destination routing via `RouterTestingHarness`
-- [ ] Route-level integration tests in the role guard suite prove that accessing protected Doctor, Clerk, or Admin paths redirects unauthorized actors to `/`
-- [ ] Direct invocation of guards with empty mock route snapshot objects is supplemented by live route harness checks
-- [ ] Unused `Router` and testing controller injections are removed from the migrated suites
+- [x] All instances of `vi.spyOn(router, 'navigate')` in the landing page test suite are replaced with `RouterTestingHarness.create()` and assertions on `router.url`
+- [x] Header layout role switching and sign-out tests verify destination routing via `RouterTestingHarness`
+- [x] Route-level integration tests in the role guard suite prove that accessing protected Doctor, Clerk, or Admin paths redirects unauthorized actors to `/`
+- [x] Direct invocation of guards with empty mock route snapshot objects is supplemented by live route harness checks
+- [x] Unused `Router` and testing controller injections are removed from the migrated suites

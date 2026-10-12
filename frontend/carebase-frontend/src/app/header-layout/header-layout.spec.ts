@@ -1,82 +1,73 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal, WritableSignal } from '@angular/core';
-import { Router, provideRouter } from '@angular/router'; // 1. Import provideRouter
+import { Component, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { HeaderLayout } from './header-layout';
-import { ActorRole, ActorSession } from '../services/actor-session';
+import { ActorSession } from '../services/actor-session';
 import { AdminService } from '../services/admin-service';
 
+@Component({ selector: 'stub-home', template: '<span>Home</span>' })
+class StubHomeComponent {}
+
 describe('HeaderLayout', () => {
+  let harness: RouterTestingHarness;
   let component: HeaderLayout;
-  let fixture: ComponentFixture<HeaderLayout>;
   let router: Router;
+  let session: ActorSession;
 
-  let mockRoleSignal: WritableSignal<ActorRole>;
-  let mockStatusValueSignal: WritableSignal<{ dbType?: string } | undefined>;
-  let mockIsLoadingSignal: WritableSignal<boolean>;
-  let mockHasValueSignal: WritableSignal<boolean>;
-
-  let mockActorSession: {
-    role: WritableSignal<ActorRole>;
-    setRole: ReturnType<typeof vi.fn>;
-    clearSession: ReturnType<typeof vi.fn>;
-  };
-
-  let mockAdminService: {
+  const mockAdminService = {
     statusResource: {
-      value: () => { dbType?: string } | undefined;
-      isLoading: () => boolean;
-      hasValue: () => boolean;
-    };
+      value: signal(undefined),
+      isLoading: signal(false),
+      hasValue: signal(false),
+    },
   };
 
   beforeEach(async () => {
-    mockRoleSignal = signal<ActorRole>('doctor');
-    mockStatusValueSignal = signal(undefined);
-    mockIsLoadingSignal = signal(false);
-    mockHasValueSignal = signal(false);
-
-    mockActorSession = {
-      role: mockRoleSignal,
-      setRole: vi.fn(),
-      clearSession: vi.fn(),
-    };
-
-    mockAdminService = {
-      statusResource: {
-        value: mockStatusValueSignal,
-        isLoading: mockIsLoadingSignal,
-        hasValue: mockHasValueSignal,
-      },
-    };
+    sessionStorage.clear();
 
     TestBed.configureTestingModule({
-      imports: [HeaderLayout],
       providers: [
-        provideRouter([]), // 3. Provides Router, ActivatedRoute, and all router plumbing
-        { provide: ActorSession, useValue: mockActorSession },
+        provideRouter([
+          { path: '', component: StubHomeComponent },
+          { path: 'doctor', component: HeaderLayout },
+        ]),
+        ActorSession,
         { provide: AdminService, useValue: mockAdminService },
       ],
     });
+
+    session = TestBed.inject(ActorSession);
+    session.setRole('doctor');
     router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    fixture = TestBed.createComponent(HeaderLayout);
-    component = fixture.componentInstance;
-    await fixture.whenStable();
+    harness = await RouterTestingHarness.create();
+    component = await harness.navigateByUrl('/doctor', HeaderLayout);
   });
 
-  // Tests remain the same; use `router.navigate` instead of `mockRouter.navigate`:
-  it('should delegate role switching and redirect to "/"', () => {
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('should delegate role switching and redirect to "/"', async () => {
+    expect(router.url).toBe('/doctor');
+
     component.switchRole('admin');
+    await harness.fixture.whenStable();
 
-    expect(mockActorSession.setRole).toHaveBeenCalledWith('admin');
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    expect(session.role()).toBe('admin');
+    expect(router.url).toBe('/');
+    expect(harness.routeNativeElement?.textContent).toContain('Home');
   });
 
-  it('should clear session and redirect to "/" on logout', () => {
-    component.logout();
+  it('should clear session and redirect to "/" on logout', async () => {
+    expect(router.url).toBe('/doctor');
 
-    expect(mockActorSession.clearSession).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    component.logout();
+    await harness.fixture.whenStable();
+
+    expect(session.role()).toBeNull();
+    expect(router.url).toBe('/');
+    expect(harness.routeNativeElement?.textContent).toContain('Home');
   });
 });
