@@ -4,11 +4,11 @@
 
 **Blocked by:** 04 (Implement provideTestHospitalData and Eliminate Collaborator Spies), 05 (Adopt RouterTestingHarness and Eliminate Router Spies)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Clerk Page tests verify navigation to Appointment intake and Consultation Frequency Report via `RouterTestingHarness`
-- [ ] Doctor Page tests verify navigation to clinical treatment documentation and treatment expenditure analytics via `RouterTestingHarness`
-- [ ] Doctor treatment documentation tests verify recording a Treatment and prescribed Medications through component workflows rather than passing mock stepper objects
-- [ ] Doctor expenditure report tests verify annual cost aggregations and summary metric rendering
-- [ ] Clerk Service tests assert reactive resource emission values rather than checking `.toBeTruthy()`
-- [ ] Clerk Service session rehydration tests verify fresh state hydration by resetting injector context between test cases
+- [x] Clerk Page tests verify navigation to Appointment intake and Consultation Frequency Report via `RouterTestingHarness`
+- [x] Doctor Page tests verify navigation to clinical treatment documentation and treatment expenditure analytics via `RouterTestingHarness`
+- [x] Doctor treatment documentation tests verify recording a Treatment and prescribed Medications through component workflows rather than passing mock stepper objects
+- [x] Doctor expenditure report tests verify annual cost aggregations and summary metric rendering
+- [x] Clerk Service tests assert reactive resource emission values rather than checking `.toBeTruthy()`
+- [x] Clerk Service session rehydration tests verify fresh state hydration by resetting injector context between test cases
