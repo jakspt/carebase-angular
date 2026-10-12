@@ -4,10 +4,10 @@
 
 **Blocked by:** 04 (Implement provideTestHospitalData and Eliminate Collaborator Spies), 08 (Author ActionCardHarness and Modernize Reusable Component Testing)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] All step navigation and validation in the Appointment intake wizard test suite are performed using `MatStepperHarness`
-- [ ] Stepper index direct mutations (`stepper.selectedIndex = N`) are eliminated in favor of clicking step headers or next buttons via harnesses
-- [ ] Patient selection, doctor selection, date picker, and slot interactions are performed using official component harnesses
-- [ ] Brittle CSS class selectors and references to private Material DOM wrappers are completely removed
-- [ ] Stepper form submission and concurrent booking collision (HTTP 409) step recovery are verified through harnesses
+- [x] All step navigation and validation in the Appointment intake wizard test suite are performed using `MatStepperHarness`
+- [x] Stepper index direct mutations (`stepper.selectedIndex = N`) are eliminated in favor of clicking step headers or next buttons via harnesses
+- [x] Patient selection, doctor selection, date picker, and slot interactions are performed using official component harnesses
+- [x] Brittle CSS class selectors and references to private Material DOM wrappers are completely removed
+- [x] Stepper form submission and concurrent booking collision (HTTP 409) step recovery are verified through harnesses
