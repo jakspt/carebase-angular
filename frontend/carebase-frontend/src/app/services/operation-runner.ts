@@ -3,7 +3,7 @@ import { FieldTree, submit } from '@angular/forms/signals';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, firstValueFrom, isObservable, of } from 'rxjs';
 
-export interface OperationConfig<T = unknown> {
+export interface OperationConfig<_T = unknown> {
   title?: string;
   description?: string;
   confirmMessage?: string;

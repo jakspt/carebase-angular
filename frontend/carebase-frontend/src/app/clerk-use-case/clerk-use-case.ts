@@ -117,7 +117,7 @@ export class ClerkUseCase {
     this.workflow.setPatientSearchInput(val);
   }
 
-  selectPatient(patient: Patient, stepper?: MatStepper): void {
+  selectPatient(patient: Patient): void {
     this.workflow.selectPatient(patient);
   }
 
@@ -150,7 +150,7 @@ export class ClerkUseCase {
     this.workflow.selectDoctor(doctor);
   }
 
-  selectDoctor(doctor: Doctor, stepper?: MatStepper): void {
+  selectDoctor(doctor: Doctor): void {
     this.workflow.selectDoctor(doctor);
   }
 
@@ -162,7 +162,7 @@ export class ClerkUseCase {
     this.workflow.selectNextAvailableDate(dateVal);
   }
 
-  selectTimeSlot(time: string, stepper?: MatStepper): void {
+  selectTimeSlot(time: string): void {
     this.workflow.selectTimeSlot(time);
   }
 
