@@ -7,15 +7,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { form, FormField, max, min, required, submit } from '@angular/forms/signals';
+import { form, FormField, max, min, required } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Appointment, Medication, Patient } from '../models/models';
 import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { OperationRunner } from '../services/operation-runner';
 
 interface TreatmentFormModel {
   description: string;
@@ -34,7 +34,6 @@ interface TreatmentFormModel {
     MatChipsModule,
     MatIconModule,
     MatCardModule,
-    MatSnackBarModule,
     MatProgressSpinnerModule,
     MatDividerModule,
     MatPaginatorModule,
@@ -45,7 +44,7 @@ interface TreatmentFormModel {
 })
 export class DoctorUseCase {
   private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
-  private readonly snackBar = inject(MatSnackBar);
+  readonly operationRunner = inject(OperationRunner);
 
   // ── Step 1: Patient Search (Debounced) ──
   readonly searchQuery = signal('');
@@ -61,7 +60,9 @@ export class DoctorUseCase {
 
   readonly selectedPatient = signal<Patient | null>(null);
   readonly selectedPatientId = computed(() => this.selectedPatient()?.id ?? null);
-  readonly patientDetailsResource = this.hospitalDataAccess.getPatientDetails(this.selectedPatientId);
+  readonly patientDetailsResource = this.hospitalDataAccess.getPatientDetails(
+    this.selectedPatientId,
+  );
 
   constructor() {
     this.searchSubject$
@@ -117,9 +118,7 @@ export class DoctorUseCase {
   readonly medicationsResource = this.hospitalDataAccess.getMedications();
   readonly medSearchQuery = signal('');
   readonly filteredMedications = computed(() => {
-    const all = this.medicationsResource.hasValue()
-      ? (this.medicationsResource.value() ?? [])
-      : [];
+    const all = this.medicationsResource.hasValue() ? (this.medicationsResource.value() ?? []) : [];
     const q = this.medSearchQuery().toLowerCase().trim();
     const selectedIds = new Set(this.treatmentModel().medications.map((m) => m.id));
     const available = all.filter((m) => !selectedIds.has(m.id));
@@ -127,7 +126,6 @@ export class DoctorUseCase {
     return available.filter((m) => m.name.toLowerCase().includes(q));
   });
 
-  readonly isSubmitting = signal(false);
   readonly treatmentCompleted = signal(false);
 
   // ── Handlers ──
@@ -138,6 +136,7 @@ export class DoctorUseCase {
   }
 
   onPatientSelected(patient: Patient, stepper: MatStepper): void {
+    if (this.operationRunner.isLocked()) return;
     this.selectedPatient.set(patient);
     this.searchInputValue.set(this.displayPatient(patient));
     this.searchQuery.set(patient ? patient.name : '');
@@ -147,11 +146,13 @@ export class DoctorUseCase {
   }
 
   onSelectAppointment(appt: Appointment, stepper: MatStepper): void {
+    if (this.operationRunner.isLocked()) return;
     this.selectedAppointment.set(appt);
     stepper.next();
   }
 
   addMedication(med: Medication): void {
+    if (this.operationRunner.isLocked()) return;
     this.treatmentModel.update((current) => ({
       ...current,
       medications: [...current.medications, med],
@@ -160,51 +161,41 @@ export class DoctorUseCase {
   }
 
   removeMedication(med: Medication): void {
+    if (this.operationRunner.isLocked()) return;
     this.treatmentModel.update((current) => ({
       ...current,
       medications: current.medications.filter((m) => m.id !== med.id),
     }));
   }
 
-  onSubmitTreatment(stepper: MatStepper): void {
-    submit(this.treatmentForm, async () => {
-      const patient = this.selectedPatient();
-      const appt = this.selectedAppointment();
-      if (!patient || !appt) return;
+  async onSubmitTreatment(_stepper?: MatStepper): Promise<void> {
+    const patient = this.selectedPatient();
+    const appt = this.selectedAppointment();
 
-      this.isSubmitting.set(true);
-      try {
-        const payload = {
+    const result = await this.operationRunner.submitForm(
+      this.treatmentForm,
+      async () => {
+        if (!patient || !appt) {
+          throw new Error('Patient and appointment must be selected.');
+        }
+        return await this.hospitalDataAccess.addTreatment(patient.id, appt.id, {
           description: this.treatmentModel().description,
           cost: Number(this.treatmentModel().cost),
           medications: this.treatmentModel().medications,
-        };
+        });
+      },
+      {
+        successMessage: 'Treatment recorded successfully!',
+      },
+    );
 
-        const res = await this.hospitalDataAccess.addTreatment(
-          patient.id,
-          appt.id,
-          payload,
-        );
-
-        if (res.success) {
-          this.treatmentCompleted.set(true);
-          this.snackBar.open('Treatment recorded successfully!', 'Close', {
-            duration: 4000,
-          });
-        }
-      } catch (err: unknown) {
-        const errorMsg =
-          err instanceof Error
-            ? err.message
-            : 'Failed to add treatment. Please try again.';
-        this.snackBar.open(errorMsg, 'Close', { duration: 5000 });
-      } finally {
-        this.isSubmitting.set(false);
-      }
-    });
+    if (result.status === 'success' && result.data?.success) {
+      this.treatmentCompleted.set(true);
+    }
   }
 
   resetWorkflow(stepper: MatStepper): void {
+    if (this.operationRunner.isLocked()) return;
     this.selectedPatient.set(null);
     this.selectedAppointment.set(null);
     this.appointmentPageIndex.set(0);

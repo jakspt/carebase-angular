@@ -13,7 +13,7 @@
 
   <mat-stepper linear #stepper class="stepper-content">
     <!-- ── Step 1: Search Patient ── -->
-    <mat-step [completed]="selectedPatient() !== null">
+    <mat-step [completed]="selectedPatient() !== null" [editable]="!operationRunner.isLocked()">
       <ng-template matStepLabel>Find Patient</ng-template>
 
       <div class="step-container">
@@ -73,7 +73,12 @@
                 <span class="meta-val">{{ patient.insurance || 'N/A' }}</span>
               </p>
             </div>
-            <button mat-button color="primary" matStepperNext>
+            <button
+              mat-button
+              color="primary"
+              matStepperNext
+              [disabled]="operationRunner.isLocked()"
+            >
               Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
             </button>
           </div>
@@ -82,7 +87,7 @@
     </mat-step>
 
     <!-- ── Step 2: Select Appointment ── -->
-    <mat-step [completed]="selectedAppointment() !== null">
+    <mat-step [completed]="selectedAppointment() !== null" [editable]="!operationRunner.isLocked()">
       <ng-template matStepLabel>Select Appointment</ng-template>
 
       <div class="step-container">
@@ -160,12 +165,14 @@
         }
 
         <div class="step-actions">
-          <button mat-button matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
+          <button mat-button matStepperPrevious [disabled]="operationRunner.isLocked()">
+            <mat-icon>arrow_back</mat-icon> Back
+          </button>
           <button
             mat-flat-button
             color="primary"
             matStepperNext
-            [disabled]="!selectedAppointment()"
+            [disabled]="!selectedAppointment() || operationRunner.isLocked()"
           >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
@@ -174,7 +181,7 @@
     </mat-step>
 
     <!-- ── Step 3: Add Treatment ── -->
-    <mat-step [completed]="treatmentCompleted()">
+    <mat-step [completed]="treatmentCompleted()" [editable]="!operationRunner.isLocked()">
       <ng-template matStepLabel>Add Treatment</ng-template>
 
       <div class="step-container">
@@ -206,10 +213,7 @@
             >
           </div>
 
-          <form
-            (submit)="onSubmitTreatment(stepper); $event.preventDefault()"
-            class="treatment-form"
-          >
+          <form (submit)="onSubmitTreatment(); $event.preventDefault()" class="treatment-form">
             <!-- Treatment Description -->
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Treatment Description</mat-label>
@@ -269,16 +273,21 @@
             </mat-form-field>
 
             <div class="step-actions">
-              <button mat-button type="button" matStepperPrevious>
+              <button
+                mat-button
+                type="button"
+                matStepperPrevious
+                [disabled]="operationRunner.isLocked()"
+              >
                 <mat-icon>arrow_back</mat-icon> Back
               </button>
               <button
                 mat-flat-button
                 color="primary"
                 type="submit"
-                [disabled]="treatmentForm().invalid() || isSubmitting()"
+                [disabled]="treatmentForm().invalid() || operationRunner.isLocked()"
               >
-                @if (isSubmitting()) {
+                @if (operationRunner.isLocked()) {
                   <div class="inline-loading">
                     <mat-spinner diameter="18"></mat-spinner>
                     <span>Saving...</span>

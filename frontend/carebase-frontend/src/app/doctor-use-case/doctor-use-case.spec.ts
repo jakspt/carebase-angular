@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
-import { MatSnackBarHarness } from '@angular/material/snack-bar/testing';
 import { MatStepperHarness } from '@angular/material/stepper/testing';
 import { MatButtonHarness } from '@angular/material/button/testing';
 import { By } from '@angular/platform-browser';
@@ -14,11 +13,13 @@ import {
   provideTestHospitalData,
 } from '../services/in-memory-hospital-data-adapter';
 import { Appointment, Patient } from '../models/models';
+import { HeadlessSnackBar, provideTestOperationRunner } from '../services/operation-runner';
 
 describe('DoctorUseCase', () => {
   let component: DoctorUseCase;
   let fixture: ComponentFixture<DoctorUseCase>;
   let dataAdapter: InMemoryHospitalDataAdapter;
+  let feedback: HeadlessSnackBar;
   let stepper: MatStepper;
   let loader: HarnessLoader;
   let stepperHarness: MatStepperHarness;
@@ -41,12 +42,13 @@ describe('DoctorUseCase', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [DoctorUseCase],
-      providers: [provideNoopAnimations(), provideTestHospitalData()],
+      providers: [provideNoopAnimations(), provideTestHospitalData(), provideTestOperationRunner()],
     });
 
     fixture = TestBed.createComponent(DoctorUseCase);
     component = fixture.componentInstance;
     dataAdapter = TestBed.inject(HOSPITAL_DATA_ACCESS) as InMemoryHospitalDataAdapter;
+    feedback = TestBed.inject(HeadlessSnackBar);
     await fixture.whenStable();
 
     loader = TestbedHarnessEnvironment.loader(fixture);
@@ -152,7 +154,6 @@ describe('DoctorUseCase', () => {
   });
 
   it('should record treatment and prescribed medications through complete workflow without mock steppers', async () => {
-    const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
     const steps = await stepperHarness.getSteps();
 
     // Step 1: Search and select patient
@@ -204,9 +205,9 @@ describe('DoctorUseCase', () => {
       expect(component.treatmentCompleted()).toBe(true);
     });
 
-    // Verify alert message via MatSnackBarHarness
-    const snackBar = await rootLoader.getHarness(MatSnackBarHarness);
-    expect(await snackBar.getMessage()).toContain('Treatment recorded successfully!');
+    // Verify alert message via headless feedback provider
+    expect(feedback.lastMessage()).toContain('Treatment recorded successfully!');
+    expect(component.operationRunner).toBeDefined();
 
     // Verify persisted state reflects the updated treatment cost in hospital data store
     const earningsReport = dataAdapter.getDoctorEarningsReport(() => 2026);
@@ -220,22 +221,44 @@ describe('DoctorUseCase', () => {
     expect(drWeberEarnings?.totalCosts).toBe(180);
   });
 
-  it('should prevent submission when treatment form violates validation schema', async () => {
+  it('should gate submission and deliver validation notification when treatment form violates schema constraints', async () => {
     component.selectedPatient.set(samplePatient);
     component.selectedAppointment.set(sampleAppointment);
 
     // Negative cost violates validation schema
     component.treatmentModel.set({
-      description: 'Invalid cost test',
+      description: 'Invalid negative cost test',
       cost: -50,
       medications: [],
     });
     await fixture.whenStable();
 
+    const submitBtn = await loader.getHarness(
+      MatButtonHarness.with({ text: /Complete Treatment/i }),
+    );
+    expect(await submitBtn.isDisabled()).toBe(true);
+
     await component.onSubmitTreatment(stepper);
     await fixture.whenStable();
 
     expect(component.treatmentCompleted()).toBe(false);
+    expect(feedback.lastMessage()).toBe('Cost cannot be negative.');
+
+    // Excessive cost violates upper bound
+    component.treatmentModel.set({
+      description: 'Invalid excessive cost test',
+      cost: 15000,
+      medications: [],
+    });
+    await fixture.whenStable();
+
+    expect(await submitBtn.isDisabled()).toBe(true);
+
+    await component.onSubmitTreatment(stepper);
+    await fixture.whenStable();
+
+    expect(component.treatmentCompleted()).toBe(false);
+    expect(feedback.lastMessage()).toBe('Cost cannot exceed 9,999 €.');
   });
 
   it('should reset workflow state and stepper when resetWorkflow is called', async () => {
@@ -258,9 +281,7 @@ describe('DoctorUseCase', () => {
     expect(await steps[0].isSelected()).toBe(true);
   });
 
-  it('should display error snackbar via MatSnackBarHarness when addTreatment fails without port method spying', async () => {
-    const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
-
+  it('should display error snackbar via headless feedback provider when addTreatment fails without port method spying', async () => {
     component.selectedPatient.set(samplePatient);
     component.selectedAppointment.set(sampleAppointment);
     component.treatmentModel.set({
@@ -278,9 +299,77 @@ describe('DoctorUseCase', () => {
       await component.onSubmitTreatment(stepper);
       await fixture.whenStable();
 
-      const snackBar = await rootLoader.getHarness(MatSnackBarHarness);
-      expect(await snackBar.getMessage()).toContain('Database connection timed out.');
+      expect(feedback.lastMessage()).toContain('Database connection timed out.');
       expect(component.treatmentCompleted()).toBe(false);
+    } finally {
+      dataAdapter.addTreatment = originalAddTreatment;
+    }
+  });
+
+  it('should lock submit button and stepper navigation controls while treatment mutation is in flight', async () => {
+    component.selectedPatient.set(samplePatient);
+    component.selectedAppointment.set(sampleAppointment);
+    component.treatmentModel.set({
+      description: 'In-flight locking test',
+      cost: 250,
+      medications: [],
+    });
+    await fixture.whenStable();
+
+    // Advance stepper to Step 3 via button harnesses
+    const steps = await stepperHarness.getSteps();
+    const nextBtn1 = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn1.click();
+    await fixture.whenStable();
+
+    const nextBtn2 = await steps[1].getHarness(MatButtonHarness.with({ text: /Next/i }));
+    await nextBtn2.click();
+    await fixture.whenStable();
+
+    expect(await steps[2].isSelected()).toBe(true);
+
+    // Hold addTreatment resolution to inspect in-flight locked state
+    let resolveMutation!: (value: any) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolveMutation = resolve;
+    });
+
+    const originalAddTreatment = dataAdapter.addTreatment.bind(dataAdapter);
+    dataAdapter.addTreatment = () => pendingPromise as any;
+
+    try {
+      const submitPromise = component.onSubmitTreatment(stepper);
+      await fixture.whenStable();
+
+      // Verify runner lock is active
+      expect(component.operationRunner.isLocked()).toBe(true);
+
+      // Verify submit button is locked and shows loading state
+      const submitBtn = await loader.getHarness(MatButtonHarness.with({ text: /Saving/i }));
+      expect(await submitBtn.isDisabled()).toBe(true);
+
+      // Verify stepper back button in Step 3 is disabled
+      const step3 = steps[2];
+      const backBtn = await step3.getHarness(MatButtonHarness.with({ text: /Back/i }));
+      expect(await backBtn.isDisabled()).toBe(true);
+
+      // Verify step header navigation is prevented while mutation is in flight
+      await steps[0].select();
+      await fixture.whenStable();
+      expect(await steps[2].isSelected()).toBe(true);
+
+      // Verify concurrent submission attempt is rejected without duplicate execution
+      await component.onSubmitTreatment(stepper);
+      expect(component.treatmentCompleted()).toBe(false);
+
+      // Resolve pending mutation
+      resolveMutation({ success: true });
+      await submitPromise;
+      await fixture.whenStable();
+
+      // Verify runner unlocked and completed
+      expect(component.operationRunner.isLocked()).toBe(false);
+      expect(component.treatmentCompleted()).toBe(true);
     } finally {
       dataAdapter.addTreatment = originalAddTreatment;
     }
