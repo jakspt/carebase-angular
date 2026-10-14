@@ -5,34 +5,19 @@ import { MatDialogHarness } from '@angular/material/dialog/testing';
 import { MatButtonHarness } from '@angular/material/button/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
-import { of } from 'rxjs';
 import { AdminPage } from './admin-page';
 import { ActionCardHarness } from '../action-card/testing';
-import { AdminService } from '../services/admin-service';
+import { provideTestAdminService } from '../services/admin-service';
 
 describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;
   let loader: HarnessLoader;
   let rootLoader: HarnessLoader;
 
-  const fakeAdminService = {
-    seedDatabase: () =>
-      of({
-        success: true,
-        message: 'Database successfully populated with randomized test data.',
-      }),
-    migrateDatabase: () =>
-      of({
-        success: true,
-        message:
-          'Migration completed! MariaDB records successfully transferred and switched to MongoDB.',
-      }),
-  };
-
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [AdminPage],
-      providers: [provideNoopAnimations(), { provide: AdminService, useValue: fakeAdminService }],
+      providers: [provideNoopAnimations(), provideTestAdminService()],
     });
 
     fixture = TestBed.createComponent(AdminPage);
@@ -97,6 +82,73 @@ describe('AdminPage', () => {
     await fixture.whenStable();
 
     expect(await dialog.getContentText()).toContain(
+      'Migration completed! MariaDB records successfully transferred and switched to MongoDB.',
+    );
+  });
+
+  it('should cleanly abort and close dialog when Seed confirmation dialog is cancelled', async () => {
+    const seedCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Seed Test Database' }),
+    );
+    await seedCard.clickActionButton();
+    await fixture.whenStable();
+
+    const dialog = await rootLoader.getHarness(MatDialogHarness);
+    const cancelButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Cancel' }));
+    await cancelButton.click();
+    await fixture.whenStable();
+
+    const remainingDialogs = await rootLoader.getAllHarnesses(MatDialogHarness);
+    expect(remainingDialogs).toHaveLength(0);
+  });
+
+  it('should cleanly abort and close dialog when Migration confirmation dialog is cancelled', async () => {
+    const migrateCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Execute NoSQL Migration' }),
+    );
+    await migrateCard.clickActionButton();
+    await fixture.whenStable();
+
+    const dialog = await rootLoader.getHarness(MatDialogHarness);
+    const cancelButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Cancel' }));
+    await cancelButton.click();
+    await fixture.whenStable();
+
+    const remainingDialogs = await rootLoader.getAllHarnesses(MatDialogHarness);
+    expect(remainingDialogs).toHaveLength(0);
+  });
+
+  it('should enforce ADR 0001 invariants: seeding populates MariaDB without triggering MongoDB migration messaging', async () => {
+    const seedCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Seed Test Database' }),
+    );
+    await seedCard.clickActionButton();
+    await fixture.whenStable();
+
+    const dialog = await rootLoader.getHarness(MatDialogHarness);
+    const confirmButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Confirm' }));
+    await confirmButton.click();
+    await fixture.whenStable();
+
+    const content = await dialog.getContentText();
+    expect(content).toContain('Database successfully populated with randomized test data.');
+    expect(content).not.toContain('switched to MongoDB');
+  });
+
+  it('should enforce ADR 0001 invariants: migration permanently triggers MongoDB migration and confirms switch', async () => {
+    const migrateCard = await loader.getHarness(
+      ActionCardHarness.with({ title: 'Execute NoSQL Migration' }),
+    );
+    await migrateCard.clickActionButton();
+    await fixture.whenStable();
+
+    const dialog = await rootLoader.getHarness(MatDialogHarness);
+    const confirmButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Confirm' }));
+    await confirmButton.click();
+    await fixture.whenStable();
+
+    const content = await dialog.getContentText();
+    expect(content).toContain(
       'Migration completed! MariaDB records successfully transferred and switched to MongoDB.',
     );
   });

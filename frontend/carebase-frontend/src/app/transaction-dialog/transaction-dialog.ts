@@ -13,6 +13,7 @@ export interface TransactionDialogData<T = unknown> {
   successMessage?: string;
   /** Async function that performs the transaction */
   action: () => Observable<T> | Promise<T>;
+  errorMessageResolver?: (error: unknown) => string;
 }
 
 export type TransactionState = 'confirm' | 'loading' | 'success' | 'error';
@@ -46,7 +47,10 @@ export class TransactionDialog {
           this.dialogRef.disableClose = false;
         },
         error: (err) => {
-          this.errorMessage.set(err?.message || 'An unexpected error occurred.');
+          const message = this.data.errorMessageResolver
+            ? this.data.errorMessageResolver(err)
+            : err?.message || 'An unexpected error occurred.';
+          this.errorMessage.set(message);
           this.state.set('error');
           this.dialogRef.disableClose = false;
         },

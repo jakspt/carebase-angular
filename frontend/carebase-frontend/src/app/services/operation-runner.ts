@@ -1,7 +1,9 @@
 import { Injectable, Provider, Signal, inject, signal } from '@angular/core';
 import { FieldTree, submit } from '@angular/forms/signals';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, firstValueFrom, isObservable, of } from 'rxjs';
+import { Observable, Subject, firstValueFrom, isObservable, of } from 'rxjs';
+import { TransactionDialog } from '../transaction-dialog/transaction-dialog';
 
 export interface OperationConfig<_T = unknown> {
   title?: string;
@@ -19,7 +21,7 @@ export interface OperationResult<T = unknown> {
   error?: unknown;
 }
 
-function resolveDefaultErrorMessage(error: unknown): string {
+export function resolveDefaultErrorMessage(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
@@ -57,6 +59,7 @@ function resolveDefaultErrorMessage(error: unknown): string {
 })
 export class OperationRunner {
   private readonly snackBar = inject(MatSnackBar, { optional: true });
+  private readonly dialog = inject(MatDialog, { optional: true });
   private readonly _isLocked = signal(false);
   readonly isLocked: Signal<boolean> = this._isLocked.asReadonly();
 
@@ -66,6 +69,10 @@ export class OperationRunner {
   ): Promise<OperationResult<T>> {
     if (this._isLocked()) {
       return { status: 'cancelled' };
+    }
+
+    if (config?.requireConfirmation) {
+      return this.executeWithConfirmation(action, config);
     }
 
     this._isLocked.set(true);
@@ -95,6 +102,65 @@ export class OperationRunner {
     } finally {
       this._isLocked.set(false);
     }
+  }
+
+  private executeWithConfirmation<T>(
+    action: () => Promise<T> | Observable<T> | T,
+    config: OperationConfig<T>,
+  ): Promise<OperationResult<T>> {
+    const dialog = this.dialog;
+    if (!dialog) {
+      return Promise.resolve({ status: 'cancelled' });
+    }
+
+    this._isLocked.set(true);
+
+    return new Promise<OperationResult<T>>((resolve) => {
+      let actionExecuted = false;
+      let actionResult: T | undefined;
+      let actionError: unknown;
+
+      const wrappedAction = async () => {
+        actionExecuted = true;
+        try {
+          const rawResult = action();
+          actionResult = isObservable(rawResult)
+            ? await firstValueFrom(rawResult)
+            : await rawResult;
+          return actionResult;
+        } catch (error) {
+          actionError = error;
+          throw error;
+        }
+      };
+
+      const dialogRef = dialog.open(TransactionDialog, {
+        width: '450px',
+        data: {
+          title: config.title ?? 'Confirm Action',
+          description:
+            config.description ?? config.confirmMessage ?? 'Are you sure you want to proceed?',
+          loadingMessage: config.loadingMessage,
+          successMessage: config.successMessage,
+          action: wrappedAction,
+          errorMessageResolver: (err: unknown) =>
+            config.errorMessageResolver
+              ? config.errorMessageResolver(err)
+              : resolveDefaultErrorMessage(err),
+        },
+      });
+
+      dialogRef.afterClosed().subscribe(() => {
+        this._isLocked.set(false);
+        if (!actionExecuted) {
+          resolve({ status: 'cancelled' });
+        } else if (actionError !== undefined) {
+          resolve({ status: 'error', error: actionError });
+        } else {
+          resolve({ status: 'success', data: actionResult });
+        }
+      });
+    });
   }
 
   async submitForm<TModel, TResult = unknown>(
@@ -174,13 +240,68 @@ export class HeadlessSnackBar {
   }
 }
 
-export function provideTestOperationRunner(): Provider[] {
+export interface TestOperationRunnerOptions {
+  autoConfirm?: boolean;
+}
+
+@Injectable()
+export class HeadlessDialog {
+  readonly openedDialogs = signal<any[]>([]);
+  readonly autoConfirm = signal(true);
+
+  open<T, D = any>(_component: any, config?: { data?: D; [key: string]: any }): MatDialogRef<T> {
+    const data = config?.data as any;
+    this.openedDialogs.update((list) => [...list, data]);
+    const closed$ = new Subject<any>();
+
+    const dialogRef = {
+      disableClose: false,
+      afterClosed: () => closed$.asObservable(),
+      close: (result?: any) => {
+        closed$.next(result);
+        closed$.complete();
+      },
+    };
+
+    queueMicrotask(async () => {
+      if (this.autoConfirm()) {
+        if (data?.action) {
+          try {
+            await data.action();
+          } catch {
+            // Handled inside wrapped action
+          }
+        }
+        dialogRef.close(true);
+      } else {
+        dialogRef.close(undefined);
+      }
+    });
+
+    return dialogRef as unknown as MatDialogRef<T>;
+  }
+}
+
+export function provideTestOperationRunner(options?: TestOperationRunnerOptions): Provider[] {
+  const headlessDialog = new HeadlessDialog();
+  if (options?.autoConfirm !== undefined) {
+    headlessDialog.autoConfirm.set(options.autoConfirm);
+  }
+
   return [
     OperationRunner,
     HeadlessSnackBar,
     {
       provide: MatSnackBar,
       useExisting: HeadlessSnackBar,
+    },
+    {
+      provide: HeadlessDialog,
+      useValue: headlessDialog,
+    },
+    {
+      provide: MatDialog,
+      useExisting: HeadlessDialog,
     },
   ];
 }

@@ -1,9 +1,24 @@
-import { signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, maxLength } from '@angular/forms/signals';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { MatDialogHarness } from '@angular/material/dialog/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
+import { MatProgressBarHarness } from '@angular/material/progress-bar/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { of, throwError } from 'rxjs';
 import { describe, expect, it } from 'vitest';
-import { HeadlessSnackBar, OperationRunner, provideTestOperationRunner } from './operation-runner';
+import {
+  HeadlessDialog,
+  HeadlessSnackBar,
+  OperationRunner,
+  provideTestOperationRunner,
+} from './operation-runner';
+
+@Component({
+  template: '',
+})
+class TestHostComponent {}
 
 describe('OperationRunner', () => {
   it('should initialize with isLocked false', () => {
@@ -283,7 +298,149 @@ describe('OperationRunner', () => {
     });
   });
 
-  describe('provideTestOperationRunner (Seam 3)', () => {
+  describe('Modal Confirmation (Seam 1)', () => {
+    it('should open confirmation modal and abort with cancelled status when dismissed without invoking action', async () => {
+      TestBed.configureTestingModule({
+        imports: [TestHostComponent],
+        providers: [provideNoopAnimations()],
+      });
+      const fixture = TestBed.createComponent(TestHostComponent);
+      const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
+      const runner = TestBed.inject(OperationRunner);
+
+      let actionCalled = false;
+      const resultPromise = runner.execute(
+        async () => {
+          actionCalled = true;
+          return 'should-not-run';
+        },
+        {
+          requireConfirmation: true,
+          title: 'Confirm Operation',
+          description: 'Are you sure you want to proceed?',
+        },
+      );
+
+      const dialog = await rootLoader.getHarness(MatDialogHarness);
+      expect(await dialog.getTitleText()).toBe('Confirm Operation');
+      expect(await dialog.getContentText()).toContain('Are you sure you want to proceed?');
+      expect(runner.isLocked()).toBe(true);
+
+      const cancelButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Cancel' }));
+      await cancelButton.click();
+
+      const result = await resultPromise;
+      expect(result).toEqual({ status: 'cancelled' });
+      expect(actionCalled).toBe(false);
+      expect(runner.isLocked()).toBe(false);
+    });
+
+    it('should show progress and completion messaging and return success result when confirmed', async () => {
+      TestBed.configureTestingModule({
+        imports: [TestHostComponent],
+        providers: [provideNoopAnimations()],
+      });
+      const fixture = TestBed.createComponent(TestHostComponent);
+      const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
+      const runner = TestBed.inject(OperationRunner);
+
+      let resolveAction!: (val: { migrated: boolean }) => void;
+      const actionPromise = new Promise<{ migrated: boolean }>((resolve) => {
+        resolveAction = resolve;
+      });
+
+      const resultPromise = runner.execute(() => actionPromise, {
+        requireConfirmation: true,
+        title: 'Migrate Database',
+        description: 'Migrate relational data to MongoDB?',
+        loadingMessage: 'Exporting tables and building MongoDB indexes...',
+        successMessage: 'Migration completed successfully!',
+      });
+
+      const dialog = await rootLoader.getHarness(MatDialogHarness);
+      expect(await dialog.getTitleText()).toBe('Migrate Database');
+      expect(runner.isLocked()).toBe(true);
+
+      const confirmButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Confirm' }));
+      await confirmButton.click();
+      await fixture.whenStable();
+
+      // In flight: loading message and progress bar visible, runner locked
+      expect(await dialog.getContentText()).toContain(
+        'Exporting tables and building MongoDB indexes...',
+      );
+      const progressBar = await dialog.getHarness(MatProgressBarHarness);
+      expect(progressBar).toBeTruthy();
+      expect(runner.isLocked()).toBe(true);
+
+      // Attempt concurrent execution while in flight
+      let concurrentCalled = false;
+      const concurrentResult = await runner.execute(async () => {
+        concurrentCalled = true;
+        return 'blocked';
+      });
+      expect(concurrentCalled).toBe(false);
+      expect(concurrentResult).toEqual({ status: 'cancelled' });
+
+      // Resolve action
+      resolveAction({ migrated: true });
+      await fixture.whenStable();
+
+      // Success feedback displayed in modal
+      expect(await dialog.getContentText()).toContain('Migration completed successfully!');
+
+      // Close modal
+      const closeButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Close' }));
+      await closeButton.click();
+
+      const result = await resultPromise;
+      expect(result).toEqual({
+        status: 'success',
+        data: { migrated: true },
+      });
+      expect(runner.isLocked()).toBe(false);
+    });
+
+    it('should display error message in modal and return error status when action throws', async () => {
+      TestBed.configureTestingModule({
+        imports: [TestHostComponent],
+        providers: [provideNoopAnimations()],
+      });
+      const fixture = TestBed.createComponent(TestHostComponent);
+      const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
+      const runner = TestBed.inject(OperationRunner);
+
+      const testError = new Error('Database connection failed');
+      const resultPromise = runner.execute(
+        async () => {
+          throw testError;
+        },
+        {
+          requireConfirmation: true,
+          title: 'Seed Database',
+          description: 'Are you sure you want to seed?',
+          loadingMessage: 'Seeding database...',
+        },
+      );
+
+      const dialog = await rootLoader.getHarness(MatDialogHarness);
+      const confirmButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Confirm' }));
+      await confirmButton.click();
+      await fixture.whenStable();
+
+      expect(await dialog.getContentText()).toContain('Error: Database connection failed');
+
+      const closeButton = await dialog.getHarness(MatButtonHarness.with({ text: 'Close' }));
+      await closeButton.click();
+
+      const result = await resultPromise;
+      expect(result.status).toBe('error');
+      expect(result.error).toBe(testError);
+      expect(runner.isLocked()).toBe(false);
+    });
+  });
+
+  describe('provideTestOperationRunner (Seam 2)', () => {
     it('should provide headless execution without CDK overlays and record notifications', async () => {
       TestBed.configureTestingModule({
         providers: [provideTestOperationRunner()],
@@ -301,6 +458,60 @@ describe('OperationRunner', () => {
 
       expect(feedback.messages()).toEqual(['Step 1 complete', 'Step 2 complete']);
       expect(feedback.lastMessage()).toBe('Step 2 complete');
+      expect(runner.isLocked()).toBe(false);
+    });
+
+    it('should support headless confirmation and execute action when autoConfirm is true', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideTestOperationRunner({ autoConfirm: true })],
+      });
+      const runner = TestBed.inject(OperationRunner);
+      const headlessDialog = TestBed.inject(HeadlessDialog);
+
+      let actionCalled = false;
+      const result = await runner.execute(
+        async () => {
+          actionCalled = true;
+          return 'seeded-ok';
+        },
+        {
+          requireConfirmation: true,
+          title: 'Seed Data',
+          description: 'Overwrite data?',
+        },
+      );
+
+      expect(actionCalled).toBe(true);
+      expect(result).toEqual({ status: 'success', data: 'seeded-ok' });
+      expect(headlessDialog.openedDialogs().length).toBe(1);
+      expect(headlessDialog.openedDialogs()[0].title).toBe('Seed Data');
+      expect(runner.isLocked()).toBe(false);
+    });
+
+    it('should support headless cancellation and abort without executing action when autoConfirm is false', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideTestOperationRunner({ autoConfirm: false })],
+      });
+      const runner = TestBed.inject(OperationRunner);
+      const headlessDialog = TestBed.inject(HeadlessDialog);
+
+      let actionCalled = false;
+      const result = await runner.execute(
+        async () => {
+          actionCalled = true;
+          return 'should-not-run';
+        },
+        {
+          requireConfirmation: true,
+          title: 'Dangerous Migration',
+          description: 'Permanently switch to MongoDB?',
+        },
+      );
+
+      expect(actionCalled).toBe(false);
+      expect(result).toEqual({ status: 'cancelled' });
+      expect(headlessDialog.openedDialogs().length).toBe(1);
+      expect(headlessDialog.openedDialogs()[0].title).toBe('Dangerous Migration');
       expect(runner.isLocked()).toBe(false);
     });
   });
