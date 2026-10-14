@@ -23,6 +23,7 @@ import {
 import { ClerkService } from '../services/clerk-service';
 import { ActorSession } from '../services/actor-session';
 import { BookingConflictError, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { OperationRunner } from '../services/operation-runner';
 import { form, maxLength } from '@angular/forms/signals';
 
 export type { AppointmentNotes, AppointmentResult, BookingResult };
@@ -62,6 +63,7 @@ export class AppointmentIntakeWorkflow {
   private readonly actorSession = inject(ActorSession);
   private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
   private readonly clerkService = inject(ClerkService, { optional: true });
+  private readonly operationRunner = inject(OperationRunner);
 
   // ── Clerk Profile ──
   readonly activeClerk = this.actorSession.activeClerk;
@@ -70,7 +72,7 @@ export class AppointmentIntakeWorkflow {
   readonly availableClerks = computed<Clerk[]>(() => {
     if (this.clerkSearchResults.hasValue()) {
       const val = this.clerkSearchResults.value();
-      return Array.isArray(val) ? val : (val as any)?.clerks ?? [];
+      return Array.isArray(val) ? val : ((val as any)?.clerks ?? []);
     }
     return [];
   });
@@ -90,7 +92,7 @@ export class AppointmentIntakeWorkflow {
   readonly patients = computed<Patient[]>(() => {
     if (this.patientSearchResults.hasValue()) {
       const val = this.patientSearchResults.value();
-      return Array.isArray(val) ? val : (val as any)?.patients ?? [];
+      return Array.isArray(val) ? val : ((val as any)?.patients ?? []);
     }
     return [];
   });
@@ -111,7 +113,7 @@ export class AppointmentIntakeWorkflow {
   readonly allDoctors = computed<Doctor[]>(() => {
     if (this.doctorsResource.hasValue()) {
       const val = this.doctorsResource.value();
-      return Array.isArray(val) ? val : (val as any)?.doctors ?? [];
+      return Array.isArray(val) ? val : ((val as any)?.doctors ?? []);
     }
     return [];
   });
@@ -256,8 +258,8 @@ export class AppointmentIntakeWorkflow {
 
   readonly reason = computed(() => this.appointmentNotes().reason);
 
-  private readonly _isSubmitting = signal(false);
-  readonly isSubmitting = this._isSubmitting.asReadonly();
+  readonly isLocked = this.operationRunner.isLocked;
+  readonly isSubmitting = this.isLocked;
 
   private readonly _appointmentSuccess = signal(false);
   readonly appointmentSuccess = this._appointmentSuccess.asReadonly();
@@ -355,39 +357,62 @@ export class AppointmentIntakeWorkflow {
       clerkSsn: activeClerk ? String(activeClerk.ssn) : undefined,
     };
 
-    this._isSubmitting.set(true);
+    let conflictOccurred = false;
 
-    try {
-      const response = this.clerkService
-        ? await firstValueFrom(this.clerkService.bookAppointment(payload))
-        : await this.hospitalDataAccess.bookAppointment(payload);
-      if (response.success) {
-        this._appointmentSuccess.set(true);
-        this._createdAppointmentId.set(response.appointmentId ?? null);
-        return {
-          status: 'success',
-          appointmentId: response.appointmentId,
-        };
-      }
+    const runnerResult = await this.operationRunner.execute(
+      async () => {
+        const response = this.clerkService
+          ? await firstValueFrom(this.clerkService.bookAppointment(payload))
+          : await this.hospitalDataAccess.bookAppointment(payload);
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to schedule appointment.');
+        }
+        return response;
+      },
+      {
+        successMessage: 'Appointment successfully scheduled.',
+        errorMessageResolver: (err: unknown) => {
+          if (err instanceof BookingConflictError || (err as any)?.status === 409) {
+            conflictOccurred = true;
+            this._selectedTimeSlot.set(null);
+            this.timeSlotsResource.reload();
+            return 'Selected slot was just booked by another user. Please choose an alternate slot.';
+          }
+          return err instanceof Error
+            ? err.message
+            : (err as any)?.error?.error ||
+                'Failed to schedule appointment. Please check your data and retry.';
+        },
+      },
+    );
+
+    if (runnerResult.status === 'success' && runnerResult.data) {
+      this._appointmentSuccess.set(true);
+      this._createdAppointmentId.set(runnerResult.data.appointmentId ?? null);
       return {
-        status: 'error',
-        message: response.message || 'Failed to schedule appointment.',
+        status: 'success',
+        appointmentId: runnerResult.data.appointmentId,
       };
-    } catch (err: unknown) {
-      if (err instanceof BookingConflictError || (err as any)?.status === 409) {
-        this._selectedTimeSlot.set(null);
-        this.timeSlotsResource.reload();
-        return { status: 'conflict' };
-      }
-      const errorMsg =
-        err instanceof Error
-          ? err.message
-          : (err as any)?.error?.error ||
-            'Failed to schedule appointment. Please check your data and retry.';
-      return { status: 'error', message: errorMsg };
-    } finally {
-      this._isSubmitting.set(false);
     }
+
+    if (
+      conflictOccurred ||
+      runnerResult.error instanceof BookingConflictError ||
+      (runnerResult.error as any)?.status === 409
+    ) {
+      return { status: 'conflict' };
+    }
+
+    if (runnerResult.status === 'cancelled') {
+      return { status: 'error', message: 'An operation is already in progress.' };
+    }
+
+    const errorMsg =
+      runnerResult.error instanceof Error
+        ? runnerResult.error.message
+        : (runnerResult.error as any)?.error?.error ||
+          'Failed to schedule appointment. Please check your data and retry.';
+    return { status: 'error', message: errorMsg };
   }
 
   reset(): void {
@@ -401,6 +426,5 @@ export class AppointmentIntakeWorkflow {
     this.appointmentNotes.set({ reason: '' });
     this._appointmentSuccess.set(false);
     this._createdAppointmentId.set(null);
-    this._isSubmitting.set(false);
   }
 }

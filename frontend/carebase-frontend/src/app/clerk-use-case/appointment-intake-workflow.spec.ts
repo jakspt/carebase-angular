@@ -4,11 +4,17 @@ import { ClerkService } from '../services/clerk-service';
 import { Clerk, Doctor, Patient } from '../models/models';
 import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
 import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
+import {
+  HeadlessSnackBar,
+  OperationRunner,
+  provideTestOperationRunner,
+} from '../services/operation-runner';
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;
   let clerkService: ClerkService;
   let dataAccess: HospitalDataAccess;
+  let snackBar: HeadlessSnackBar;
 
   const mockClerk: Clerk = { id: '1001', name: 'Erika Mustermann', ssn: '1001' };
   const mockPatient: Patient = {
@@ -37,12 +43,18 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AppointmentIntakeWorkflow, ClerkService, provideTestHospitalData()],
+      providers: [
+        AppointmentIntakeWorkflow,
+        ClerkService,
+        provideTestHospitalData(),
+        provideTestOperationRunner(),
+      ],
     });
 
     workflow = TestBed.inject(AppointmentIntakeWorkflow);
     clerkService = TestBed.inject(ClerkService);
     dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
+    snackBar = TestBed.inject(HeadlessSnackBar);
     clerkService.setActiveClerk(mockClerk);
   });
 
@@ -268,6 +280,35 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       });
     });
 
+    it('should reflect lockout during in-flight submission and deliver success feedback to snackbar', async () => {
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 20));
+      workflow.selectTimeSlot('10:00');
+      workflow.setReason('Routine checkup');
+
+      let submittingDuringExecution = false;
+      let lockedDuringExecution = false;
+      const originalBook = dataAccess.bookAppointment.bind(dataAccess);
+      dataAccess.bookAppointment = async (req) => {
+        submittingDuringExecution = workflow.isSubmitting();
+        lockedDuringExecution = workflow.isLocked();
+        return await originalBook(req);
+      };
+
+      try {
+        const result = await workflow.submit();
+        expect(result.status).toBe('success');
+        expect(submittingDuringExecution).toBe(true);
+        expect(lockedDuringExecution).toBe(true);
+        expect(workflow.isSubmitting()).toBe(false);
+        expect(workflow.isLocked()).toBe(false);
+        expect(snackBar.lastMessage()).toContain('successfully');
+      } finally {
+        dataAccess.bookAppointment = originalBook;
+      }
+    });
+
     it('should handle conflict when slot is already booked: reset selectedTimeSlot, reload slots, and return conflict status', async () => {
       // Pre-book the slot in data store to induce genuine conflict
       await dataAccess.bookAppointment({
@@ -289,12 +330,49 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
       expect(workflow.selectedTimeSlot()).toBeNull();
       expect(workflow.bookingSuccess()).toBe(false);
       expect(workflow.isSubmitting()).toBe(false);
+      expect(snackBar.lastMessage()).toBe(
+        'Selected slot was just booked by another user. Please choose an alternate slot.',
+      );
 
       // Verify slots were reloaded and slot is unavailable
       await vi.waitFor(() => {
         const slot = workflow.timeSlots().find((s) => s.time === '11:00');
         expect(slot?.available).toBe(false);
       });
+    });
+
+    it('should abort submission and return cancelled status if operation runner is locked', async () => {
+      workflow.selectPatient(mockPatient);
+      workflow.selectDoctor(mockCardioDoc);
+      workflow.selectDate(new Date(2026, 9, 20));
+      workflow.selectTimeSlot('10:00');
+      workflow.setReason('Routine checkup');
+
+      const operationRunner = TestBed.inject(OperationRunner);
+      let finishLockedOp!: () => void;
+      const lockedPromise = new Promise<void>((resolve) => {
+        finishLockedOp = resolve;
+      });
+      const ongoingOp = operationRunner.execute(() => lockedPromise);
+
+      try {
+        expect(workflow.isLocked()).toBe(true);
+        expect(workflow.isSubmitting()).toBe(true);
+
+        const result = await workflow.submit();
+        expect(result).toEqual({
+          status: 'error',
+          message: 'An operation is already in progress.',
+        });
+        expect(workflow.appointmentSuccess()).toBe(false);
+        expect(workflow.createdAppointmentId()).toBeNull();
+      } finally {
+        finishLockedOp();
+        await ongoingOp;
+      }
+
+      expect(workflow.isLocked()).toBe(false);
+      expect(workflow.isSubmitting()).toBe(false);
     });
 
     it('should handle general error and return error status with message', async () => {
