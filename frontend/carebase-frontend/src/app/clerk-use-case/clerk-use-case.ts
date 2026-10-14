@@ -12,7 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -46,7 +46,6 @@ import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
 })
 export class ClerkUseCase {
   readonly workflow = inject(AppointmentIntakeWorkflow);
-  private readonly snackBar = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
 
   // ── Clerk Profile ──
@@ -86,6 +85,7 @@ export class ClerkUseCase {
   readonly bookingModel = this.workflow.bookingModel;
   readonly bookingForm = this.workflow.bookingForm;
   readonly reason = this.workflow.reason;
+  readonly isLocked = this.workflow.isLocked;
   readonly isSubmitting = this.workflow.isSubmitting;
   readonly bookingSuccess = this.workflow.bookingSuccess;
   readonly createdAppointmentId = this.workflow.createdAppointmentId;
@@ -93,15 +93,18 @@ export class ClerkUseCase {
   // ── Methods & Handlers ──
 
   onClerkSearchInput(event: Event): void {
+    if (this.isLocked()) return;
     const val = (event.target as HTMLInputElement).value;
     this.workflow.setClerkSearchInput(val);
   }
 
   selectClerk(clerk: Clerk): void {
+    if (this.isLocked()) return;
     this.workflow.selectClerk(clerk);
   }
 
   clearClerk(): void {
+    if (this.isLocked()) return;
     this.workflow.clearClerk();
     this.cdr.detectChanges();
     const inputEl = this.clerkInput()?.nativeElement;
@@ -113,11 +116,13 @@ export class ClerkUseCase {
   }
 
   onPatientSearchInput(event: Event): void {
+    if (this.isLocked()) return;
     const val = (event.target as HTMLInputElement).value;
     this.workflow.setPatientSearchInput(val);
   }
 
   selectPatient(patient: Patient): void {
+    if (this.isLocked()) return;
     this.workflow.selectPatient(patient);
   }
 
@@ -143,61 +148,47 @@ export class ClerkUseCase {
   }
 
   onDepartmentChange(dept: string): void {
+    if (this.isLocked()) return;
     this.workflow.selectDepartment(dept);
   }
 
   onDoctorChange(doctor: Doctor): void {
+    if (this.isLocked()) return;
     this.workflow.selectDoctor(doctor);
   }
 
   selectDoctor(doctor: Doctor): void {
+    if (this.isLocked()) return;
     this.workflow.selectDoctor(doctor);
   }
 
   onDateChange(date: Date | null): void {
+    if (this.isLocked()) return;
     this.workflow.selectDate(date);
   }
 
   selectNextAvailableDate(dateVal?: string | Date | null): void {
+    if (this.isLocked()) return;
     this.workflow.selectNextAvailableDate(dateVal);
   }
 
   selectTimeSlot(time: string): void {
+    if (this.isLocked()) return;
     this.workflow.selectTimeSlot(time);
   }
 
   async confirmBooking(stepper?: MatStepper): Promise<void> {
+    if (this.isLocked()) return;
     await submit(this.bookingForm, async () => {
       const result = await this.workflow.submit();
-      switch (result.status) {
-        case 'success':
-          this.snackBar.open(
-            `Appointment successfully scheduled (ID: ${result.appointmentId ?? 'N/A'})`,
-            'Close',
-            { duration: 5000 },
-          );
-          break;
-        case 'conflict':
-          this.snackBar.open(
-            'Selected slot was just booked by another user. Please choose an alternate slot.',
-            'Close',
-            { duration: 6000 },
-          );
-          if (stepper) {
-            stepper.selectedIndex = 2;
-          }
-          break;
-        case 'validation_error':
-          this.snackBar.open(result.message, 'Close', { duration: 4000 });
-          break;
-        case 'error':
-          this.snackBar.open(result.message, 'Close', { duration: 5000 });
-          break;
+      if (result.status === 'conflict' && stepper) {
+        stepper.selectedIndex = 2;
       }
     });
   }
 
   resetWorkflow(stepper?: MatStepper): void {
+    if (this.isLocked()) return;
     this.workflow.reset();
     if (stepper) {
       stepper.reset();

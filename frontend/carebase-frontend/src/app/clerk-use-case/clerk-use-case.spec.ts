@@ -874,5 +874,126 @@ describe('ClerkUseCase', () => {
       const updatedSlotBtn = await steps[2].getHarness(MatButtonHarness.with({ text: /11:00/ }));
       expect(await updatedSlotBtn.isDisabled()).toBe(true);
     });
+
+    it('should lock booking button, back button, change clerk button, and stepper navigation while booking mutation is in flight', async () => {
+      component.selectPatient(mockPatient);
+      await advanceToStep(1);
+      component.selectDoctor(mockDoctors[0]);
+      await advanceToStep(2);
+      component.selectTimeSlot('10:00');
+      await advanceToStep(3);
+
+      const steps = await stepperHarness.getSteps();
+      expect(await steps[3].isSelected()).toBe(true);
+
+      let resolveBooking!: (value: any) => void;
+      const pendingPromise = new Promise((resolve) => {
+        resolveBooking = resolve;
+      });
+
+      const originalBook = dataAccess.bookAppointment.bind(dataAccess);
+      dataAccess.bookAppointment = () => pendingPromise as any;
+
+      try {
+        const confirmPromise = component.confirmBooking();
+        await fixture.whenStable();
+
+        // Runner lock must be active
+        expect(component.isLocked()).toBe(true);
+
+        // Book button must be disabled and show loading state
+        const loadingBookBtn = await steps[3].getHarness(
+          MatButtonHarness.with({ text: /Booking Appointment/i }),
+        );
+        expect(await loadingBookBtn.isDisabled()).toBe(true);
+
+        // Step 4 back button must be disabled
+        const backBtn = await steps[3].getHarness(MatButtonHarness.with({ text: /Back/i }));
+        expect(await backBtn.isDisabled()).toBe(true);
+
+        // Change clerk button must be disabled
+        const changeClerkBtn = await loader.getHarness(MatButtonHarness.with({ text: /Change/i }));
+        expect(await changeClerkBtn.isDisabled()).toBe(true);
+
+        // Header stepper navigation must be prevented
+        await steps[0].select();
+        await fixture.whenStable();
+        expect(await steps[3].isSelected()).toBe(true);
+
+        // Interactive methods should be guarded
+        component.selectPatient(null as any);
+        expect(component.selectedPatient()).toEqual(mockPatient);
+
+        // Rapid duplicate call to confirmBooking should be ignored
+        await component.confirmBooking();
+
+        // Resolve mutation
+        resolveBooking({ success: true, appointmentId: 444 });
+        await confirmPromise;
+        await fixture.whenStable();
+
+        expect(component.isLocked()).toBe(false);
+        expect(component.bookingSuccess()).toBe(true);
+      } finally {
+        dataAccess.bookAppointment = originalBook;
+      }
+    });
+
+    it('should present centralized success notification via MatSnackBarHarness upon booking completion', async () => {
+      component.selectPatient(mockPatient);
+      await advanceToStep(1);
+      component.selectDoctor(mockDoctors[0]);
+      await advanceToStep(2);
+      component.selectTimeSlot('10:00');
+      await advanceToStep(3);
+
+      const steps = await stepperHarness.getSteps();
+      const bookBtn = await steps[3].getHarness(
+        MatButtonHarness.with({ text: /Book Appointment/i }),
+      );
+      await bookBtn.click();
+      await fixture.whenStable();
+
+      expect(component.bookingSuccess()).toBe(true);
+      const snackBar = await rootLoader.getHarness(MatSnackBarHarness);
+      expect(await snackBar.getMessage()).toContain('Appointment successfully scheduled');
+    });
+
+    it('should gate booking submission and disable Book Appointment button when notes exceed 500 characters', async () => {
+      component.selectPatient(mockPatient);
+      await advanceToStep(1);
+      component.selectDoctor(mockDoctors[0]);
+      await advanceToStep(2);
+      component.selectTimeSlot('10:00');
+      await advanceToStep(3);
+
+      const steps = await stepperHarness.getSteps();
+      const reasonField = await steps[3].getHarness(
+        MatFormFieldHarness.with({ floatingLabelText: /Consultation Reason/ }),
+      );
+      const reasonInput = await reasonField.getControl(MatInputHarness);
+      const longText = 'a'.repeat(501);
+      await reasonInput!.setValue(longText);
+      await fixture.whenStable();
+
+      // Form must be invalid
+      expect(component.bookingForm().invalid()).toBe(true);
+
+      // Book button must be disabled by validation gating
+      const bookBtn = await steps[3].getHarness(
+        MatButtonHarness.with({ text: /Book Appointment/i }),
+      );
+      expect(await bookBtn.isDisabled()).toBe(true);
+
+      // Attempting confirmBooking directly must be gated
+      await component.confirmBooking();
+      expect(component.bookingSuccess()).toBe(false);
+      await fixture.whenStable();
+
+      // Error message rendered in form field
+      const errors = await reasonField.getTextErrors();
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain('500');
+    });
   });
 });

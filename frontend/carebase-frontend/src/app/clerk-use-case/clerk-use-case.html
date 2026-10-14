@@ -26,6 +26,7 @@
             (click)="clearClerk()"
             class="change-clerk-btn"
             aria-label="Change acting clerk"
+            [disabled]="isLocked()"
           >
             <mat-icon aria-hidden="true">edit</mat-icon>
             <span>Change</span>
@@ -114,7 +115,7 @@
   <!-- Stepper Workflow -->
   <mat-stepper linear #stepper class="stepper-content">
     <!-- ── Step 1: Find Patient ── -->
-    <mat-step [completed]="selectedPatient() !== null">
+    <mat-step [completed]="selectedPatient() !== null" [editable]="!isLocked()">
       <ng-template matStepLabel>Find Patient</ng-template>
 
       <div class="step-container">
@@ -130,6 +131,7 @@
             [value]="patientInputValue()"
             (input)="onPatientSearchInput($event)"
             [matAutocomplete]="patientAuto"
+            [disabled]="isLocked()"
           />
           <mat-icon matPrefix>search</mat-icon>
           <mat-hint>Debounced query searches registered patients</mat-hint>
@@ -203,7 +205,12 @@
         }
 
         <div class="step-actions">
-          <button mat-flat-button color="primary" matStepperNext [disabled]="!selectedPatient()">
+          <button
+            mat-flat-button
+            color="primary"
+            matStepperNext
+            [disabled]="!selectedPatient() || isLocked()"
+          >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
         </div>
@@ -211,7 +218,7 @@
     </mat-step>
 
     <!-- ── Step 2: Department & Doctor Selection ── -->
-    <mat-step [completed]="selectedDoctor() !== null">
+    <mat-step [completed]="selectedDoctor() !== null" [editable]="!isLocked()">
       <ng-template matStepLabel>Select Doctor</ng-template>
 
       <div class="step-container">
@@ -271,8 +278,15 @@
         }
 
         <div class="step-actions">
-          <button mat-button matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
-          <button mat-flat-button color="primary" matStepperNext [disabled]="!selectedDoctor()">
+          <button mat-button matStepperPrevious [disabled]="isLocked()">
+            <mat-icon>arrow_back</mat-icon> Back
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            matStepperNext
+            [disabled]="!selectedDoctor() || isLocked()"
+          >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
         </div>
@@ -280,7 +294,7 @@
     </mat-step>
 
     <!-- ── Step 3: Date & Time Slot Selection ── -->
-    <mat-step [completed]="selectedTimeSlot() !== null">
+    <mat-step [completed]="selectedTimeSlot() !== null" [editable]="!isLocked()">
       <ng-template matStepLabel>Select Date & Time</ng-template>
 
       <div class="step-container">
@@ -345,6 +359,7 @@
                       mat-stroked-button
                       class="next-available-btn"
                       (click)="selectNextAvailableDate(nextDate)"
+                      [disabled]="isLocked()"
                       [matTooltip]="
                         'Switch consultation date to ' + (nextDate | date: 'EEEE, MMMM d, y')
                       "
@@ -375,7 +390,7 @@
                     class="time-slot-btn"
                     [class.slot-selected]="selectedTimeSlot() === slot.time"
                     [class.slot-available]="slot.available"
-                    [disabled]="!slot.available"
+                    [disabled]="!slot.available || isLocked()"
                     (click)="selectTimeSlot(slot.time)"
                   >
                     <mat-icon class="slot-icon">
@@ -390,8 +405,15 @@
         </div>
 
         <div class="step-actions">
-          <button mat-button matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
-          <button mat-flat-button color="primary" matStepperNext [disabled]="!selectedTimeSlot()">
+          <button mat-button matStepperPrevious [disabled]="isLocked()">
+            <mat-icon>arrow_back</mat-icon> Back
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            matStepperNext
+            [disabled]="!selectedTimeSlot() || isLocked()"
+          >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
         </div>
@@ -399,7 +421,7 @@
     </mat-step>
 
     <!-- ── Step 4: Reason & Confirmation ── -->
-    <mat-step [completed]="bookingSuccess()">
+    <mat-step [completed]="bookingSuccess()" [editable]="!isLocked()">
       <ng-template matStepLabel>Confirm Booking</ng-template>
 
       <div class="step-container">
@@ -490,16 +512,16 @@
           </div>
 
           <div class="step-actions">
-            <button mat-button matStepperPrevious [disabled]="isSubmitting()">
+            <button mat-button matStepperPrevious [disabled]="isLocked()">
               <mat-icon>arrow_back</mat-icon> Back
             </button>
             <button
               mat-flat-button
               color="primary"
               (click)="confirmBooking(stepper)"
-              [disabled]="isSubmitting() || !selectedTimeSlot()"
+              [disabled]="isLocked() || !selectedTimeSlot() || bookingForm().invalid()"
             >
-              @if (isSubmitting()) {
+              @if (isLocked()) {
                 <div class="inline-loading">
                   <mat-spinner diameter="18"></mat-spinner>
                   <span>Booking Appointment...</span>
