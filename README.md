@@ -44,9 +44,11 @@ flowchart TD
     Client["Client Browser"] -->|"HTTP :80"| Nginx["Nginx Reverse Proxy (:80)"]
     Nginx -->|"Path: /"| Angular["Angular SPA (carebase_frontend:80)"]
     Nginx -->|"Path: /api/"| Flask["Flask REST API (carebase:5000)"]
-    Flask -->|"Strategy Pattern"| DBStrategy["DBStrategy Interface"]
-    DBStrategy -->|"Relational Driver"| MariaDB[("MariaDB (:3306)")]
-    DBStrategy -->|"NoSQL Driver"| MongoDB[("MongoDB (:27017)")]
+    Flask -->|"Strategy Pattern"| DBStrategy["DBStrategy (Abstract Interface)"]
+    DBStrategy --> MariaDBStrategy["MariaDBStrategy"]
+    DBStrategy --> MongoDBStrategy["MongoDBStrategy"]
+    MariaDBStrategy -->|"Relational Driver"| MariaDB[("MariaDB (:3306)")]
+    MongoDBStrategy -->|"NoSQL Driver"| MongoDB[("MongoDB (:27017)")]
 ```
 
 ## Engineering Deep Dives
@@ -58,12 +60,45 @@ flowchart TD
 - **Enterprise Design System**: Clinical interfaces are built with Angular Material components styled for high-density medical workflows while maintaining WCAG AA accessibility compliance.
 - **Component Test Rigor**: Test suites leverage Vitest and Angular CDK/Material component test harnesses (`MatAutocompleteHarness`, `MatStepperHarness`) with zoneless asynchronous stabilization (`await fixture.whenStable()`). Direct method spying on hexagonal ports is prohibited in favor of realistic adapter stubs and observable DOM interactions. Refer to [ADR 0003: Frontend Testing Standards and Harnesses](docs/adr/0003-frontend-testing-standards-and-harnesses.md).
 
+<details>
+<summary>Architectural Context: Frontend Testing Standards & Harnesses (ADR 0003)</summary>
+
+CareBase enforces realistic, interaction-driven frontend testing through Angular CDK/Material component test harnesses (`TestbedHarnessEnvironment`), `RouterTestingHarness`, and zoneless asynchronous stabilization (`await fixture.whenStable()`). Manual `fixture.detectChanges()`, ad-hoc timeouts, router spying, and collaborator call-count assertions are prohibited.
+
+To protect hexagonal architecture boundaries, test suites are prohibited from spying on port methods (`vi.spyOn`). Instead, tests run against `InMemoryHospitalDataAdapter` or provide dedicated failing adapter stubs through Dependency Injection (`{ provide: HOSPITAL_DATA_ACCESS, useValue: failingAdapter }`). In asynchronous reactive UI flows such as autocompletes, deterministic polling with `vi.waitFor` ensures signals and CDK overlay panels stabilize before interactions execute.
+
+For full architectural context, rationale, and examples, see [ADR 0003: Frontend Testing Standards and Harnesses](docs/adr/0003-frontend-testing-standards-and-harnesses.md).
+
+</details>
+
 ### Database Engineering & Migration
 
 - **Runtime Strategy Pattern**: All database interactions are mediated by an abstract `DBStrategy` interface in the Flask backend. The active implementation (`MariaDBStrategy` or `MongoDBStrategy`) can be swapped at runtime via the administrative interface without restarting the application container.
 - **Automated One-Way Migration**: An integrated migration pipeline transforms normalized relational tables from MariaDB into denormalized, document-oriented MongoDB collections, automatically re-structuring relational foreign keys into embedded document hierarchies. Refer to [ADR 0001: One-Way Migration and Independent SQL Seeding](docs/adr/0001-one-way-migration-and-independent-sql-seeding.md).
 - **MongoDB Computed Pattern**: To avoid costly aggregation pipelines (`$unwind` operations across nested appointment and treatment arrays) during reporting queries, doctor yearly earnings are pre-computed directly on Doctor documents (`kosten_pro_jahr.<year>`). Every new treatment write atomically updates both the patient record and the doctor's pre-computed total, ensuring $O(1)$ read performance for the Doctor Earnings Report. Refer to [ADR 0002: MongoDB Computed Pattern for Doctor Earnings](docs/adr/0002-mongodb-computed-pattern-for-doctor-earnings.md).
 - **Hybrid Appointment Collection**: Appointments are embedded within Patient documents for immediate chronological medical history retrieval. Concurrently, a dedicated root `Appointment` collection is maintained in MongoDB to facilitate fast 30-minute time slot collision detection during clerk scheduling without scanning all patient documents.
+
+<details>
+<summary>Architectural Context: One-Way Migration & Independent SQL Seeding (ADR 0001)</summary>
+
+In this dual-database architecture demonstration, data migration is designed as a one-way transformation pipeline that restructures relational data into MongoDB documents and permanently switches the active runtime strategy to MongoDB.
+
+To maintain demonstration consistency and support repeated migration trials, the synthetic data seeding workflow ("Seed Database") intentionally targets MariaDB exclusively. Seeding MariaDB does not mutate existing MongoDB collections or switch the active strategy back, guaranteeing an isolated, reproducible relational baseline that can be repopulated and re-migrated at will.
+
+For full architectural context and implementation details, see [ADR 0001: One-Way Migration and Independent SQL Seeding](docs/adr/0001-one-way-migration-and-independent-sql-seeding.md).
+
+</details>
+
+<details>
+<summary>Architectural Context: MongoDB Computed Pattern for Doctor Earnings (ADR 0002)</summary>
+
+While relational MariaDB calculates annual doctor earnings using SQL joins across doctors, appointments, and treatments, querying this in document-oriented MongoDB would require compute-intensive aggregation pipelines with `$unwind` stages over nested appointment and treatment arrays.
+
+To ensure $O(1)$ read latency for the Doctor Earnings Report, the system applies the MongoDB Computed Pattern. Doctor documents store pre-computed yearly earnings directly (`kosten_pro_jahr.<year>`). Every clinical treatment write atomically updates the patient document and increments the doctor's pre-computed total, trading minimal write latency for immediate, aggregation-free read performance.
+
+For full architectural context and schema trade-offs, see [ADR 0002: MongoDB Computed Pattern for Doctor Earnings](docs/adr/0002-mongodb-computed-pattern-for-doctor-earnings.md).
+
+</details>
 
 ### DevOps & Multi-Container Infrastructure
 
@@ -114,21 +149,23 @@ _Figure 2: Clinical analytics dashboard visualizing Consultation Frequency Repor
 
 ## Verification & Testing
 
-The frontend test suite validates components, services, and integration workflows using Vitest:
+CareBase enforces automated code quality checks, TypeScript compilation, Prettier formatting, and Vitest component testing. All verification commands can be executed from the repository root:
 
 ```bash
-# Execute frontend unit and harness tests
-cd frontend/carebase-frontend
-npm run test:run
-```
-
-From the repository root, the test suite can also be executed directly:
-
-```bash
+# Execute frontend unit and component harness tests
 npm --prefix frontend/carebase-frontend run test:run
+
+# Verify TypeScript compilation and type safety
+npm --prefix frontend/carebase-frontend run typecheck
+
+# Check Prettier code formatting
+npx --prefix frontend/carebase-frontend prettier --check README.md
+
+# Run pre-commit checks across staged files
+npx --prefix frontend/carebase-frontend lint-staged
 ```
 
-Repository guardrails enforce code quality, Prettier formatting, and TypeScript compilation before commits are accepted.
+Automated Husky pre-commit hooks enforce formatting, type checking, and test suite execution prior to accepting any commit.
 
 ## Architecture Evolution
 
