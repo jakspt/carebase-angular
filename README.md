@@ -10,28 +10,27 @@
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx&logoColor=white)
 ![Vitest](https://img.shields.io/badge/Vitest-Testing-6E9F18?logo=vitest&logoColor=white)
 
-CareBase is a hospital information system designed to demonstrate enterprise web architecture, polyglot persistence, and containerized deployment. The application couples a modern Angular 22 Single Page Application with a Python Flask REST API, orchestrated across five Docker containers behind an Nginx reverse proxy.
+CareBase is a hospital information system designed to demonstrate enterprise web architecture, polyglot persistence, and containerized deployment. The application couples a modern Angular 22 Single Page Application with a Python Flask REST API, orchestrated across five Docker containers behind an Nginx reverse proxy. It is a refactored version of my university project, which originally used Jinja2 HTML templates for the frontend.
+
+**insert landing page image here**
 
 ## Live Demonstration
 
-The application can be evaluated immediately without local installation:
-
-**[Launch Live Demo](https://jakspt.github.io/carebase)**
+**[Launch a Live Demo](https://jakspt.github.io/carebase)**
 
 <details>
-<summary>Architectural Note: Zero-Backend Static Client Bundle</summary>
+<summary>How this works</summary>
 
-CareBase implements Hexagonal Architecture (Ports and Adapters) at the frontend data boundary. Component and feature layers depend strictly on the abstract `HospitalDataAccess` port (`HOSPITAL_DATA_ACCESS` injection token).
-
-In the containerized production stack, Angular Dependency Injection provides `HttpHospitalDataAdapter`, which dispatches HTTP requests to the Flask REST API. For the static live demonstration hosted on GitHub Pages, the application configures `InMemoryHospitalDataAdapter`. This adapter fulfills the identical port contract entirely in memory using reactive Angular Signals, enabling complete clinical workflows (patient search, conflict-free appointment scheduling, treatment documentation, and analytics reports) with zero server or database dependencies.
-
+By implemementing a Hexagonal Architecture (Ports and Adapters), the frontend depends entirely on the abstract `HospitalDataAccess` port.
+While in production, a `HttpHospitalDataAdapter` which dispatches requests to the Flask backend is injected, this demo uses a `InMemoryHospitalDataAdapter`.
+This adapter fulfills the port's contract entirely in memory (by storing a static array of doctors, patients and appointments), which enables testing with zero server or database dependencies. It also enables a lightweight live demo which does not require spinning up the backend and database Docker containers.
 </details>
 
 ## Executive Summary
 
 CareBase demonstrates end-to-end full-stack software engineering across three foundational technical pillars:
 
-- **Modern Angular Architecture**: Angular 22 Single Page Application built on fine-grained reactive Signals, Hexagonal Architecture with decoupled Ports and Adapters, an accessible Angular Material design system, and Vitest component test harnesses.
+- **Modern Angular Architecture**: Angular 22 Single Page Application built on reactive Signals, Hexagonal Architecture with decoupled Ports and Adapters, an accessible Angular Material design system, and Vitest component test harnesses.
 - **Polyglot Persistence & Data Migration**: Runtime Strategy Pattern enabling zero-downtime persistence switching between relational MariaDB and document-oriented MongoDB, supported by an automated one-way migration engine and MongoDB performance optimization patterns.
 - **DevOps & Multi-Container Infrastructure**: 5-container Docker Compose topology orchestrated with healthcheck dependency chains, Nginx reverse proxy routing, and persistent volume storage.
 
@@ -57,48 +56,15 @@ flowchart TD
 
 - **Fine-Grained Reactivity**: State management and asynchronous data lifecycles rely on Angular Signals (`signal`, `computed`, `resource`), ensuring optimal change detection performance and reactive data propagation without manual RxJS subscription handling.
 - **Hexagonal Architecture (Ports & Adapters)**: Frontend domain logic interacts with data access boundaries through the `HospitalDataAccess` port. The system decouples consumers from transport details, allowing `HttpHospitalDataAdapter` and `InMemoryHospitalDataAdapter` to be swapped seamlessly across production, testing, and static preview environments.
-- **Enterprise Design System**: Clinical interfaces are built with Angular Material components styled for high-density medical workflows while maintaining WCAG AA accessibility compliance.
-- **Component Test Rigor**: Test suites leverage Vitest and Angular CDK/Material component test harnesses (`MatAutocompleteHarness`, `MatStepperHarness`) with zoneless asynchronous stabilization (`await fixture.whenStable()`). Direct method spying on hexagonal ports is prohibited in favor of realistic adapter stubs and observable DOM interactions. Refer to [ADR 0003: Frontend Testing Standards and Harnesses](docs/adr/0003-frontend-testing-standards-and-harnesses.md).
-
-<details>
-<summary>Architectural Context: Frontend Testing Standards & Harnesses (ADR 0003)</summary>
-
-CareBase enforces realistic, interaction-driven frontend testing through Angular CDK/Material component test harnesses (`TestbedHarnessEnvironment`), `RouterTestingHarness`, and zoneless asynchronous stabilization (`await fixture.whenStable()`). Manual `fixture.detectChanges()`, ad-hoc timeouts, router spying, and collaborator call-count assertions are prohibited.
-
-To protect hexagonal architecture boundaries, test suites are prohibited from spying on port methods (`vi.spyOn`). Instead, tests run against `InMemoryHospitalDataAdapter` or provide dedicated failing adapter stubs through Dependency Injection (`{ provide: HOSPITAL_DATA_ACCESS, useValue: failingAdapter }`). In asynchronous reactive UI flows such as autocompletes, deterministic polling with `vi.waitFor` ensures signals and CDK overlay panels stabilize before interactions execute.
-
-For full architectural context, rationale, and examples, see [ADR 0003: Frontend Testing Standards and Harnesses](docs/adr/0003-frontend-testing-standards-and-harnesses.md).
-
-</details>
+- **Enterprise Design System**: User interfaces are built with Angular Material components styled for high-density medical workflows while maintaining WCAG AA accessibility compliance.
+- **Component Test Rigor**: Test suites leverage Vitest and Angular CDK/Material component test harnesses with zoneless asynchronous stabilization. Direct method spying on hexagonal ports is prohibited in favor of realistic adapter stubs and observable DOM interactions.
 
 ### Database Engineering & Migration
 
 - **Runtime Strategy Pattern**: All database interactions are mediated by an abstract `DBStrategy` interface in the Flask backend. The active implementation (`MariaDBStrategy` or `MongoDBStrategy`) can be swapped at runtime via the administrative interface without restarting the application container.
-- **Automated One-Way Migration**: An integrated migration pipeline transforms normalized relational tables from MariaDB into denormalized, document-oriented MongoDB collections, automatically re-structuring relational foreign keys into embedded document hierarchies. Refer to [ADR 0001: One-Way Migration and Independent SQL Seeding](docs/adr/0001-one-way-migration-and-independent-sql-seeding.md).
-- **MongoDB Computed Pattern**: To avoid costly aggregation pipelines (`$unwind` operations across nested appointment and treatment arrays) during reporting queries, doctor yearly earnings are pre-computed directly on Doctor documents (`kosten_pro_jahr.<year>`). Every new treatment write atomically updates both the patient record and the doctor's pre-computed total, ensuring $O(1)$ read performance for the Doctor Earnings Report. Refer to [ADR 0002: MongoDB Computed Pattern for Doctor Earnings](docs/adr/0002-mongodb-computed-pattern-for-doctor-earnings.md).
+- **Automated One-Way Migration**: An integrated migration pipeline transforms normalized relational tables from MariaDB into denormalized, document-oriented MongoDB collections, automatically re-structuring relational foreign keys into embedded document hierarchies.
+- **MongoDB Computed Pattern**: To avoid costly aggregation pipelines (`$unwind` operations across nested appointment and treatment arrays) during reporting queries, doctor yearly earnings are pre-computed directly on Doctor documents (`kosten_pro_jahr.<year>`). Every new treatment write atomically updates both the patient record and the doctor's pre-computed total, ensuring $O(1)$ read performance for the Doctor Earnings Report.
 - **Hybrid Appointment Collection**: Appointments are embedded within Patient documents for immediate chronological medical history retrieval. Concurrently, a dedicated root `Appointment` collection is maintained in MongoDB to facilitate fast 30-minute time slot collision detection during clerk scheduling without scanning all patient documents.
-
-<details>
-<summary>Architectural Context: One-Way Migration & Independent SQL Seeding (ADR 0001)</summary>
-
-In this dual-database architecture demonstration, data migration is designed as a one-way transformation pipeline that restructures relational data into MongoDB documents and permanently switches the active runtime strategy to MongoDB.
-
-To maintain demonstration consistency and support repeated migration trials, the synthetic data seeding workflow ("Seed Database") intentionally targets MariaDB exclusively. Seeding MariaDB does not mutate existing MongoDB collections or switch the active strategy back, guaranteeing an isolated, reproducible relational baseline that can be repopulated and re-migrated at will.
-
-For full architectural context and implementation details, see [ADR 0001: One-Way Migration and Independent SQL Seeding](docs/adr/0001-one-way-migration-and-independent-sql-seeding.md).
-
-</details>
-
-<details>
-<summary>Architectural Context: MongoDB Computed Pattern for Doctor Earnings (ADR 0002)</summary>
-
-While relational MariaDB calculates annual doctor earnings using SQL joins across doctors, appointments, and treatments, querying this in document-oriented MongoDB would require compute-intensive aggregation pipelines with `$unwind` stages over nested appointment and treatment arrays.
-
-To ensure $O(1)$ read latency for the Doctor Earnings Report, the system applies the MongoDB Computed Pattern. Doctor documents store pre-computed yearly earnings directly (`kosten_pro_jahr.<year>`). Every clinical treatment write atomically updates the patient document and increments the doctor's pre-computed total, trading minimal write latency for immediate, aggregation-free read performance.
-
-For full architectural context and schema trade-offs, see [ADR 0002: MongoDB Computed Pattern for Doctor Earnings](docs/adr/0002-mongodb-computed-pattern-for-doctor-earnings.md).
-
-</details>
 
 ### DevOps & Multi-Container Infrastructure
 
