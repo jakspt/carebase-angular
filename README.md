@@ -1,95 +1,137 @@
-# CareBase ‒ Hospital Information System (SQL & NoSQL)
+# CareBase - Hospital Information System
 
+![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-Backend-000000?logo=flask&logoColor=white)
-
 ![MariaDB](https://img.shields.io/badge/MariaDB-Relational-003545?logo=mariadb&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-NoSQL-47A248?logo=mongodb&logoColor=white)
-
-![Bootstrap](https://img.shields.io/badge/Bootstrap-Frontend-7952B3?logo=bootstrap&logoColor=white)
-![Chart.js](https://img.shields.io/badge/Chart.js-Analytics-FF6384?logo=chartdotjs&logoColor=white)
-
-![Docker](https://img.shields.io/badge/Docker_Compose-Orchestration-2496ED?logo=docker&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-Orchestration-2496ED?logo=docker&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-Testing-6E9F18?logo=vitest&logoColor=white)
 
-CareBase is a web-based hospital information system developed as part of a university course.
+CareBase is a hospital information system designed to demonstrate enterprise web architecture, polyglot persistence, and containerized deployment. The application couples a modern Angular 22 Single Page Application with a Python Flask REST API, orchestrated across five Docker containers behind an Nginx reverse proxy.
 
-The core objective of this project was to implement a flexible application capable of operating on both a Relational Database Management System (RDBMS) and a NoSQL database, including a feature for live data migration and seamless runtime switching between technologies using the Strategy Pattern.
+## Live Demonstration
 
-## Features
+The application can be evaluated immediately without local installation:
 
-- **Dual-Database Support**: The system runs fully functional on either MariaDB (SQL) or MongoDB (NoSQL).
-- **Live Data Migration**: An integrated migration engine transforms relational SQL data into document-oriented JSON structures, automatically handling embedding and denormalization.
-- **Role-Based Access Control**:
-  - Doctor ("Arzt"): Manage patient treatments and view medical history.
-  - Clerk ("Sachbearbeiter"): Schedule and manage appointments with collision detection.
-  - Admin: Generate synthetic test data (utilizing the `faker` library and optimized bulk inserts via `executemany`).
-- **Analytics Dashboard**
-  - **Report 1**: Total treatment costs per doctor (aggregated by year).
-  - **Report 2**: Patient visit frequency analysis per doctor
+**[Launch Live Demo](https://jakspt.github.io/carebase)**
 
-![alt text](demo/usecase_demo.gif)
-![alt text](demo/mig_demo.gif)
-![alt text](demo/report_demo.gif)
+<details>
+<summary>Architectural Note: Zero-Backend Static Client Bundle</summary>
 
-## Tech Stack & Architecture
+CareBase implements Hexagonal Architecture (Ports and Adapters) at the frontend data boundary. Component and feature layers depend strictly on the abstract `HospitalDataAccess` port (`HOSPITAL_DATA_ACCESS` injection token).
 
-The entire infrastructure is containerized and orchestrated via Docker Compose:
+In the containerized production stack, Angular Dependency Injection provides `HttpHospitalDataAdapter`, which dispatches HTTP requests to the Flask REST API. For the static live demonstration hosted on GitHub Pages, the application configures `InMemoryHospitalDataAdapter`. This adapter fulfills the identical port contract entirely in memory using reactive Angular Signals, enabling complete clinical workflows (patient search, conflict-free appointment scheduling, treatment documentation, and analytics reports) with zero server or database dependencies.
 
-- **Application**: Python Flask (Backend) with Jinja2 Templates, styled with Bootstrap CSS (Frontend).
-- **Databases**:
-  - **MariaDB**: For the relational implementation.
-  - **MongoDB**: For the document-oriented implementation.
-- **Web Server**: Nginx (Reverse Proxy for HTTPS with self-signed certificates).
+</details>
 
-### Software Design Patterns
+## Executive Summary
 
-We implemented a robust architecture to decouple the application logic from the database layer:
+CareBase demonstrates end-to-end full-stack software engineering across three foundational technical pillars:
 
-- **Repository Pattern**: The application interacts with the database solely through an abstract interface (`DBStrategy`). This abstracts the complex data access logic (SQL queries vs. MongoDB aggregations) into clean methods like `get_patient_details` or `add_treatment`, keeping the frontend code clean and storage-agnostic.
-- **Strategy Pattern**: To enable the live switching requirement, the Repository is implemented as a Strategy. The application holds a reference to the abstract strategy, while the concrete implementation (`MariaDBStrategy` or `MongoDBStrategy`) can be swapped at runtime via the migration interface.
+- **Modern Angular Architecture**: Angular 22 Single Page Application built on fine-grained reactive Signals, Hexagonal Architecture with decoupled Ports and Adapters, an accessible Angular Material design system, and Vitest component test harnesses.
+- **Polyglot Persistence & Data Migration**: Runtime Strategy Pattern enabling zero-downtime persistence switching between relational MariaDB and document-oriented MongoDB, supported by an automated one-way migration engine and MongoDB performance optimization patterns.
+- **DevOps & Multi-Container Infrastructure**: 5-container Docker Compose topology orchestrated with healthcheck dependency chains, Nginx reverse proxy routing, and persistent volume storage.
 
-## Database Design Decisions
+## System Architecture
 
-### SQL Implementation (MariaDB)
+The containerized topology separates client delivery, API routing, application logic, and polyglot persistence layers behind an Nginx gateway.
 
-The relational model follows a strictly normalized schema ensuring data consistency, involving entities such as Person, Patient, Doctor, Appointment, and Treatment.
+```mermaid
+flowchart TD
+    Client["Client Browser"] -->|"HTTP :80"| Nginx["Nginx Reverse Proxy (:80)"]
+    Nginx -->|"Path: /"| Angular["Angular SPA (carebase_frontend:80)"]
+    Nginx -->|"Path: /api/"| Flask["Flask REST API (carebase:5000)"]
+    Flask -->|"Strategy Pattern"| DBStrategy["DBStrategy Interface"]
+    DBStrategy -->|"Relational Driver"| MariaDB[("MariaDB (:3306)")]
+    DBStrategy -->|"NoSQL Driver"| MongoDB[("MongoDB (:27017)")]
+```
 
-### NoSQL Implementation (MongoDB)
+## Engineering Deep Dives
 
-For the migration to MongoDB, we optimized the schema for read performance by leveraging denormalization and specific NoSQL patterns:
+### Frontend Architecture
 
-- **Embedding over Referencing**:
-  - Treatments and Appointments were embedded directly into the Patient document to reduce the need for expensive $lookup (Join) operations.
-  - Department details are embedded within the Doctor document as they rarely change.
-- **Computed Pattern**:
-  - For the cost analytics report, aggregated sums (e.g., costs_2025) are stored directly in the Doctor document and incremented on every write. This avoids computationally expensive aggregation pipelines during read time.
-- **Hybrid Approach for Appointments**:
-  - Although appointments are embedded in patients, a separate Appointment collection was maintained. This allows the system to efficiently query for free time slots (Clerk Use Case) without needing to `$unwind` thousands of patient documents, balancing storage redundancy against query performance .
+- **Fine-Grained Reactivity**: State management and asynchronous data lifecycles rely on Angular Signals (`signal`, `computed`, `resource`), ensuring optimal change detection performance and reactive data propagation without manual RxJS subscription handling.
+- **Hexagonal Architecture (Ports & Adapters)**: Frontend domain logic interacts with data access boundaries through the `HospitalDataAccess` port. The system decouples consumers from transport details, allowing `HttpHospitalDataAdapter` and `InMemoryHospitalDataAdapter` to be swapped seamlessly across production, testing, and static preview environments.
+- **Enterprise Design System**: Clinical interfaces are built with Angular Material components styled for high-density medical workflows while maintaining WCAG AA accessibility compliance.
+- **Component Test Rigor**: Test suites leverage Vitest and Angular CDK/Material component test harnesses (`MatAutocompleteHarness`, `MatStepperHarness`) with zoneless asynchronous stabilization (`await fixture.whenStable()`). Direct method spying on hexagonal ports is prohibited in favor of realistic adapter stubs and observable DOM interactions. Refer to [ADR 0003: Frontend Testing Standards and Harnesses](docs/adr/0003-frontend-testing-standards-and-harnesses.md).
 
-## Setup & Usage
+### Database Engineering & Migration
 
-Prerequisites: Docker and Docker Compose must be installed.
+- **Runtime Strategy Pattern**: All database interactions are mediated by an abstract `DBStrategy` interface in the Flask backend. The active implementation (`MariaDBStrategy` or `MongoDBStrategy`) can be swapped at runtime via the administrative interface without restarting the application container.
+- **Automated One-Way Migration**: An integrated migration pipeline transforms normalized relational tables from MariaDB into denormalized, document-oriented MongoDB collections, automatically re-structuring relational foreign keys into embedded document hierarchies. Refer to [ADR 0001: One-Way Migration and Independent SQL Seeding](docs/adr/0001-one-way-migration-and-independent-sql-seeding.md).
+- **MongoDB Computed Pattern**: To avoid costly aggregation pipelines (`$unwind` operations across nested appointment and treatment arrays) during reporting queries, doctor yearly earnings are pre-computed directly on Doctor documents (`kosten_pro_jahr.<year>`). Every new treatment write atomically updates both the patient record and the doctor's pre-computed total, ensuring $O(1)$ read performance for the Doctor Earnings Report. Refer to [ADR 0002: MongoDB Computed Pattern for Doctor Earnings](docs/adr/0002-mongodb-computed-pattern-for-doctor-earnings.md).
+- **Hybrid Appointment Collection**: Appointments are embedded within Patient documents for immediate chronological medical history retrieval. Concurrently, a dedicated root `Appointment` collection is maintained in MongoDB to facilitate fast 30-minute time slot collision detection during clerk scheduling without scanning all patient documents.
 
-1. **Clone the repository**
+### DevOps & Multi-Container Infrastructure
 
-    ```bash
-    git clone https://github.com/jakspt/carebase.git
-    cd carebase
-    ```
+- **5-Service Container Topology**: Orchestrated using [compose.yaml](compose.yaml), coordinating `nginx` (reverse proxy), `frontend` (Angular SPA), `web` (Flask REST API), `mariadb` (relational database), and `mongodb` (document database).
+- **Healthcheck Dependency Chains**: Service startup order is enforced through health checks. The `web` service waits for `condition: service_healthy` on both `mariadb` (`healthcheck.sh`) and `mongodb` (`mongosh ping`) prior to starting API workers.
+- **Reverse Proxy Routing**: Nginx operates as the central entrypoint on port 80, routing API traffic (`/api/`) to the Flask container and all client routes (`/`) to the Angular SPA, with configured proxy timeouts (120s) and SPA route fallback handling.
+- **Persistent Data Storage**: Database volumes (`mariadb_data` and `mongodb_data`) guarantee data persistence across container rebuilds and teardowns.
 
-2. **Start the system**
+## User Interface & Clinical Workflows
 
-    ```bash
-    docker compose up
-    ```
+![Appointment Scheduling Interface](demo/scheduling-demo.png)
+_Figure 1: Clerk appointment scheduling interface featuring multi-step intake and real-time 30-minute time slot availability._
 
-    The application will be accessible at <https://localhost>.
+![Clinical Analytics Dashboard](demo/analytics-demo.png)
+_Figure 2: Clinical analytics dashboard visualizing Consultation Frequency Reports and doctor yearly earnings._
 
-3. **Generate Data**
+## Quickstart
 
-    Navigate to the Admin panel in the browser and click "Fill Database" ("Datenbank füllen") to generate synthetic test data.
+### Prerequisites
 
-4. **Execute Migration**
+- Docker and Docker Compose
 
-    After testing the SQL functionality, click "Execute Migration" ("Migration ausführen") to transform the data and switch the active backend strategy to MongoDB. Note: This is a one-way process for this demonstration.
+### 3-Step Setup
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone https://github.com/jakspt/carebase.git
+   cd carebase
+   ```
+
+2. **Start the multi-container stack**:
+
+   ```bash
+   docker compose up
+   ```
+
+3. **Access the application**:
+   Open [http://localhost](http://localhost) in your browser.
+
+### User Role Matrix
+
+| Role       | Domain Scope & Core Capabilities                                                                              | Primary Clinical Actions                                                                                                                            |
+| :--------- | :------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Doctor** | Review patient medical histories, manage treatment records, and prescribe medications.                        | Search patients by name or SSN, view chronological appointment histories, record clinical treatments with medications and associated costs.         |
+| **Clerk**  | Manage patient scheduling and view administrative consultation analytics.                                     | Search available doctors and patients, reserve 30-minute time slots with conflict-free collision detection, inspect Consultation Frequency Reports. |
+| **Admin**  | Manage infrastructure demonstration state, synthetic test data generation, and runtime persistence migration. | Seed synthetic clinical data into MariaDB using `faker`, execute live one-way migration to MongoDB, swap active runtime persistence strategy.       |
+
+## Verification & Testing
+
+The frontend test suite validates components, services, and integration workflows using Vitest:
+
+```bash
+# Execute frontend unit and harness tests
+cd frontend/carebase-frontend
+npm run test:run
+```
+
+From the repository root, the test suite can also be executed directly:
+
+```bash
+npm --prefix frontend/carebase-frontend run test:run
+```
+
+Repository guardrails enforce code quality, Prettier formatting, and TypeScript compilation before commits are accepted.
+
+## Architecture Evolution
+
+CareBase originated as an academic proof-of-concept exploring dual-database persistence in a monolithic Python Flask application using server-rendered Jinja2 templates and Bootstrap CSS. While this initial prototype validated the database Strategy Pattern and data migration mechanics, coupling presentation directly to the server framework created friction in state management, responsive UI updates, and automated testability.
+
+To elevate the system to enterprise standards, the presentation layer was extracted and completely redesigned into a decoupled Angular 22 Single Page Application. This architectural evolution introduced fine-grained reactivity with Angular Signals, Hexagonal Architecture to isolate data access concerns, comprehensive component test harnesses using Vitest, and an Nginx reverse proxy architecture. The result is a scalable, decoupled system demonstrating both polyglot database design and modern frontend engineering practices.
