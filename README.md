@@ -10,7 +10,7 @@
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx&logoColor=white)
 ![Vitest](https://img.shields.io/badge/Vitest-Testing-6E9F18?logo=vitest&logoColor=white)
 
-CareBase is a hospital information system designed to demonstrate enterprise web architecture, polyglot persistence, and containerized deployment. The application couples a modern Angular 22 Single Page Application with a Python Flask REST API, orchestrated across five Docker containers behind an Nginx reverse proxy. It is a refactored version of my university project, which originally used Jinja2 HTML templates for the frontend.
+CareBase is a hospital information system designed to demonstrate enterprise web architecture, polyglot persistence, and containerized deployment. The application couples a modern Angular 22 Single Page Application with a Python Flask REST API, orchestrated across five Docker containers behind an Nginx reverse proxy. It is [a refactored version of my university project](https://github.com/jakspt/carebase), which originally used Jinja2 HTML templates for the frontend.
 
 **insert landing page image here**
 
