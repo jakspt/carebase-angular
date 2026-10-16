@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
-import { ClerkService } from '../services/clerk-service';
+import { ActorSession } from '../services/actor-session';
 import { Clerk, Doctor, Patient } from '../models/models';
 import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
 import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
@@ -12,7 +12,7 @@ import {
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;
-  let clerkService: ClerkService;
+  let actorSession: ActorSession;
   let dataAccess: HospitalDataAccess;
   let snackBar: HeadlessSnackBar;
 
@@ -45,20 +45,20 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
     TestBed.configureTestingModule({
       providers: [
         AppointmentIntakeWorkflow,
-        ClerkService,
+        ActorSession,
         provideTestHospitalData(),
         provideTestOperationRunner(),
       ],
     });
 
     workflow = TestBed.inject(AppointmentIntakeWorkflow);
-    clerkService = TestBed.inject(ClerkService);
+    actorSession = TestBed.inject(ActorSession);
     dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
     snackBar = TestBed.inject(HeadlessSnackBar);
-    clerkService.setActiveClerk(mockClerk);
+    actorSession.setActiveClerk(mockClerk);
   });
 
-  it('should be created and reflect active clerk from ClerkService', () => {
+  it('should be created and reflect active clerk from ActorSession', () => {
     expect(workflow).toBeTruthy();
     expect(workflow.activeClerk()).toEqual(mockClerk);
   });
