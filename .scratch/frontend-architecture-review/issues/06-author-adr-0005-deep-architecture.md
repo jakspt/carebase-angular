@@ -4,9 +4,9 @@
 
 **Blocked by:** 01: Retire shallow DoctorService and ClerkService, 02: Extract pure Time Slot allocation engine and deepen in-memory adapter, 03: Extract pure Doctor earnings engine and deepen in-memory adapter, 04: Align Consultation Frequency Report domain naming and extract pure aggregation engine, 05: Collapse artificial seam in Appointment Intake and deduplicate test suites
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] ADR 0005 is created under `docs/adr/0005-frontend-deepening-and-seam-simplification.md`.
-- [ ] The document details the context, problem statement, options considered, decisions taken, consequences, and testing standards.
-- [ ] The rationale for extracting pure calculation engines and eliminating shallow forwarder proxies is clearly explained.
-- [ ] The testing boundaries between pure domain engines, hexagonal adapters, and CDK component harnesses are defined.
+- [x] ADR 0005 is created under `docs/adr/0005-frontend-deepening-and-seam-simplification.md`.
+- [x] The document details the context, problem statement, options considered, decisions taken, consequences, and testing standards.
+- [x] The rationale for extracting pure calculation engines and eliminating shallow forwarder proxies is clearly explained.
+- [x] The testing boundaries between pure domain engines, hexagonal adapters, and CDK component harnesses are defined.
