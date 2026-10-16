@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Retire shallow DoctorService and ClerkService
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] The Appointment Intake template binds directly to workflow state and methods where appropriate, eliminating pass-through forwarders on the component class.
-- [ ] The Appointment Intake component class retains only DOM, focus, and view-coordination responsibilities (e.g. stepper resetting and input focusing).
-- [ ] The component harness test suite remains the authoritative end-to-end behavioral test suite for the intake stepper per ADR 0003.
-- [ ] Redundant duplicate multi-step flow scenarios in the headless workflow test suite are pruned, leaving focused unit checks for workflow-specific state transitions.
-- [ ] The appointment scheduling workflow (patient search, doctor selection, slot booking, conflict handling, and reset) behaves identically for the user.
+- [x] The Appointment Intake template binds directly to workflow state and methods where appropriate, eliminating pass-through forwarders on the component class.
+- [x] The Appointment Intake component class retains only DOM, focus, and view-coordination responsibilities (e.g. stepper resetting and input focusing).
+- [x] The component harness test suite remains the authoritative end-to-end behavioral test suite for the intake stepper per ADR 0003.
+- [x] Redundant duplicate multi-step flow scenarios in the headless workflow test suite are pruned, leaving focused unit checks for workflow-specific state transitions.
+- [x] The appointment scheduling workflow (patient search, doctor selection, slot booking, conflict handling, and reset) behaves identically for the user.

@@ -8,7 +8,7 @@
 
     <!-- Active Clerk Session Header -->
     <div class="clerk-context-box">
-      @if (activeClerk(); as clerk) {
+      @if (workflow.activeClerk(); as clerk) {
         <div
           class="active-clerk-card active-clerk-badge"
           matTooltip="Logged-in Clerk attached to bookings"
@@ -26,7 +26,7 @@
             (click)="clearClerk()"
             class="change-clerk-btn"
             aria-label="Change acting clerk"
-            [disabled]="isLocked()"
+            [disabled]="workflow.isLocked()"
           >
             <mat-icon aria-hidden="true">edit</mat-icon>
             <span>Change</span>
@@ -40,8 +40,8 @@
               #clerkInput
               matInput
               placeholder="Search clerk name/SSN..."
-              [value]="clerkSearchQuery()"
-              (input)="onClerkSearchInput($event)"
+              [value]="workflow.clerkSearchQuery()"
+              (input)="workflow.setClerkSearchInput($any($event.target).value)"
               [matAutocomplete]="clerkAuto"
             />
             <mat-icon matPrefix>badge</mat-icon>
@@ -49,9 +49,9 @@
           <mat-autocomplete
             #clerkAuto="matAutocomplete"
             [displayWith]="displayClerk"
-            (optionSelected)="selectClerk($event.option.value)"
+            (optionSelected)="workflow.selectClerk($event.option.value)"
           >
-            @for (clerk of availableClerks(); track clerk.ssn) {
+            @for (clerk of workflow.availableClerks(); track clerk.ssn) {
               <mat-option [value]="clerk"> {{ clerk.name }} (SSN: {{ clerk.ssn }}) </mat-option>
             }
           </mat-autocomplete>
@@ -64,7 +64,7 @@
 
   <!-- Reusable Persistent Clinical Summary Strip Across Active Steps -->
   <ng-template #clinicalSummaryStrip>
-    @if (selectedPatient(); as patient) {
+    @if (workflow.selectedPatient(); as patient) {
       <div class="clinical-summary-strip" role="region" aria-label="Clinical Context Summary">
         <!-- Patient Column -->
         <div class="summary-col patient-col">
@@ -93,14 +93,14 @@
           <div class="summary-col-content">
             <div class="col-primary-line">
               <span class="col-prefix">Doctor:</span>
-              @if (selectedDoctor(); as doc) {
+              @if (workflow.selectedDoctor(); as doc) {
                 <span class="col-name">{{ doc.name }}</span>
               } @else {
                 <span class="col-name unselected-doc">Not selected</span>
               }
             </div>
             <div class="col-secondary-line">
-              @if (selectedDoctor(); as doc) {
+              @if (workflow.selectedDoctor(); as doc) {
                 <span class="col-meta">{{ doc.specialty || doc.department }}</span>
               } @else {
                 <span class="col-meta unselected-doc">Pending selection</span>
@@ -115,7 +115,7 @@
   <!-- Stepper Workflow -->
   <mat-stepper linear #stepper class="stepper-content">
     <!-- ── Step 1: Find Patient ── -->
-    <mat-step [completed]="selectedPatient() !== null" [editable]="!isLocked()">
+    <mat-step [completed]="workflow.selectedPatient() !== null" [editable]="!workflow.isLocked()">
       <ng-template matStepLabel>Find Patient</ng-template>
 
       <div class="step-container">
@@ -128,10 +128,10 @@
           <input
             matInput
             placeholder="Type at least 2 characters (e.g. Maria or 2041)..."
-            [value]="patientInputValue()"
-            (input)="onPatientSearchInput($event)"
+            [value]="workflow.patientInputValue()"
+            (input)="workflow.setPatientSearchInput($any($event.target).value)"
             [matAutocomplete]="patientAuto"
-            [disabled]="isLocked()"
+            [disabled]="workflow.isLocked()"
           />
           <mat-icon matPrefix>search</mat-icon>
           <mat-hint>Debounced query searches registered patients</mat-hint>
@@ -140,9 +140,9 @@
         <mat-autocomplete
           #patientAuto="matAutocomplete"
           [displayWith]="displayPatient"
-          (optionSelected)="selectPatient($event.option.value)"
+          (optionSelected)="workflow.selectPatient($event.option.value)"
         >
-          @if (showPatientSpinner()) {
+          @if (workflow.showPatientSpinner()) {
             <mat-option disabled>
               <div class="inline-loading">
                 <mat-spinner diameter="18"></mat-spinner>
@@ -150,13 +150,13 @@
               </div>
             </mat-option>
           } @else if (
-            !patientSearchResults.isLoading() &&
-            patients().length === 0 &&
-            patientInputValue().trim().length >= 2
+            !workflow.patientSearchResults.isLoading() &&
+            workflow.patients().length === 0 &&
+            workflow.patientInputValue().trim().length >= 2
           ) {
-            <mat-option disabled>No patients found matching "{{ patientInputValue() }}"</mat-option>
+            <mat-option disabled>No patients found matching "{{ workflow.patientInputValue() }}"</mat-option>
           } @else {
-            @for (patient of patients(); track patient.ssn) {
+            @for (patient of workflow.patients(); track patient.ssn) {
               <mat-option [value]="patient" class="patient-autocomplete-option">
                 <div class="patient-option-row">
                   <div class="patient-primary">
@@ -182,7 +182,7 @@
         </mat-autocomplete>
 
         <!-- Selected Patient Card -->
-        @if (selectedPatient(); as patient) {
+        @if (workflow.selectedPatient(); as patient) {
           <div class="selected-entity-card">
             <mat-icon class="entity-icon">person</mat-icon>
             <div class="entity-details">
@@ -209,7 +209,7 @@
             mat-flat-button
             color="primary"
             matStepperNext
-            [disabled]="!selectedPatient() || isLocked()"
+            [disabled]="!workflow.selectedPatient() || workflow.isLocked()"
           >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
@@ -218,7 +218,7 @@
     </mat-step>
 
     <!-- ── Step 2: Department & Doctor Selection ── -->
-    <mat-step [completed]="selectedDoctor() !== null" [editable]="!isLocked()">
+    <mat-step [completed]="workflow.selectedDoctor() !== null" [editable]="!workflow.isLocked()">
       <ng-template matStepLabel>Select Doctor</ng-template>
 
       <div class="step-container">
@@ -232,11 +232,11 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Hospital Department</mat-label>
           <mat-select
-            [value]="selectedDepartment()"
-            (selectionChange)="onDepartmentChange($event.value)"
+            [value]="workflow.selectedDepartment()"
+            (selectionChange)="workflow.selectDepartment($event.value)"
           >
             <mat-option value="">-- All Departments --</mat-option>
-            @for (dept of departments(); track dept) {
+            @for (dept of workflow.departments(); track dept) {
               <mat-option [value]="dept">{{ dept }}</mat-option>
             }
           </mat-select>
@@ -247,11 +247,11 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Attending Doctor</mat-label>
           <mat-select
-            [value]="selectedDoctor()"
+            [value]="workflow.selectedDoctor()"
             [compareWith]="compareDoctor"
-            (selectionChange)="onDoctorChange($event.value)"
+            (selectionChange)="workflow.selectDoctor($event.value)"
           >
-            @for (doc of filteredDoctors(); track doc.ssn) {
+            @for (doc of workflow.filteredDoctors(); track doc.ssn) {
               <mat-option [value]="doc">
                 {{ doc.name }} &bull; {{ doc.specialty || doc.department }} ({{ doc.position }})
               </mat-option>
@@ -261,7 +261,7 @@
         </mat-form-field>
 
         <!-- Selected Doctor Card -->
-        @if (selectedDoctor(); as doc) {
+        @if (workflow.selectedDoctor(); as doc) {
           <div class="selected-entity-card">
             <mat-icon class="entity-icon doctor">medical_information</mat-icon>
             <div class="entity-details">
@@ -278,14 +278,14 @@
         }
 
         <div class="step-actions">
-          <button mat-button matStepperPrevious [disabled]="isLocked()">
+          <button mat-button matStepperPrevious [disabled]="workflow.isLocked()">
             <mat-icon>arrow_back</mat-icon> Back
           </button>
           <button
             mat-flat-button
             color="primary"
             matStepperNext
-            [disabled]="!selectedDoctor() || isLocked()"
+            [disabled]="!workflow.selectedDoctor() || workflow.isLocked()"
           >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
@@ -294,7 +294,7 @@
     </mat-step>
 
     <!-- ── Step 3: Date & Time Slot Selection ── -->
-    <mat-step [completed]="selectedTimeSlot() !== null" [editable]="!isLocked()">
+    <mat-step [completed]="workflow.selectedTimeSlot() !== null" [editable]="!workflow.isLocked()">
       <ng-template matStepLabel>Select Date & Time</ng-template>
 
       <div class="step-container">
@@ -310,9 +310,9 @@
           <input
             matInput
             [matDatepicker]="picker"
-            [min]="minDate"
-            [value]="selectedDate()"
-            (dateChange)="onDateChange($event.value)"
+            [min]="workflow.minDate"
+            [value]="workflow.selectedDate()"
+            (dateChange)="workflow.selectDate($event.value)"
             placeholder="Choose consultation date"
           />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
@@ -323,33 +323,33 @@
         <!-- Time Slots Container -->
         <div class="slots-section">
           <div class="slots-header">
-            <h4>Available Time Slots for {{ selectedDate() | date: 'EEEE, MMMM d, y' }}</h4>
-            @if (selectedTimeSlot()) {
+            <h4>Available Time Slots for {{ workflow.selectedDate() | date: 'EEEE, MMMM d, y' }}</h4>
+            @if (workflow.selectedTimeSlot()) {
               <span class="selected-time-pill">
-                <mat-icon>schedule</mat-icon> {{ selectedTimeSlot() }}
+                <mat-icon>schedule</mat-icon> {{ workflow.selectedTimeSlot() }}
               </span>
             }
           </div>
 
           <!-- Debounced progress spinner (<250ms threshold) -->
-          @if (showSlotSpinner()) {
+          @if (workflow.showSlotSpinner()) {
             <div class="slot-loading-state">
               <mat-spinner diameter="32"></mat-spinner>
               <span>Checking doctor and patient availability...</span>
             </div>
-          } @else if (timeSlotsResource.isLoading()) {
+          } @else if (workflow.timeSlotsResource.isLoading()) {
             <div class="slot-loading-state silent-loading"></div>
-          } @else if (timeSlots().length === 0) {
+          } @else if (workflow.timeSlots().length === 0) {
             <div class="empty-state">
               <mat-icon>event_busy</mat-icon>
               <p>Please select a date to load available time slots.</p>
             </div>
-          } @else if (!hasAvailableSlots()) {
+          } @else if (!workflow.hasAvailableSlots()) {
             <div class="no-slots-banner" role="status" aria-live="polite">
               <mat-icon class="no-slots-icon" aria-hidden="true">event_busy</mat-icon>
               <div class="no-slots-content">
                 <strong class="no-slots-title">No available slots on this date.</strong>
-                @if (parsedNextAvailableDate(); as nextDate) {
+                @if (workflow.parsedNextAvailableDate(); as nextDate) {
                   <p class="no-slots-guidance">
                     <span class="next-available-label">
                       Next available: {{ nextDate | date: 'EEEE, MMM d' }}
@@ -358,8 +358,8 @@
                       type="button"
                       mat-stroked-button
                       class="next-available-btn"
-                      (click)="selectNextAvailableDate(nextDate)"
-                      [disabled]="isLocked()"
+                      (click)="workflow.selectNextAvailableDate(nextDate)"
+                      [disabled]="workflow.isLocked()"
                       [matTooltip]="
                         'Switch consultation date to ' + (nextDate | date: 'EEEE, MMMM d, y')
                       "
@@ -383,18 +383,18 @@
             <!-- Bounded scroll container preventing overflow -->
             <div class="time-slots-container">
               <div class="time-slots-grid">
-                @for (slot of timeSlots(); track slot.time) {
+                @for (slot of workflow.timeSlots(); track slot.time) {
                   <button
                     mat-stroked-button
                     type="button"
                     class="time-slot-btn"
-                    [class.slot-selected]="selectedTimeSlot() === slot.time"
+                    [class.slot-selected]="workflow.selectedTimeSlot() === slot.time"
                     [class.slot-available]="slot.available"
-                    [disabled]="!slot.available || isLocked()"
-                    (click)="selectTimeSlot(slot.time)"
+                    [disabled]="!slot.available || workflow.isLocked()"
+                    (click)="workflow.selectTimeSlot(slot.time)"
                   >
                     <mat-icon class="slot-icon">
-                      {{ selectedTimeSlot() === slot.time ? 'check_circle' : 'schedule' }}
+                      {{ workflow.selectedTimeSlot() === slot.time ? 'check_circle' : 'schedule' }}
                     </mat-icon>
                     <span>{{ slot.time }}</span>
                   </button>
@@ -405,14 +405,14 @@
         </div>
 
         <div class="step-actions">
-          <button mat-button matStepperPrevious [disabled]="isLocked()">
+          <button mat-button matStepperPrevious [disabled]="workflow.isLocked()">
             <mat-icon>arrow_back</mat-icon> Back
           </button>
           <button
             mat-flat-button
             color="primary"
             matStepperNext
-            [disabled]="!selectedTimeSlot() || isLocked()"
+            [disabled]="!workflow.selectedTimeSlot() || workflow.isLocked()"
           >
             Next <mat-icon iconPositionEnd>arrow_forward</mat-icon>
           </button>
@@ -421,16 +421,16 @@
     </mat-step>
 
     <!-- ── Step 4: Reason & Confirmation ── -->
-    <mat-step [completed]="bookingSuccess()" [editable]="!isLocked()">
+    <mat-step [completed]="workflow.bookingSuccess()" [editable]="!workflow.isLocked()">
       <ng-template matStepLabel>Confirm Booking</ng-template>
 
       <div class="step-container">
-        @if (bookingSuccess()) {
+        @if (workflow.bookingSuccess()) {
           <div class="success-box">
             <mat-icon class="success-icon">check_circle</mat-icon>
             <h3>Appointment Successfully Scheduled!</h3>
-            @if (createdAppointmentId()) {
-              <div class="appointment-id-badge">Appointment ID: #{{ createdAppointmentId() }}</div>
+            @if (workflow.createdAppointmentId()) {
+              <div class="appointment-id-badge">Appointment ID: #{{ workflow.createdAppointmentId() }}</div>
             }
             <p>
               The appointment has been recorded. Availability slots for the patient and doctor have
@@ -454,10 +454,10 @@
               matInput
               rows="3"
               placeholder="e.g. Routine cardiac checkup, Follow-up consultation, Symptoms discussion..."
-              [formField]="bookingForm.reason"
+              [formField]="workflow.bookingForm.reason"
             ></textarea>
-            @if (bookingForm.reason().touched() && bookingForm.reason().errors().length) {
-              <mat-error>{{ bookingForm.reason().errors()[0].message }}</mat-error>
+            @if (workflow.bookingForm.reason().touched() && workflow.bookingForm.reason().errors().length) {
+              <mat-error>{{ workflow.bookingForm.reason().errors()[0].message }}</mat-error>
             }
             <mat-hint>Clinical notes or patient concern</mat-hint>
           </mat-form-field>
@@ -472,56 +472,56 @@
             <div class="summary-grid">
               <div class="summary-item">
                 <span class="summary-label">Patient</span>
-                <span class="summary-val">{{ selectedPatient()?.name }}</span>
+                <span class="summary-val">{{ workflow.selectedPatient()?.name }}</span>
                 <span class="summary-sub"
-                  >SSN: {{ selectedPatient()?.ssn }} &bull; {{ selectedPatient()?.insurance }}</span
+                  >SSN: {{ workflow.selectedPatient()?.ssn }} &bull; {{ workflow.selectedPatient()?.insurance }}</span
                 >
               </div>
 
               <div class="summary-item">
                 <span class="summary-label">Doctor</span>
-                <span class="summary-val">{{ selectedDoctor()?.name }}</span>
+                <span class="summary-val">{{ workflow.selectedDoctor()?.name }}</span>
                 <span class="summary-sub"
-                  >{{ selectedDoctor()?.specialty }} ({{ selectedDoctor()?.department }})</span
+                  >{{ workflow.selectedDoctor()?.specialty }} ({{ workflow.selectedDoctor()?.department }})</span
                 >
               </div>
 
               <div class="summary-item">
                 <span class="summary-label">Date & Time</span>
-                <span class="summary-val">{{ selectedDate() | date: 'EEEE, MMMM d, y' }}</span>
-                <span class="summary-sub highlight-time">{{ selectedTimeSlot() }} (30 min)</span>
+                <span class="summary-val">{{ workflow.selectedDate() | date: 'EEEE, MMMM d, y' }}</span>
+                <span class="summary-sub highlight-time">{{ workflow.selectedTimeSlot() }} (30 min)</span>
               </div>
 
               <div class="summary-item">
                 <span class="summary-label">Acting Clerk</span>
                 <span class="summary-val">{{
-                  activeClerk() ? activeClerk()!.name : 'Unassigned'
+                  workflow.activeClerk() ? workflow.activeClerk()!.name : 'Unassigned'
                 }}</span>
-                @if (activeClerk()) {
-                  <span class="summary-sub">SSN: {{ activeClerk()!.ssn }}</span>
+                @if (workflow.activeClerk()) {
+                  <span class="summary-sub">SSN: {{ workflow.activeClerk()!.ssn }}</span>
                 }
               </div>
 
-              @if (reason().trim()) {
+              @if (workflow.reason().trim()) {
                 <div class="summary-item full-width-item">
                   <span class="summary-label">Consultation Reason</span>
-                  <span class="summary-val reason-text">{{ reason().trim() }}</span>
+                  <span class="summary-val reason-text">{{ workflow.reason().trim() }}</span>
                 </div>
               }
             </div>
           </div>
 
           <div class="step-actions">
-            <button mat-button matStepperPrevious [disabled]="isLocked()">
+            <button mat-button matStepperPrevious [disabled]="workflow.isLocked()">
               <mat-icon>arrow_back</mat-icon> Back
             </button>
             <button
               mat-flat-button
               color="primary"
               (click)="confirmBooking(stepper)"
-              [disabled]="isLocked() || !selectedTimeSlot() || bookingForm().invalid()"
+              [disabled]="workflow.isLocked() || !workflow.selectedTimeSlot() || workflow.bookingForm().invalid()"
             >
-              @if (isLocked()) {
+              @if (workflow.isLocked()) {
                 <div class="inline-loading">
                   <mat-spinner diameter="18"></mat-spinner>
                   <span>Booking Appointment...</span>

@@ -269,43 +269,52 @@ export class AppointmentIntakeWorkflow {
   // ── Commands / Actions ──
 
   setClerkSearchInput(query: string): void {
+    if (this.isLocked()) return;
     this.clerkSearchQuery.set(query);
   }
 
   selectClerk(clerk: Clerk): void {
+    if (this.isLocked()) return;
     this.actorSession.setActiveClerk(clerk);
     this.clerkSearchQuery.set('');
   }
 
   clearClerk(): void {
+    if (this.isLocked()) return;
     this.actorSession.setActiveClerk(null);
     this.clerkSearchQuery.set('');
   }
 
   setPatientSearchInput(value: string): void {
+    if (this.isLocked()) return;
     this._patientInputValue.set(value);
     this.patientSearchSubject$.next(value);
   }
 
   selectPatient(patient: Patient | null): void {
+    if (this.isLocked()) return;
     this._selectedPatient.set(patient);
     this._patientInputValue.set(patient ? `${patient.name} (SSN: ${patient.ssn})` : '');
     this._patientSearchQuery.set(patient ? patient.name : '');
   }
 
   selectDepartment(dept: string): void {
+    if (this.isLocked()) return;
     this._selectedDepartment.set(dept);
   }
 
   selectDoctor(doctor: Doctor | null): void {
+    if (this.isLocked()) return;
     this._selectedDoctor.set(doctor);
   }
 
   selectDate(date: Date | null): void {
+    if (this.isLocked()) return;
     this._selectedDate.set(date);
   }
 
   selectNextAvailableDate(dateVal?: string | Date | null): void {
+    if (this.isLocked()) return;
     const target = dateVal ?? this.parsedNextAvailableDate() ?? this.nextAvailableDate();
     if (!target) return;
     const targetDate = parseIsoDate(target);
@@ -313,6 +322,7 @@ export class AppointmentIntakeWorkflow {
   }
 
   selectTimeSlot(time: string): void {
+    if (this.isLocked()) return;
     if (this._selectedTimeSlot() === time) {
       this._selectedTimeSlot.set(null);
     } else {
@@ -321,6 +331,7 @@ export class AppointmentIntakeWorkflow {
   }
 
   setReason(reason: string): void {
+    if (this.isLocked()) return;
     this.appointmentNotes.set({ reason });
   }
 
@@ -412,6 +423,7 @@ export class AppointmentIntakeWorkflow {
   }
 
   reset(): void {
+    if (this.isLocked()) return;
     this._selectedPatient.set(null);
     this._patientInputValue.set('');
     this._patientSearchQuery.set('');
