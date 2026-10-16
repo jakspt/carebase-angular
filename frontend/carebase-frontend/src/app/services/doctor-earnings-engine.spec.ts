@@ -149,7 +149,11 @@ describe('doctor-earnings-engine', () => {
         },
       ];
 
-      const result = calculateDoctorEarnings([DOCTOR_WEBER, DOCTOR_JENKINS, DOCTOR_CHEN], appointments, 2026);
+      const result = calculateDoctorEarnings(
+        [DOCTOR_WEBER, DOCTOR_JENKINS, DOCTOR_CHEN],
+        appointments,
+        2026,
+      );
 
       expect(result.data.find((d) => d.id === 3001)?.totalCosts).toBe(500);
       expect(result.data.find((d) => d.id === 3002)?.totalCosts).toBe(0);
@@ -224,7 +228,7 @@ describe('doctor-earnings-engine', () => {
           time: '14:00',
           doctorSsn: '3001',
           patientSsn: '2002',
-          treatment: { description: 'Afternoon procedure', cost: 450, medications: [] },
+          treatment: { description: 'Afternoon treatment', cost: 450, medications: [] },
         },
       ];
 
@@ -338,7 +342,7 @@ describe('doctor-earnings-engine', () => {
           time: '09:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: '2024 procedure', cost: 100, medications: [] },
+          treatment: { description: '2024 treatment', cost: 100, medications: [] },
         },
         {
           id: 402,
@@ -346,7 +350,7 @@ describe('doctor-earnings-engine', () => {
           time: '09:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: '2025 procedure', cost: 200, medications: [] },
+          treatment: { description: '2025 treatment', cost: 200, medications: [] },
         },
         {
           id: 403,
@@ -354,7 +358,7 @@ describe('doctor-earnings-engine', () => {
           time: '09:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: '2026 procedure A', cost: 300, medications: [] },
+          treatment: { description: '2026 treatment A', cost: 300, medications: [] },
         },
         {
           id: 404,
@@ -362,7 +366,7 @@ describe('doctor-earnings-engine', () => {
           time: '09:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: '2026 procedure B', cost: 400, medications: [] },
+          treatment: { description: '2026 treatment B', cost: 400, medications: [] },
         },
         {
           id: 405,
@@ -370,15 +374,25 @@ describe('doctor-earnings-engine', () => {
           time: '09:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: '2027 procedure', cost: 500, medications: [] },
+          treatment: { description: '2027 treatment', cost: 500, medications: [] },
         },
       ];
 
-      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2024).data[0].totalCosts).toBe(100);
-      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2025).data[0].totalCosts).toBe(200);
-      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2026).data[0].totalCosts).toBe(700);
-      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2027).data[0].totalCosts).toBe(500);
-      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2028).data[0].totalCosts).toBe(0);
+      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2024).data[0].totalCosts).toBe(
+        100,
+      );
+      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2025).data[0].totalCosts).toBe(
+        200,
+      );
+      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2026).data[0].totalCosts).toBe(
+        700,
+      );
+      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2027).data[0].totalCosts).toBe(
+        500,
+      );
+      expect(calculateDoctorEarnings([DOCTOR_WEBER], appointments, 2028).data[0].totalCosts).toBe(
+        0,
+      );
     });
 
     it('should include treatments on exact year boundaries (Jan 1 and Dec 31)', () => {
@@ -572,7 +586,11 @@ describe('doctor-earnings-engine', () => {
           time: '10:00',
           doctorSsn: '3001',
           patientSsn: '2001',
-          treatment: { description: 'Corrupted cost', cost: 'NaN' as unknown as number, medications: [] },
+          treatment: {
+            description: 'Corrupted cost',
+            cost: 'NaN' as unknown as number,
+            medications: [],
+          },
         },
         {
           id: 904,

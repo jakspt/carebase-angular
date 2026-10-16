@@ -43,10 +43,20 @@ export const DAILY_OPERATING_SLOTS: readonly string[] = [
 
 export const SLOTS_PER_DAY = DAILY_OPERATING_SLOTS.length; // 19
 
+function isSlotConflict(
+  appt: TimeSlotAppointment,
+  doctorSsn: string,
+  patientSsn?: string,
+): boolean {
+  return appt.doctorSsn === doctorSsn || Boolean(patientSsn && appt.patientSsn === patientSsn);
+}
+
 /**
- * Pure domain function to calculate available 30-minute time slots between 08:00 and 17:00,
- * filter conflicts for the doctor and patient, and determine the next available date
- * within a 14-day forward window when the requested date is fully booked.
+ * Calculates available 30-minute time slots for a given doctor and date,
+ * filtering out any doctor or patient scheduling conflicts.
+ *
+ * If all 19 daily slots (08:00 - 17:00) are booked, computes the next available
+ * date within a 14-day forward lookahead window.
  *
  * Has zero Angular dependencies and operates strictly on plain data.
  */
@@ -60,14 +70,8 @@ export function calculateTimeSlots(
   for (const a of appointments) {
     if (!a?.date || !a?.time) continue;
     const apptDate = a.date.split('T')[0];
-    if (apptDate === rawDate) {
-      const isDoctorConflict = a.doctorSsn === params.doctorSsn;
-      const isPatientConflict = Boolean(
-        params.patientSsn && a.patientSsn === params.patientSsn,
-      );
-      if (isDoctorConflict || isPatientConflict) {
-        unavailableSlots.add(a.time);
-      }
+    if (apptDate === rawDate && isSlotConflict(a, params.doctorSsn, params.patientSsn)) {
+      unavailableSlots.add(a.time);
     }
   }
 
@@ -101,16 +105,12 @@ export function calculateTimeSlots(
             for (const a of appointments) {
               if (!a?.date || !a?.time) continue;
               const apptDate = a.date.split('T')[0];
-              if (apptDate === candidateStr) {
-                const isDoctorConflict = a.doctorSsn === params.doctorSsn;
-                const isPatientConflict = Boolean(
-                  params.patientSsn && a.patientSsn === params.patientSsn,
-                );
-                if (isDoctorConflict || isPatientConflict) {
-                  if (DAILY_OPERATING_SLOTS.includes(a.time)) {
-                    unavailableOnCandidate.add(a.time);
-                  }
-                }
+              if (
+                apptDate === candidateStr &&
+                isSlotConflict(a, params.doctorSsn, params.patientSsn) &&
+                DAILY_OPERATING_SLOTS.includes(a.time)
+              ) {
+                unavailableOnCandidate.add(a.time);
               }
             }
 

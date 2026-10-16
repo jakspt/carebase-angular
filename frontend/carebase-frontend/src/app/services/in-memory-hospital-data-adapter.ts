@@ -185,7 +185,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       },
       loader: async (ctx) => {
         if (!ctx.params?.p) return undefined;
-        return this.calculateSlots(ctx.params.p);
+        return calculateTimeSlots(this.appointments, ctx.params.p);
       },
     });
   }
@@ -215,7 +215,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       },
       loader: async (ctx) => {
         if (!ctx.params) return undefined;
-        return this.calculateDoctorEarnings(ctx.params.year);
+        return calculateDoctorEarnings(this.doctors, this.appointments, ctx.params.year);
       },
     });
   }
@@ -236,7 +236,12 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       },
       loader: async (ctx) => {
         if (!ctx.params?.range) return undefined;
-        return this.calculateConsultationFrequency(ctx.params.range);
+        return calculateConsultationFrequency(
+          this.appointments,
+          this.patients,
+          this.doctors,
+          ctx.params.range,
+        );
       },
     });
   }
@@ -333,23 +338,6 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     this.stateVersion.update((v) => v + 1);
 
     return { success: true };
-  }
-
-  private calculateSlots(p: TimeSlotQueryParams): TimeSlotsResult {
-    return calculateTimeSlots(this.appointments, p);
-  }
-
-  private calculateDoctorEarnings(year: number): DoctorEarningsReport {
-    return calculateDoctorEarnings(this.doctors, this.appointments, year);
-  }
-
-  private calculateConsultationFrequency(range: DateRange): ConsultationFrequencyReport {
-    return calculateConsultationFrequency(
-      this.appointments,
-      this.patients,
-      this.doctors,
-      range,
-    );
   }
 
   getDatabaseStatus(): ResourceRef<DbStatus | undefined> {

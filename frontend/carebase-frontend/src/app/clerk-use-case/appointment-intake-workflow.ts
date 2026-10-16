@@ -1,14 +1,6 @@
 import { computed, inject, Injectable, linkedSignal, Signal, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import {
-  map,
-  of,
-  Subject,
-  switchMap,
-  timer,
-  debounceTime,
-  distinctUntilChanged,
-} from 'rxjs';
+import { map, of, Subject, switchMap, timer, debounceTime, distinctUntilChanged } from 'rxjs';
 import {
   AppointmentNotes,
   AppointmentResult,
@@ -59,8 +51,7 @@ function parseIsoDate(target: string | Date): Date {
 @Injectable()
 export class AppointmentIntakeWorkflow {
   private readonly actorSession = inject(ActorSession);
-  private readonly dataAccess = inject(HOSPITAL_DATA_ACCESS);
-  private readonly hospitalDataAccess = this.dataAccess;
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
   private readonly operationRunner = inject(OperationRunner);
 
   // ── Clerk Profile ──
@@ -370,7 +361,7 @@ export class AppointmentIntakeWorkflow {
 
     const runnerResult = await this.operationRunner.execute(
       async () => {
-        const response = await this.dataAccess.bookAppointment(payload);
+        const response = await this.hospitalDataAccess.bookAppointment(payload);
         if (!response.success) {
           throw new Error(response.message || 'Failed to schedule appointment.');
         }
