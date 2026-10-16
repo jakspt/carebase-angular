@@ -70,7 +70,7 @@ CareBase focuses on three main areas of full-stack engineering:
 
 An Nginx reverse proxy sits in front of the app, sending normal page requests to the Angular container and `/api/` requests to the Flask backend.
 
-```
+```mermaid
 flowchart TD
     Client["Client Browser"] -->|"HTTP :80"| Nginx["Nginx Reverse Proxy (:80)"]
     Nginx -->|"Path: /"| Angular["Angular SPA (carebase_frontend:80)"]
