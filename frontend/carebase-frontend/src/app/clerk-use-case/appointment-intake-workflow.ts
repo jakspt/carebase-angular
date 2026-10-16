@@ -8,7 +8,6 @@ import {
   timer,
   debounceTime,
   distinctUntilChanged,
-  firstValueFrom,
 } from 'rxjs';
 import {
   AppointmentNotes,
@@ -20,7 +19,6 @@ import {
   Patient,
   TimeSlot,
 } from '../models/models';
-import { ClerkService } from '../services/clerk-service';
 import { ActorSession } from '../services/actor-session';
 import { BookingConflictError, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import { OperationRunner } from '../services/operation-runner';
@@ -61,8 +59,8 @@ function parseIsoDate(target: string | Date): Date {
 @Injectable()
 export class AppointmentIntakeWorkflow {
   private readonly actorSession = inject(ActorSession);
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
-  private readonly clerkService = inject(ClerkService, { optional: true });
+  private readonly dataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly hospitalDataAccess = this.dataAccess;
   private readonly operationRunner = inject(OperationRunner);
 
   // ── Clerk Profile ──
@@ -361,9 +359,7 @@ export class AppointmentIntakeWorkflow {
 
     const runnerResult = await this.operationRunner.execute(
       async () => {
-        const response = this.clerkService
-          ? await firstValueFrom(this.clerkService.bookAppointment(payload))
-          : await this.hospitalDataAccess.bookAppointment(payload);
+        const response = await this.dataAccess.bookAppointment(payload);
         if (!response.success) {
           throw new Error(response.message || 'Failed to schedule appointment.');
         }

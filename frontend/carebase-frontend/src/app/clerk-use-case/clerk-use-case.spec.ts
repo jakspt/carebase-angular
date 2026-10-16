@@ -14,7 +14,7 @@ import { MatSnackBarHarness } from '@angular/material/snack-bar/testing';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
 import { ClerkUseCase } from './clerk-use-case';
-import { ClerkService } from '../services/clerk-service';
+import { ActorSession } from '../services/actor-session';
 import { Clerk, Doctor, Patient } from '../models/models';
 import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
 import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
@@ -22,7 +22,7 @@ import { provideTestHospitalData } from '../services/in-memory-hospital-data-ada
 describe('ClerkUseCase', () => {
   let component: ClerkUseCase;
   let fixture: ComponentFixture<ClerkUseCase>;
-  let clerkService: ClerkService;
+  let actorSession: ActorSession;
   let dataAccess: HospitalDataAccess;
   let loader: HarnessLoader;
   let rootLoader: HarnessLoader;
@@ -115,13 +115,13 @@ describe('ClerkUseCase', () => {
       providers: [
         provideNoopAnimations(),
         provideNativeDateAdapter(),
-        ClerkService,
+        ActorSession,
         provideTestHospitalData(),
       ],
     });
 
-    clerkService = TestBed.inject(ClerkService);
-    clerkService.setActiveClerk(mockClerk);
+    actorSession = TestBed.inject(ActorSession);
+    actorSession.setActiveClerk(mockClerk);
     dataAccess = TestBed.inject(HOSPITAL_DATA_ACCESS);
 
     fixture = TestBed.createComponent(ClerkUseCase);
@@ -140,7 +140,7 @@ describe('ClerkUseCase', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should reflect active clerk from ClerkService', () => {
+  it('should reflect active clerk from ActorSession', () => {
     expect(component.activeClerk()).toEqual(mockClerk);
   });
 

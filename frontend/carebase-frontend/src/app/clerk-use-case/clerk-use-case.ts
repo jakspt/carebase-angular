@@ -182,6 +182,7 @@ export class ClerkUseCase {
     await submit(this.bookingForm, async () => {
       const result = await this.workflow.submit();
       if (result.status === 'conflict' && stepper) {
+        this.cdr.detectChanges();
         stepper.selectedIndex = 2;
       }
     });

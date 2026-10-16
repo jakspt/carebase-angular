@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] `DoctorService`, `ClerkService`, and `clerk-service.spec.ts` are permanently removed from the codebase.
-- [ ] The Appointment Intake workflow and test suites consume `ActorSession` and the `HOSPITAL_DATA_ACCESS` token directly for clerk state and appointment booking.
-- [ ] Active clerk selection, appointment booking, and session management behavior remain unchanged from the user's perspective.
-- [ ] All existing test suites pass green with zero reliance on the deleted forwarder services.
+- [x] `DoctorService`, `ClerkService`, and `clerk-service.spec.ts` are permanently removed from the codebase.
+- [x] The Appointment Intake workflow and test suites consume `ActorSession` and the `HOSPITAL_DATA_ACCESS` token directly for clerk state and appointment booking.
+- [x] Active clerk selection, appointment booking, and session management behavior remain unchanged from the user's perspective.
+- [x] All existing test suites pass green with zero reliance on the deleted forwarder services.
