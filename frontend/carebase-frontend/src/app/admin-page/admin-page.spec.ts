@@ -7,7 +7,7 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { AdminPage } from './admin-page';
 import { ActionCardHarness } from '../action-card/testing';
-import { provideTestAdminService } from '../services/admin-service';
+import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
 
 describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;
@@ -17,7 +17,7 @@ describe('AdminPage', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [AdminPage],
-      providers: [provideNoopAnimations(), provideTestAdminService()],
+      providers: [provideNoopAnimations(), provideTestHospitalData()],
     });
 
     fixture = TestBed.createComponent(AdminPage);

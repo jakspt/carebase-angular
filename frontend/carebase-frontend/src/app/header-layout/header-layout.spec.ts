@@ -9,19 +9,22 @@ import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { HeaderLayout } from './header-layout';
 import { ActorSession } from '../services/actor-session';
-import { TestAdminServiceOptions, provideTestAdminService } from '../services/admin-service';
+import {
+  TestHospitalDataOptions,
+  provideTestHospitalData,
+} from '../services/in-memory-hospital-data-adapter';
 
 @Component({ selector: 'stub-home', template: '<span>Home</span>' })
 class StubHomeComponent {}
 
-async function createHeaderHarness(adminOptions?: TestAdminServiceOptions) {
+async function createHeaderHarness(options?: TestHospitalDataOptions) {
   sessionStorage.clear();
   TestBed.configureTestingModule({
     providers: [
       provideNoopAnimations(),
       provideRouter([{ path: 'doctor', component: HeaderLayout }]),
       ActorSession,
-      provideTestAdminService(adminOptions),
+      provideTestHospitalData(options),
     ],
   });
   const customHarness = await RouterTestingHarness.create();
@@ -48,7 +51,7 @@ describe('HeaderLayout', () => {
           { path: 'doctor', component: HeaderLayout },
         ]),
         ActorSession,
-        provideTestAdminService(),
+        provideTestHospitalData(),
       ],
     });
 
@@ -104,14 +107,14 @@ describe('HeaderLayout', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Home');
   });
 
-  it('should render offline database status badge in toolbar when provideTestAdminService defaults to offline', async () => {
+  it('should render MariaDB database status badge in toolbar by default', async () => {
     const toolbar = await loader.getHarness(MatToolbarHarness);
     const text = await (await toolbar.host()).text();
-    expect(text).toContain('Offline');
+    expect(text).toContain('MariaDB');
   });
 });
 
-describe('HeaderLayout with configured AdminService status', () => {
+describe('HeaderLayout with configured database status', () => {
   it('should render MongoDB badge in toolbar when dbType is MongoDB', async () => {
     const { toolbar } = await createHeaderHarness({ dbType: 'MongoDB' });
     const text = await (await toolbar.host()).text();
@@ -122,5 +125,11 @@ describe('HeaderLayout with configured AdminService status', () => {
     const { toolbar } = await createHeaderHarness({ isLoading: true });
     const text = await (await toolbar.host()).text();
     expect(text).toContain('Connecting...');
+  });
+
+  it('should render Offline status in toolbar when dbType is null', async () => {
+    const { toolbar } = await createHeaderHarness({ dbType: null });
+    const text = await (await toolbar.host()).text();
+    expect(text).toContain('Offline');
   });
 });

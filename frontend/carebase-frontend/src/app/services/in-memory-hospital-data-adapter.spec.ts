@@ -400,4 +400,29 @@ describe('provideTestHospitalData', () => {
     // 0ms delay should resolve virtually instantaneously
     expect(elapsed).toBeLessThan(50);
   });
+
+  it('should provide a loading database status resource when isLoading is configured', () => {
+    TestBed.configureTestingModule({
+      providers: [provideTestHospitalData({ isLoading: true })],
+    });
+    const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
+    const statusRes = instance.getDatabaseStatus();
+
+    expect(statusRes.isLoading()).toBe(true);
+    expect(statusRes.hasValue()).toBe(false);
+  });
+
+  it('should provide an offline database status resource when dbType is null', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideTestHospitalData({ dbType: null })],
+    });
+    const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
+    const statusRes = instance.getDatabaseStatus();
+
+    await vi.waitFor(() => {
+      expect(statusRes.isLoading()).toBe(false);
+      expect(statusRes.value()).toBeUndefined();
+      expect(statusRes.hasValue()).toBe(false);
+    });
+  });
 });

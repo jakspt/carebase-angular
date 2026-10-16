@@ -6,7 +6,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatAnchor } from '@angular/material/button';
 import { ActorRole, ActorSession } from '../services/actor-session';
-import { AdminService } from '../services/admin-service';
+import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import { UpperCasePipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -28,27 +28,26 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class HeaderLayout {
   private readonly actorSession = inject(ActorSession);
-  private readonly adminService = inject(AdminService);
+  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
   private readonly router = inject(Router);
+
+  private readonly dbStatusResource = this.hospitalDataAccess.getDatabaseStatus();
 
   readonly activeRole = this.actorSession.role;
   readonly currentUser = this.activeRole;
 
   dbStatus = computed(() => {
-    if (this.adminService.statusResource.hasValue()) {
-      return this.adminService.statusResource.value()?.dbType ?? 'Connected';
+    if (this.dbStatusResource.hasValue()) {
+      return this.dbStatusResource.value()?.dbType ?? 'Connected';
     }
-    if (this.adminService.statusResource.isLoading()) {
+    if (this.dbStatusResource.isLoading()) {
       return 'Connecting...';
     }
     return 'Offline';
   });
 
   isMongo = computed(() => {
-    return (
-      this.adminService.statusResource.hasValue() &&
-      this.adminService.statusResource.value()?.dbType === 'MongoDB'
-    );
+    return this.dbStatusResource.hasValue() && this.dbStatusResource.value()?.dbType === 'MongoDB';
   });
 
   switchRole(role: ActorRole) {

@@ -7,7 +7,7 @@ import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { App } from './app';
 import { HeaderLayout } from './header-layout/header-layout';
 import { ActorSession } from './services/actor-session';
-import { provideTestAdminService } from './services/admin-service';
+import { provideTestHospitalData } from './services/in-memory-hospital-data-adapter';
 
 @Component({ selector: 'stub-child', template: '<p>Child Content</p>' })
 class StubChildComponent {}
@@ -26,7 +26,7 @@ describe('App', () => {
           },
         ]),
         ActorSession,
-        provideTestAdminService(),
+        provideTestHospitalData(),
       ],
     });
   });

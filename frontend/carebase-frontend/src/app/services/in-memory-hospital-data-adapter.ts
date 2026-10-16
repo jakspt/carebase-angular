@@ -37,7 +37,8 @@ import {
 export interface InMemoryAdapterConfig {
   seedDelayMs?: number;
   migrateDelayMs?: number;
-  initialDbType?: 'MariaDB' | 'MongoDB';
+  initialDbType?: 'MariaDB' | 'MongoDB' | null;
+  isLoading?: boolean;
 }
 
 export const IN_MEMORY_ADAPTER_CONFIG = new InjectionToken<InMemoryAdapterConfig>(
@@ -45,7 +46,7 @@ export const IN_MEMORY_ADAPTER_CONFIG = new InjectionToken<InMemoryAdapterConfig
 );
 
 export interface TestHospitalDataOptions extends InMemoryAdapterConfig {
-  dbType?: 'MariaDB' | 'MongoDB';
+  dbType?: 'MariaDB' | 'MongoDB' | null;
 }
 
 interface StoredAppointment {
@@ -175,8 +176,8 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   private readonly injector = inject(Injector);
   private readonly config = inject(IN_MEMORY_ADAPTER_CONFIG, { optional: true });
   private readonly stateVersion = signal(0);
-  private readonly dbStatus = signal<'MariaDB' | 'MongoDB'>(
-    this.config?.initialDbType ?? 'MariaDB',
+  private readonly dbStatus = signal<'MariaDB' | 'MongoDB' | null>(
+    this.config?.initialDbType !== undefined ? this.config.initialDbType : 'MariaDB',
   );
 
   private nextAppointmentId = 500;
@@ -555,10 +556,32 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   }
 
   getDatabaseStatus(): ResourceRef<DbStatus | undefined> {
-    return resource<DbStatus | undefined, 'MariaDB' | 'MongoDB'>({
+    if (this.config?.isLoading) {
+      const isLoading = signal(true);
+      const value = signal<DbStatus | undefined>(undefined);
+      const hasValue = signal(false);
+      const error = signal<unknown>(undefined);
+      const status = signal<'idle' | 'loading' | 'resolved' | 'error'>('loading');
+      return {
+        value: value.asReadonly(),
+        status: status.asReadonly(),
+        error: error.asReadonly(),
+        isLoading: isLoading.asReadonly(),
+        hasValue: hasValue.asReadonly(),
+        reload: () => false,
+        destroy: () => {},
+        set: () => {},
+        update: () => {},
+        snapshot: () => undefined,
+        asReadonly() {
+          return this;
+        },
+      } as unknown as ResourceRef<DbStatus | undefined>;
+    }
+    return resource<DbStatus | undefined, 'MariaDB' | 'MongoDB' | null>({
       injector: this.injector,
       params: () => this.dbStatus(),
-      loader: async (ctx) => ({ dbType: ctx.params }),
+      loader: async (ctx) => (ctx.params ? { dbType: ctx.params } : undefined),
     });
   }
 
@@ -590,10 +613,18 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
 }
 
 export function provideTestHospitalData(options?: TestHospitalDataOptions): Provider[] {
+  const initialDbType =
+    options?.initialDbType !== undefined
+      ? options.initialDbType
+      : options?.dbType !== undefined
+        ? options.dbType
+        : 'MariaDB';
+
   const config: InMemoryAdapterConfig = {
     seedDelayMs: options?.seedDelayMs ?? 0,
     migrateDelayMs: options?.migrateDelayMs ?? 0,
-    initialDbType: options?.initialDbType ?? options?.dbType ?? 'MariaDB',
+    initialDbType,
+    isLoading: options?.isLoading ?? false,
   };
   return [
     { provide: IN_MEMORY_ADAPTER_CONFIG, useValue: config },
