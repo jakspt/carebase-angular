@@ -17,7 +17,6 @@ import {
   Treatment,
   CreateAppointmentRequest,
   CreateAppointmentResponse,
-  TimeSlot,
   PatientVisitRecord,
   DoctorEarnings,
   DbStatus,
@@ -39,6 +38,7 @@ import {
   createDemoHospitalData,
   createMinimalHospitalData,
 } from './mock-hospital-data';
+import { calculateTimeSlots } from './time-slot-engine';
 
 export type { StoredAppointment, HospitalFixtureData };
 
@@ -329,69 +329,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   }
 
   private calculateSlots(p: TimeSlotQueryParams): TimeSlotsResult {
-    const rawDate = p.date.split('T')[0];
-    const unavailableSlots = new Set<string>();
-
-    for (const a of this.appointments) {
-      if (a.date === rawDate) {
-        if (a.doctorSsn === p.doctorSsn || (p.patientSsn && a.patientSsn === p.patientSsn)) {
-          unavailableSlots.add(a.time);
-        }
-      }
-    }
-
-    const slots: TimeSlot[] = [];
-    for (let hour = 8; hour < 18; hour++) {
-      for (const minute of [0, 30]) {
-        if (hour === 17 && minute === 30) continue;
-        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push({
-          time: timeStr,
-          available: !unavailableSlots.has(timeStr),
-        });
-      }
-    }
-
-    let nextAvailableDate: string | null = null;
-    const hasAvailable = slots.some((s) => s.available);
-    if (!hasAvailable) {
-      try {
-        const parts = rawDate.split('-');
-        const curr = new Date(
-          parseInt(parts[0], 10),
-          parseInt(parts[1], 10) - 1,
-          parseInt(parts[2], 10),
-        );
-        const SLOTS_PER_DAY = 19;
-        for (let offset = 1; offset <= 14; offset++) {
-          const candidate = new Date(curr);
-          candidate.setDate(curr.getDate() + offset);
-          const year = candidate.getFullYear();
-          const month = String(candidate.getMonth() + 1).padStart(2, '0');
-          const day = String(candidate.getDate()).padStart(2, '0');
-          const candidateStr = `${year}-${month}-${day}`;
-          const bookedOnCandidate = this.appointments.filter(
-            (a) =>
-              a.date === candidateStr &&
-              (a.doctorSsn === p.doctorSsn || (p.patientSsn && a.patientSsn === p.patientSsn)),
-          ).length;
-          if (bookedOnCandidate < SLOTS_PER_DAY) {
-            nextAvailableDate = candidateStr;
-            break;
-          }
-        }
-      } catch {
-        // ignore date parse issues
-      }
-    }
-
-    return {
-      date: rawDate,
-      doctorSsn: p.doctorSsn,
-      patientSsn: p.patientSsn,
-      slots,
-      nextAvailableDate,
-    };
+    return calculateTimeSlots(this.appointments, p);
   }
 
   private calculateDoctorEarnings(year: number): DoctorEarningsReport {
