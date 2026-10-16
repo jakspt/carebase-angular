@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Retire shallow DoctorService and ClerkService, 02: Extract pure Time Slot allocation engine and deepen in-memory adapter, 03: Extract pure Doctor earnings engine and deepen in-memory adapter, 04: Align Consultation Frequency Report domain naming and extract pure aggregation engine, 05: Collapse artificial seam in Appointment Intake and deduplicate test suites
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] ADR 0005 is created under `docs/adr/0005-frontend-deepening-and-seam-simplification.md`.
 - [ ] The document details the context, problem statement, options considered, decisions taken, consequences, and testing standards.
