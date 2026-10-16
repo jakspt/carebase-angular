@@ -7,7 +7,10 @@ import { MatTableHarness } from '@angular/material/table/testing';
 import { MatSortHarness } from '@angular/material/sort/testing';
 import { vi } from 'vitest';
 import { ClerkReport } from './clerk-report';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import {
+  type ConsultationFrequencyReport,
+  HOSPITAL_DATA_ACCESS,
+} from '../services/hospital-data-access';
 import {
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
@@ -65,8 +68,10 @@ describe('ClerkReport', () => {
     await fixture.whenStable();
   });
 
-  it('should create', () => {
+  it('should create and load consultation frequency report', () => {
     expect(component).toBeTruthy();
+    const report: ConsultationFrequencyReport | undefined = component.reportResource.value();
+    expect(report?.results).toBeDefined();
   });
 
   it('should render table rows matching consultation frequency report data via MatTableHarness', async () => {
