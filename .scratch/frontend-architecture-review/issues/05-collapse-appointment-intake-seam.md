@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Retire shallow DoctorService and ClerkService
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] The Appointment Intake template binds directly to workflow state and methods where appropriate, eliminating pass-through forwarders on the component class.
 - [ ] The Appointment Intake component class retains only DOM, focus, and view-coordination responsibilities (e.g. stepper resetting and input focusing).
