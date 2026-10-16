@@ -17,12 +17,12 @@ import {
   Treatment,
   CreateAppointmentRequest,
   CreateAppointmentResponse,
-  PatientVisitRecord,
   DbStatus,
 } from '../models/models';
 import {
   AddTreatmentResponse,
   BookingConflictError,
+  ConsultationFrequencyReport,
   DateRange,
   DoctorEarningsReport,
   HOSPITAL_DATA_ACCESS,
@@ -39,6 +39,7 @@ import {
 } from './mock-hospital-data';
 import { calculateTimeSlots } from './time-slot-engine';
 import { calculateDoctorEarnings } from './doctor-earnings-engine';
+import { calculateConsultationFrequency } from './consultation-frequency-engine';
 
 export type { StoredAppointment, HospitalFixtureData };
 
@@ -219,11 +220,11 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     });
   }
 
-  getPatientVisitsReport(
+  getConsultationFrequencyReport(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
-  ): ResourceRef<PatientVisitsReport | undefined> {
+  ): ResourceRef<ConsultationFrequencyReport | undefined> {
     return resource<
-      PatientVisitsReport | undefined,
+      ConsultationFrequencyReport | undefined,
       { version: number; range: DateRange } | undefined
     >({
       injector: this.injector,
@@ -235,9 +236,15 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       },
       loader: async (ctx) => {
         if (!ctx.params?.range) return undefined;
-        return this.calculatePatientVisits(ctx.params.range);
+        return this.calculateConsultationFrequency(ctx.params.range);
       },
     });
+  }
+
+  getPatientVisitsReport(
+    dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
+  ): ResourceRef<PatientVisitsReport | undefined> {
+    return this.getConsultationFrequencyReport(dateRange);
   }
 
   async bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse> {
@@ -336,46 +343,13 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     return calculateDoctorEarnings(this.doctors, this.appointments, year);
   }
 
-  private calculatePatientVisits(range: DateRange): PatientVisitsReport {
-    const counts = new Map<string, { patientSsn: string; doctorSsn: string; count: number }>();
-
-    for (const appt of this.appointments) {
-      if (appt.date >= range.startDate && appt.date <= range.endDate) {
-        const key = `${appt.patientSsn}_${appt.doctorSsn}`;
-        const existing = counts.get(key);
-        if (existing) {
-          existing.count++;
-        } else {
-          counts.set(key, {
-            patientSsn: appt.patientSsn,
-            doctorSsn: appt.doctorSsn,
-            count: 1,
-          });
-        }
-      }
-    }
-
-    const results: PatientVisitRecord[] = Array.from(counts.values()).map((item) => {
-      const patient = this.patients.find((p) => p.ssn === item.patientSsn);
-      const doctor = this.doctors.find((d) => d.ssn === item.doctorSsn);
-
-      return {
-        patientSsn: item.patientSsn,
-        patientName: patient?.name ?? 'Unknown Patient',
-        insurance: patient?.insurance ?? '',
-        doctorSsn: item.doctorSsn,
-        doctorName: doctor?.name ?? 'Unknown Doctor',
-        specialty: doctor?.specialty ?? '',
-        department: doctor?.department ?? '',
-        visitCount: item.count,
-      };
-    });
-
-    return {
-      startDate: range.startDate,
-      endDate: range.endDate,
-      results,
-    };
+  private calculateConsultationFrequency(range: DateRange): ConsultationFrequencyReport {
+    return calculateConsultationFrequency(
+      this.appointments,
+      this.patients,
+      this.doctors,
+      range,
+    );
   }
 
   getDatabaseStatus(): ResourceRef<DbStatus | undefined> {

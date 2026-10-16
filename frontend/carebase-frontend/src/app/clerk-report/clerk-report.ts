@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ResourceRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -14,7 +14,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { BarChartModule } from '@swimlane/ngx-charts';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, of, switchMap, timer } from 'rxjs';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { ConsultationFrequencyReport, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import { PatientVisitRecord } from '../models/models';
 
 interface ChartDataItem {
@@ -72,7 +72,8 @@ export class ClerkReport {
     return '';
   });
 
-  readonly reportResource = this.hospitalDataAccess.getPatientVisitsReport(this.activeRange);
+  readonly reportResource: ResourceRef<ConsultationFrequencyReport | undefined> =
+    this.hospitalDataAccess.getConsultationFrequencyReport(this.activeRange);
 
   // Debounced progress indicator (<250ms threshold)
   private readonly spinnerDelayMs = 250;

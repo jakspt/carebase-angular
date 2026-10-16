@@ -26,7 +26,8 @@ export interface DateRange {
   endDate: string;
 }
 
-export type PatientVisitsReport = PatientVisitsReportResponse;
+export type ConsultationFrequencyReport = PatientVisitsReportResponse;
+export type PatientVisitsReport = ConsultationFrequencyReport;
 
 export interface DoctorEarningsReport {
   year: number;
@@ -75,7 +76,10 @@ export interface HospitalDataAccess {
   getDoctorEarningsReport(
     year: Signal<number> | (() => number),
   ): ResourceRef<DoctorEarningsReport | undefined>;
-  getPatientVisitsReport(
+  getConsultationFrequencyReport(
+    dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
+  ): ResourceRef<ConsultationFrequencyReport | undefined>;
+  getPatientVisitsReport?(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
   ): ResourceRef<PatientVisitsReport | undefined>;
   bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse>;

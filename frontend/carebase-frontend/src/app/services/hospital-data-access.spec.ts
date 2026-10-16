@@ -4,12 +4,25 @@ import {
   HospitalDataError,
   BookingConflictError,
   PatientNotFoundError,
+  type ConsultationFrequencyReport,
+  type PatientVisitsReport,
 } from './hospital-data-access';
 
 describe('HospitalDataAccess Port and Domain Errors', () => {
   it('should export HOSPITAL_DATA_ACCESS as an InjectionToken', () => {
     expect(HOSPITAL_DATA_ACCESS).toBeInstanceOf(InjectionToken);
     expect(HOSPITAL_DATA_ACCESS.toString()).toContain('HOSPITAL_DATA_ACCESS');
+  });
+
+  it('should support ConsultationFrequencyReport and backwards-compatible PatientVisitsReport alias', () => {
+    const report: ConsultationFrequencyReport = {
+      startDate: '2026-01-01',
+      endDate: '2026-12-31',
+      results: [],
+    };
+    const legacyReport: PatientVisitsReport = report;
+    expect(legacyReport.startDate).toBe('2026-01-01');
+    expect(legacyReport.results).toEqual([]);
   });
 
   describe('Domain Error Hierarchy', () => {

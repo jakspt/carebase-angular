@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] A pure domain engine function aggregates consultation visit counts per patient-doctor pair within a date range from stored appointments, patient records, and doctor records, covered by pure unit tests.
-- [ ] The `HospitalDataAccess` port, `InMemoryHospitalDataAdapter`, `HttpHospitalDataAdapter`, and `ClerkReport` use `ConsultationFrequencyReport` and `getConsultationFrequencyReport`.
-- [ ] A backwards-compatible type alias is provided so existing references remain valid.
-- [ ] The in-memory adapter delegates report calculation to the pure aggregation engine.
-- [ ] The Consultation Frequency Report view and filters function identically from the user's perspective.
+- [x] A pure domain engine function aggregates consultation visit counts per patient-doctor pair within a date range from stored appointments, patient records, and doctor records, covered by pure unit tests.
+- [x] The `HospitalDataAccess` port, `InMemoryHospitalDataAdapter`, `HttpHospitalDataAdapter`, and `ClerkReport` use `ConsultationFrequencyReport` and `getConsultationFrequencyReport`.
+- [x] A backwards-compatible type alias is provided so existing references remain valid.
+- [x] The in-memory adapter delegates report calculation to the pure aggregation engine.
+- [x] The Consultation Frequency Report view and filters function identically from the user's perspective.

@@ -5,6 +5,7 @@ import { signal } from '@angular/core';
 import { HttpHospitalDataAdapter } from './http-hospital-data-adapter';
 import {
   BookingConflictError,
+  type ConsultationFrequencyReport,
   HospitalDataError,
   TimeSlotQueryParams,
   DateRange,
@@ -242,13 +243,13 @@ describe('HttpHospitalDataAdapter', () => {
     });
   });
 
-  describe('getPatientVisitsReport', () => {
+  describe('getConsultationFrequencyReport', () => {
     it('should query /api/clerk/reports/patient-visits with date range', async () => {
       const range = signal<DateRange | undefined>({
         startDate: '2026-01-01',
         endDate: '2026-06-30',
       });
-      const res = adapter.getPatientVisitsReport(range);
+      const res = adapter.getConsultationFrequencyReport(range);
       TestBed.tick();
 
       const req = httpTesting.expectOne(
@@ -262,7 +263,31 @@ describe('HttpHospitalDataAdapter', () => {
         results: [],
       });
       await vi.waitFor(() => {
-        expect(res.value()?.startDate).toBe('2026-01-01');
+        const val: ConsultationFrequencyReport | undefined = res.value();
+        expect(val?.startDate).toBe('2026-01-01');
+      });
+    });
+
+    it('should support backwards-compatible getPatientVisitsReport delegating to getConsultationFrequencyReport', async () => {
+      const range = signal<DateRange | undefined>({
+        startDate: '2026-07-01',
+        endDate: '2026-12-31',
+      });
+      const res = adapter.getPatientVisitsReport(range);
+      TestBed.tick();
+
+      const req = httpTesting.expectOne(
+        '/api/clerk/reports/patient-visits?startDate=2026-07-01&endDate=2026-12-31',
+      );
+      expect(req.request.method).toBe('GET');
+
+      req.flush({
+        startDate: '2026-07-01',
+        endDate: '2026-12-31',
+        results: [],
+      });
+      await vi.waitFor(() => {
+        expect(res.value()?.startDate).toBe('2026-07-01');
       });
     });
   });

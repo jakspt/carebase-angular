@@ -14,6 +14,7 @@ import {
 import {
   AddTreatmentResponse,
   BookingConflictError,
+  ConsultationFrequencyReport,
   DateRange,
   DoctorEarningsReport,
   HospitalDataAccess,
@@ -126,10 +127,10 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
     );
   }
 
-  getPatientVisitsReport(
+  getConsultationFrequencyReport(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
-  ): ResourceRef<PatientVisitsReport | undefined> {
-    return httpResource<PatientVisitsReport>(
+  ): ResourceRef<ConsultationFrequencyReport | undefined> {
+    return httpResource<ConsultationFrequencyReport>(
       () => {
         const range = typeof dateRange === 'function' ? dateRange() : undefined;
         if (!range || !range.startDate || !range.endDate) return undefined;
@@ -139,6 +140,12 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
         injector: this.injector,
       },
     );
+  }
+
+  getPatientVisitsReport(
+    dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
+  ): ResourceRef<PatientVisitsReport | undefined> {
+    return this.getConsultationFrequencyReport(dateRange);
   }
 
   async bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse> {

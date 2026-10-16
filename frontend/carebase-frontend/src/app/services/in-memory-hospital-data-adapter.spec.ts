@@ -7,6 +7,7 @@ import {
 } from './in-memory-hospital-data-adapter';
 import {
   BookingConflictError,
+  type ConsultationFrequencyReport,
   TimeSlotQueryParams,
   DateRange,
   HOSPITAL_DATA_ACCESS,
@@ -185,7 +186,23 @@ describe('InMemoryHospitalDataAdapter', () => {
     expect(Array.isArray(report?.data)).toBe(true);
   });
 
-  it('should generate patient visits report within date range', async () => {
+  it('should generate consultation frequency report within date range', async () => {
+    const range = signal<DateRange | undefined>({
+      startDate: '2026-01-01',
+      endDate: '2026-12-31',
+    });
+    const res = adapter.getConsultationFrequencyReport(range);
+    await vi.waitFor(() => {
+      expect(res.value()).toBeDefined();
+    });
+
+    const report: ConsultationFrequencyReport | undefined = res.value();
+    expect(report?.startDate).toBe('2026-01-01');
+    expect(report?.endDate).toBe('2026-12-31');
+    expect(Array.isArray(report?.results)).toBe(true);
+  });
+
+  it('should support backwards-compatible getPatientVisitsReport delegating to consultation frequency report', async () => {
     const range = signal<DateRange | undefined>({
       startDate: '2026-01-01',
       endDate: '2026-12-31',
