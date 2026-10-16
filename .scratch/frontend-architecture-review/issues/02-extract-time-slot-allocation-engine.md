@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] A pure domain engine function calculates available 30-minute Time Slots between 08:00 and 17:00 for a given doctor and date, filtering out conflicts for doctor or patient.
 - [ ] When all Time Slots on the requested date are booked, the pure domain engine identifies the next available date within a 14-day forward window.

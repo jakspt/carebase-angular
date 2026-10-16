@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] `DoctorService`, `ClerkService`, and `clerk-service.spec.ts` are permanently removed from the codebase.
 - [ ] The Appointment Intake workflow and test suites consume `ActorSession` and the `HOSPITAL_DATA_ACCESS` token directly for clerk state and appointment booking.
