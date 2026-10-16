@@ -15,7 +15,9 @@ CareBase is a full-stack hospital management system built with an Angular 22 fro
 
 This is [a refactored version of my university project](https://github.com/jakspt/carebase), which originally used server-rendered Jinja2 HTML templates for the frontend.
 
-**insert landing page image here**
+<p align="center">
+  <img src="demo/landingpage_new.png" alt="Centered image" width="600" />
+</p>
 
 ## Live Demo
 
