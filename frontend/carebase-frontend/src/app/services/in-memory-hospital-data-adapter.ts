@@ -18,7 +18,6 @@ import {
   CreateAppointmentRequest,
   CreateAppointmentResponse,
   PatientVisitRecord,
-  DoctorEarnings,
   DbStatus,
 } from '../models/models';
 import {
@@ -39,6 +38,7 @@ import {
   createMinimalHospitalData,
 } from './mock-hospital-data';
 import { calculateTimeSlots } from './time-slot-engine';
+import { calculateDoctorEarnings } from './doctor-earnings-engine';
 
 export type { StoredAppointment, HospitalFixtureData };
 
@@ -333,27 +333,7 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   }
 
   private calculateDoctorEarnings(year: number): DoctorEarningsReport {
-    const data: DoctorEarnings[] = this.doctors.map((doctor) => {
-      let total = 0;
-      for (const appt of this.appointments) {
-        if (appt.doctorSsn === doctor.ssn && appt.date.startsWith(String(year)) && appt.treatment) {
-          total += appt.treatment.cost;
-        }
-      }
-      return {
-        id: Number(doctor.id),
-        name: doctor.name,
-        specialty: doctor.specialty,
-        department: doctor.department,
-        year,
-        totalCosts: total,
-      };
-    });
-
-    return {
-      year,
-      data,
-    };
+    return calculateDoctorEarnings(this.doctors, this.appointments, year);
   }
 
   private calculatePatientVisits(range: DateRange): PatientVisitsReport {
