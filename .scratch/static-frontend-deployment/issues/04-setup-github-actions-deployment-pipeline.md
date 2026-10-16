@@ -1,6 +1,6 @@
 # Setup GitHub Actions Deployment Pipeline for GitHub Pages
 
-Status: ready-for-agent
+Status: resolved
 
 ## Context
 
