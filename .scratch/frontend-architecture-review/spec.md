@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # Spec: Frontend Architecture Deepening & LOC Reduction
 
