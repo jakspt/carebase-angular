@@ -127,7 +127,7 @@ describe('ClerkUseCase', () => {
     fixture = TestBed.createComponent(ClerkUseCase);
     component = fixture.componentInstance;
     await vi.waitFor(() => {
-      expect(component.allDoctors().length).toBeGreaterThan(0);
+      expect(component.workflow.allDoctors().length).toBeGreaterThan(0);
     });
     await fixture.whenStable();
 
@@ -141,30 +141,30 @@ describe('ClerkUseCase', () => {
   });
 
   it('should reflect active clerk from ActorSession', () => {
-    expect(component.activeClerk()).toEqual(mockClerk);
+    expect(component.workflow.activeClerk()).toEqual(mockClerk);
   });
 
   it('should set selected patient and reset downstream selections', () => {
-    component.selectPatient(mockPatient);
-    expect(component.selectedPatient()).toEqual(mockPatient);
-    expect(component.selectedTimeSlot()).toBeNull();
+    component.workflow.selectPatient(mockPatient);
+    expect(component.workflow.selectedPatient()).toEqual(mockPatient);
+    expect(component.workflow.selectedTimeSlot()).toBeNull();
   });
 
   it('should filter doctors by selected department', () => {
-    component.onDepartmentChange('Cardiology');
+    component.workflow.selectDepartment('Cardiology');
 
-    expect(component.filteredDoctors().length).toBe(1);
-    expect(component.filteredDoctors()[0].name).toBe('Dr. Alexander Weber');
+    expect(component.workflow.filteredDoctors().length).toBe(1);
+    expect(component.workflow.filteredDoctors()[0].name).toBe('Dr. Alexander Weber');
   });
 
   it('should clear selected time slot when doctor or department changes', () => {
-    component.selectTimeSlot('09:00');
-    component.onDepartmentChange('Cardiology');
-    expect(component.selectedTimeSlot()).toBeNull();
+    component.workflow.selectTimeSlot('09:00');
+    component.workflow.selectDepartment('Cardiology');
+    expect(component.workflow.selectedTimeSlot()).toBeNull();
 
-    component.selectTimeSlot('09:00');
-    component.onDoctorChange(mockDoctors[0]);
-    expect(component.selectedTimeSlot()).toBeNull();
+    component.workflow.selectTimeSlot('09:00');
+    component.workflow.selectDoctor(mockDoctors[0]);
+    expect(component.workflow.selectedTimeSlot()).toBeNull();
   });
 
   it('should correctly identify severe NACA scores (5-7)', () => {
@@ -176,16 +176,16 @@ describe('ClerkUseCase', () => {
   });
 
   it('should book appointment successfully and reflect in data store', async () => {
-    component.selectPatient(mockPatient);
-    component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 20));
-    component.selectTimeSlot('10:00');
+    component.workflow.selectPatient(mockPatient);
+    component.workflow.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDate(new Date(2026, 9, 20));
+    component.workflow.selectTimeSlot('10:00');
     component.workflow.setReason('Routine checkup');
 
     await component.confirmBooking();
 
-    expect(component.bookingSuccess()).toBe(true);
-    const apptId = component.createdAppointmentId();
+    expect(component.workflow.bookingSuccess()).toBe(true);
+    const apptId = component.workflow.createdAppointmentId();
     expect(apptId).toBeDefined();
 
     // Assert Appointment record is created and retrievable in data store
@@ -211,29 +211,29 @@ describe('ClerkUseCase', () => {
   });
 
   it('should allow clearing active clerk profile', () => {
-    expect(component.activeClerk()).toEqual(mockClerk);
+    expect(component.workflow.activeClerk()).toEqual(mockClerk);
     component.clearClerk();
-    expect(component.activeClerk()).toBeNull();
+    expect(component.workflow.activeClerk()).toBeNull();
   });
 
   it('should initialize minDate at midnight (00:00:00) so today is selectable', () => {
-    expect(component.minDate.getHours()).toBe(0);
-    expect(component.minDate.getMinutes()).toBe(0);
-    expect(component.minDate.getSeconds()).toBe(0);
-    expect(component.minDate.getMilliseconds()).toBe(0);
+    expect(component.workflow.minDate.getHours()).toBe(0);
+    expect(component.workflow.minDate.getMinutes()).toBe(0);
+    expect(component.workflow.minDate.getSeconds()).toBe(0);
+    expect(component.workflow.minDate.getMilliseconds()).toBe(0);
   });
 
   it('should toggle time slot selection on click', () => {
-    component.selectTimeSlot('09:00');
-    expect(component.selectedTimeSlot()).toBe('09:00');
+    component.workflow.selectTimeSlot('09:00');
+    expect(component.workflow.selectedTimeSlot()).toBe('09:00');
 
     // Clicking the same slot toggles it off
-    component.selectTimeSlot('09:00');
-    expect(component.selectedTimeSlot()).toBeNull();
+    component.workflow.selectTimeSlot('09:00');
+    expect(component.workflow.selectedTimeSlot()).toBeNull();
 
     // Selecting a different slot sets it
-    component.selectTimeSlot('09:30');
-    expect(component.selectedTimeSlot()).toBe('09:30');
+    component.workflow.selectTimeSlot('09:30');
+    expect(component.workflow.selectedTimeSlot()).toBe('09:30');
   });
 
   it('should compare doctors by SSN accurately', () => {
@@ -244,48 +244,47 @@ describe('ClerkUseCase', () => {
   });
 
   it('should reset workflow state while preserving active clerk profile', () => {
-    component.selectPatient(mockPatient);
-    component.selectDoctor(mockDoctors[0]);
-    component.selectTimeSlot('09:00');
+    component.workflow.selectPatient(mockPatient);
+    component.workflow.selectDoctor(mockDoctors[0]);
+    component.workflow.selectTimeSlot('09:00');
     component.workflow.setReason('Routine checkup');
 
     component.resetWorkflow();
 
-    expect(component.selectedPatient()).toBeNull();
-    expect(component.selectedDoctor()).toBeNull();
-    expect(component.selectedTimeSlot()).toBeNull();
-    expect(component.reason()).toBe('');
-    expect(component.bookingSuccess()).toBe(false);
-    expect(component.activeClerk()).toEqual(mockClerk);
+    expect(component.workflow.selectedPatient()).toBeNull();
+    expect(component.workflow.selectedDoctor()).toBeNull();
+    expect(component.workflow.selectedTimeSlot()).toBeNull();
+    expect(component.workflow.reason()).toBe('');
+    expect(component.workflow.bookingSuccess()).toBe(false);
+    expect(component.workflow.activeClerk()).toEqual(mockClerk);
   });
 
   it('should update patientInputValue immediately on typing and debounce search query', async () => {
     vi.useFakeTimers();
     try {
-      const mockEvent = { target: { value: 'Johann' } } as unknown as Event;
-      component.onPatientSearchInput(mockEvent);
+      component.workflow.setPatientSearchInput('Johann');
 
-      expect(component.patientInputValue()).toBe('Johann');
-      expect(component.patientSearchQuery()).toBe(''); // Debounced
+      expect(component.workflow.patientInputValue()).toBe('Johann');
+      expect(component.workflow.patientSearchQuery()).toBe(''); // Debounced
 
       vi.advanceTimersByTime(300);
-      expect(component.patientSearchQuery()).toBe('Johann');
+      expect(component.workflow.patientSearchQuery()).toBe('Johann');
     } finally {
       vi.useRealTimers();
     }
   });
 
   it('should format patient details into patientInputValue when selecting patient', () => {
-    component.selectPatient(mockPatient);
-    expect(component.patientInputValue()).toBe('Johann Schmidt (SSN: 2002)');
-    expect(component.patientSearchQuery()).toBe('Johann Schmidt');
+    component.workflow.selectPatient(mockPatient);
+    expect(component.workflow.patientInputValue()).toBe('Johann Schmidt (SSN: 2002)');
+    expect(component.workflow.patientSearchQuery()).toBe('Johann Schmidt');
   });
 
   it('should clear patientInputValue and patientSearchQuery on workflow reset', () => {
-    component.onPatientSearchInput({ target: { value: 'Johann' } } as any);
+    component.workflow.setPatientSearchInput('Johann');
     component.resetWorkflow();
-    expect(component.patientInputValue()).toBe('');
-    expect(component.patientSearchQuery()).toBe('');
+    expect(component.workflow.patientInputValue()).toBe('');
+    expect(component.workflow.patientSearchQuery()).toBe('');
   });
 
   it('should return informative NACA tooltip text', () => {
@@ -303,7 +302,7 @@ describe('ClerkUseCase', () => {
       insurance: 'ÖGK',
       nacaScore: 6,
     };
-    component.selectPatient(severePatient);
+    component.workflow.selectPatient(severePatient);
     await fixture.whenStable();
 
     const nacaChip = fixture.nativeElement.querySelector('.naca-chip');
@@ -316,7 +315,7 @@ describe('ClerkUseCase', () => {
   });
 
   it('should render the persistent clinical summary strip in Step 2 with patient details and unselected doctor placeholder', async () => {
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await fixture.whenStable();
     await advanceToStep(1);
 
@@ -335,9 +334,9 @@ describe('ClerkUseCase', () => {
   });
 
   it('should eliminate the Step 3 memory bridge by displaying both patient and doctor context persistently', async () => {
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDoctor(mockDoctors[0]);
     await advanceToStep(2);
 
     const steps = await stepperHarness.getSteps();
@@ -358,11 +357,11 @@ describe('ClerkUseCase', () => {
   });
 
   it('should maintain the persistent clinical summary strip in Step 4', async () => {
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDoctor(mockDoctors[0]);
     await advanceToStep(2);
-    component.selectTimeSlot('09:00');
+    component.workflow.selectTimeSlot('09:00');
     await advanceToStep(3);
 
     const steps = await stepperHarness.getSteps();
@@ -378,9 +377,9 @@ describe('ClerkUseCase', () => {
     const stepperDebug = fixture.debugElement.query(By.directive(MatStepper));
     const stepperInstance = stepperDebug.componentInstance as MatStepper;
 
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDoctor(mockDoctors[0]);
     await advanceToStep(2);
 
     const steps = await stepperHarness.getSteps();
@@ -397,7 +396,7 @@ describe('ClerkUseCase', () => {
   it('should not auto-advance stepper on patient selection', async () => {
     const steps = await stepperHarness.getSteps();
     expect(await steps[0].isSelected()).toBe(true);
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await fixture.whenStable();
     expect(await steps[0].isSelected()).toBe(true);
   });
@@ -409,14 +408,14 @@ describe('ClerkUseCase', () => {
     const nextBtn = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
     expect(await nextBtn.isDisabled()).toBe(true);
 
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await fixture.whenStable();
 
     expect(await nextBtn.isDisabled()).toBe(false);
   });
 
   it('should purge redundant inline Next buttons from entity preview cards in Step 1 and Step 2', async () => {
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await fixture.whenStable();
 
     const steps = await stepperHarness.getSteps();
@@ -429,7 +428,7 @@ describe('ClerkUseCase', () => {
     // Advance to Step 2
     await step1Buttons[0].click();
     await fixture.whenStable();
-    component.onDoctorChange(mockDoctors[0]);
+    component.workflow.selectDoctor(mockDoctors[0]);
     await fixture.whenStable();
 
     const step2Buttons = await steps[1].getAllHarnesses(MatButtonHarness);
@@ -446,13 +445,13 @@ describe('ClerkUseCase', () => {
   it('should render neutralized no-slots banner when all slots are booked', async () => {
     await bookAllDaySlots(mockDoctors[0].ssn, '2026-10-15');
 
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 15));
+    component.workflow.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDate(new Date(2026, 9, 15));
     await vi.waitFor(() => {
-      expect(component.timeSlots().length).toBe(19);
-      expect(component.hasAvailableSlots()).toBe(false);
+      expect(component.workflow.timeSlots().length).toBe(19);
+      expect(component.workflow.hasAvailableSlots()).toBe(false);
     });
     await advanceToStep(2);
 
@@ -469,12 +468,12 @@ describe('ClerkUseCase', () => {
   it('should display proactive guidance with next available date and allow one-click selection', async () => {
     await bookAllDaySlots(mockDoctors[0].ssn, '2026-10-15');
 
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 15));
+    component.workflow.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDate(new Date(2026, 9, 15));
     await vi.waitFor(() => {
-      expect(component.nextAvailableDate()).toBe('2026-10-16');
+      expect(component.workflow.nextAvailableDate()).toBe('2026-10-16');
     });
     await advanceToStep(2);
 
@@ -492,7 +491,7 @@ describe('ClerkUseCase', () => {
     await nextBtn.click();
     await fixture.whenStable();
 
-    expect(component.formattedDate()).toBe('2026-10-16');
+    expect(component.workflow.formattedDate()).toBe('2026-10-16');
   });
 
   it('should display neutral fallback guidance when no next available date is specified', async () => {
@@ -503,13 +502,13 @@ describe('ClerkUseCase', () => {
       await bookAllDaySlots(mockDoctors[0].ssn, dateStr);
     }
 
-    component.selectPatient(mockPatient);
+    component.workflow.selectPatient(mockPatient);
     await advanceToStep(1);
-    component.selectDoctor(mockDoctors[0]);
-    component.onDateChange(new Date(2026, 9, 15));
+    component.workflow.selectDoctor(mockDoctors[0]);
+    component.workflow.selectDate(new Date(2026, 9, 15));
     await vi.waitFor(() => {
-      expect(component.hasAvailableSlots()).toBe(false);
-      expect(component.nextAvailableDate()).toBeNull();
+      expect(component.workflow.hasAvailableSlots()).toBe(false);
+      expect(component.workflow.nextAvailableDate()).toBeNull();
     });
     await advanceToStep(2);
 
@@ -552,7 +551,7 @@ describe('ClerkUseCase', () => {
   it('should shift focus to clerk search input when clearing clerk', async () => {
     await fixture.whenStable();
 
-    expect(component.activeClerk()).toEqual(mockClerk);
+    expect(component.workflow.activeClerk()).toEqual(mockClerk);
     component.clearClerk();
     await fixture.whenStable();
 
@@ -572,7 +571,7 @@ describe('ClerkUseCase', () => {
     await changeBtn.click();
     await fixture.whenStable();
 
-    expect(component.activeClerk()).toBeNull();
+    expect(component.workflow.activeClerk()).toBeNull();
     const clerkInput = await loader.getHarness(
       MatInputHarness.with({ placeholder: /Search clerk/i }),
     );
@@ -598,26 +597,26 @@ describe('ClerkUseCase', () => {
     await fixture.whenStable();
 
     // Initially active clerk is mockClerk (1001)
-    expect(component.activeClerk()?.name).toBe('Erika Mustermann');
+    expect(component.workflow.activeClerk()?.name).toBe('Erika Mustermann');
 
     // User clicks change
     const changeBtn = await loader.getHarness(MatButtonHarness.with({ text: /Change/i }));
     await changeBtn.click();
     await fixture.whenStable();
 
-    expect(component.activeClerk()).toBeNull();
+    expect(component.workflow.activeClerk()).toBeNull();
 
     // User selects a different clerk via autocomplete harness
     const clerkAuto = await loader.getHarness(MatAutocompleteHarness);
     await clerkAuto.enterText('Max');
     await vi.waitFor(() => {
-      expect(component.availableClerks().length).toBeGreaterThan(0);
+      expect(component.workflow.availableClerks().length).toBeGreaterThan(0);
     });
     await clerkAuto.selectOption({ text: /Max Mustermann/ });
     await fixture.whenStable();
 
-    expect(component.activeClerk()?.name).toBe('Max Mustermann');
-    expect(component.activeClerk()?.ssn).toBe('1002');
+    expect(component.workflow.activeClerk()?.name).toBe('Max Mustermann');
+    expect(component.workflow.activeClerk()?.ssn).toBe('1002');
   });
 
   it('should display full clerk name and SSN in title tooltip for long clerk names', async () => {
@@ -626,7 +625,7 @@ describe('ClerkUseCase', () => {
       name: 'Dr. Maximilian Alexander Bartholomew Constantine von Hapsburg',
       ssn: '1003',
     };
-    component.selectClerk(longNameClerk);
+    component.workflow.selectClerk(longNameClerk);
     await fixture.whenStable();
 
     const clerkCard = fixture.nativeElement.querySelector('.active-clerk-card');
@@ -664,7 +663,7 @@ describe('ClerkUseCase', () => {
       await patientAuto.enterText('Johann');
 
       await vi.waitFor(async () => {
-        expect(component.patients().length).toBeGreaterThan(0);
+        expect(component.workflow.patients().length).toBeGreaterThan(0);
         if (!(await patientAuto.isOpen())) {
           await patientAuto.focus();
         }
@@ -674,15 +673,15 @@ describe('ClerkUseCase', () => {
       await patientAuto.selectOption({ text: /Johann Schmidt/ });
       await fixture.whenStable();
 
-      expect(component.selectedPatient()?.ssn).toBe(mockPatient.ssn);
-      expect(component.selectedPatient()?.name).toBe(mockPatient.name);
+      expect(component.workflow.selectedPatient()?.ssn).toBe(mockPatient.ssn);
+      expect(component.workflow.selectedPatient()?.name).toBe(mockPatient.name);
 
       const nextBtn = await steps[0].getHarness(MatButtonHarness.with({ text: /Next/i }));
       expect(await nextBtn.isDisabled()).toBe(false);
     });
 
     it('should select department and doctor using MatSelectHarness in Step 2', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
 
       const steps = await stepperHarness.getSteps();
@@ -697,7 +696,7 @@ describe('ClerkUseCase', () => {
       await deptSelect!.clickOptions({ text: 'Cardiology' });
       await fixture.whenStable();
 
-      expect(component.selectedDepartment()).toBe('Cardiology');
+      expect(component.workflow.selectedDepartment()).toBe('Cardiology');
 
       // Attending Doctor select
       const docSelect = await formFields[1].getControl(MatSelectHarness);
@@ -706,16 +705,16 @@ describe('ClerkUseCase', () => {
       await docSelect!.clickOptions({ text: /Dr\. Alexander Weber/ });
       await fixture.whenStable();
 
-      expect(component.selectedDoctor()?.name).toBe('Dr. Alexander Weber');
+      expect(component.workflow.selectedDoctor()?.name).toBe('Dr. Alexander Weber');
 
       const nextBtn = await steps[1].getHarness(MatButtonHarness.with({ text: /Next/i }));
       expect(await nextBtn.isDisabled()).toBe(false);
     });
 
     it('should select consultation date and time slot using datepicker and button harnesses in Step 3', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
 
       const steps = await stepperHarness.getSteps();
@@ -726,7 +725,7 @@ describe('ClerkUseCase', () => {
       await fixture.whenStable();
 
       await vi.waitFor(() => {
-        expect(component.timeSlots().length).toBeGreaterThan(0);
+        expect(component.workflow.timeSlots().length).toBeGreaterThan(0);
       });
 
       const slotBtn = await steps[2].getHarness(MatButtonHarness.with({ text: /10:00/ }));
@@ -735,16 +734,16 @@ describe('ClerkUseCase', () => {
       await slotBtn.click();
       await fixture.whenStable();
 
-      expect(component.selectedTimeSlot()).toBe('10:00');
+      expect(component.workflow.selectedTimeSlot()).toBe('10:00');
 
       const nextBtn = await steps[2].getHarness(MatButtonHarness.with({ text: /Next/i }));
       expect(await nextBtn.isDisabled()).toBe(false);
     });
 
     it('should allow navigating back to previously completed steps via MatStepHarness.select()', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
 
       const steps = await stepperHarness.getSteps();
@@ -767,11 +766,11 @@ describe('ClerkUseCase', () => {
     });
 
     it('should submit appointment booking form through Step 4 harnesses and confirm in data store', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
-      component.selectTimeSlot('10:00');
+      component.workflow.selectTimeSlot('10:00');
       await advanceToStep(3);
 
       const steps = await stepperHarness.getSteps();
@@ -791,8 +790,8 @@ describe('ClerkUseCase', () => {
       await bookBtn.click();
       await fixture.whenStable();
 
-      expect(component.bookingSuccess()).toBe(true);
-      const apptId = component.createdAppointmentId();
+      expect(component.workflow.bookingSuccess()).toBe(true);
+      const apptId = component.workflow.createdAppointmentId();
       expect(apptId).toBeDefined();
 
       // Verify Appointment record is created and retrievable in data store
@@ -809,13 +808,13 @@ describe('ClerkUseCase', () => {
       await fixture.whenStable();
 
       expect(await steps[0].isSelected()).toBe(true);
-      expect(component.selectedPatient()).toBeNull();
+      expect(component.workflow.selectedPatient()).toBeNull();
     });
 
     it('should handle 409 conflict during booking via harnesses, recover to Step 3, and reload slots', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
 
       const steps = await stepperHarness.getSteps();
@@ -823,14 +822,14 @@ describe('ClerkUseCase', () => {
       await dateInput.setValue('10/20/2026');
       await fixture.whenStable();
       await vi.waitFor(() => {
-        expect(component.timeSlots().length).toBeGreaterThan(0);
+        expect(component.workflow.timeSlots().length).toBeGreaterThan(0);
       });
 
       const slotBtn = await steps[2].getHarness(MatButtonHarness.with({ text: /11:00/ }));
       expect(await slotBtn.isDisabled()).toBe(false);
       await slotBtn.click();
       await fixture.whenStable();
-      expect(component.selectedTimeSlot()).toBe('11:00');
+      expect(component.workflow.selectedTimeSlot()).toBe('11:00');
 
       // Advance to Step 4 via Next button
       const nextBtn3 = await steps[2].getHarness(MatButtonHarness.with({ text: /Next/i }));
@@ -854,8 +853,8 @@ describe('ClerkUseCase', () => {
       await bookBtn.click();
       await fixture.whenStable();
 
-      expect(component.bookingSuccess()).toBe(false);
-      expect(component.selectedTimeSlot()).toBeNull();
+      expect(component.workflow.bookingSuccess()).toBe(false);
+      expect(component.workflow.selectedTimeSlot()).toBeNull();
 
       // Verify stepper recovered back to Step 3 (index 2)
       expect(await steps[2].isSelected()).toBe(true);
@@ -868,7 +867,7 @@ describe('ClerkUseCase', () => {
 
       // Verify slots were reloaded and 11:00 slot is now disabled in Step 3
       await vi.waitFor(() => {
-        const slot = component.timeSlots().find((s) => s.time === '11:00');
+        const slot = component.workflow.timeSlots().find((s) => s.time === '11:00');
         expect(slot?.available).toBe(false);
       });
       const updatedSlotBtn = await steps[2].getHarness(MatButtonHarness.with({ text: /11:00/ }));
@@ -876,11 +875,11 @@ describe('ClerkUseCase', () => {
     });
 
     it('should lock booking button, back button, change clerk button, and stepper navigation while booking mutation is in flight', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
-      component.selectTimeSlot('10:00');
+      component.workflow.selectTimeSlot('10:00');
       await advanceToStep(3);
 
       const steps = await stepperHarness.getSteps();
@@ -899,7 +898,7 @@ describe('ClerkUseCase', () => {
         await fixture.whenStable();
 
         // Runner lock must be active
-        expect(component.isLocked()).toBe(true);
+        expect(component.workflow.isLocked()).toBe(true);
 
         // Book button must be disabled and show loading state
         const loadingBookBtn = await steps[3].getHarness(
@@ -921,8 +920,8 @@ describe('ClerkUseCase', () => {
         expect(await steps[3].isSelected()).toBe(true);
 
         // Interactive methods should be guarded
-        component.selectPatient(null as any);
-        expect(component.selectedPatient()).toEqual(mockPatient);
+        component.workflow.selectPatient(null as any);
+        expect(component.workflow.selectedPatient()).toEqual(mockPatient);
 
         // Rapid duplicate call to confirmBooking should be ignored
         await component.confirmBooking();
@@ -932,19 +931,19 @@ describe('ClerkUseCase', () => {
         await confirmPromise;
         await fixture.whenStable();
 
-        expect(component.isLocked()).toBe(false);
-        expect(component.bookingSuccess()).toBe(true);
+        expect(component.workflow.isLocked()).toBe(false);
+        expect(component.workflow.bookingSuccess()).toBe(true);
       } finally {
         dataAccess.bookAppointment = originalBook;
       }
     });
 
     it('should present centralized success notification via MatSnackBarHarness upon booking completion', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
-      component.selectTimeSlot('10:00');
+      component.workflow.selectTimeSlot('10:00');
       await advanceToStep(3);
 
       const steps = await stepperHarness.getSteps();
@@ -954,17 +953,17 @@ describe('ClerkUseCase', () => {
       await bookBtn.click();
       await fixture.whenStable();
 
-      expect(component.bookingSuccess()).toBe(true);
+      expect(component.workflow.bookingSuccess()).toBe(true);
       const snackBar = await rootLoader.getHarness(MatSnackBarHarness);
       expect(await snackBar.getMessage()).toContain('Appointment successfully scheduled');
     });
 
     it('should gate booking submission and disable Book Appointment button when notes exceed 500 characters', async () => {
-      component.selectPatient(mockPatient);
+      component.workflow.selectPatient(mockPatient);
       await advanceToStep(1);
-      component.selectDoctor(mockDoctors[0]);
+      component.workflow.selectDoctor(mockDoctors[0]);
       await advanceToStep(2);
-      component.selectTimeSlot('10:00');
+      component.workflow.selectTimeSlot('10:00');
       await advanceToStep(3);
 
       const steps = await stepperHarness.getSteps();
@@ -977,7 +976,7 @@ describe('ClerkUseCase', () => {
       await fixture.whenStable();
 
       // Form must be invalid
-      expect(component.bookingForm().invalid()).toBe(true);
+      expect(component.workflow.bookingForm().invalid()).toBe(true);
 
       // Book button must be disabled by validation gating
       const bookBtn = await steps[3].getHarness(
@@ -987,7 +986,7 @@ describe('ClerkUseCase', () => {
 
       // Attempting confirmBooking directly must be gated
       await component.confirmBooking();
-      expect(component.bookingSuccess()).toBe(false);
+      expect(component.workflow.bookingSuccess()).toBe(false);
       await fixture.whenStable();
 
       // Error message rendered in form field
