@@ -4,10 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] A pure domain engine function calculates available 30-minute Time Slots between 08:00 and 17:00 for a given doctor and date, filtering out conflicts for doctor or patient.
-- [ ] When all Time Slots on the requested date are booked, the pure domain engine identifies the next available date within a 14-day forward window.
-- [ ] The calculation engine is free of Angular dependencies (no DI, signals, or resources) and covered by a comprehensive, fast unit test suite testing conflict scenarios and lookahead edge cases.
-- [ ] The in-memory data adapter delegates its time slot query handling to the pure engine while preserving the `HospitalDataAccess` port contract.
-- [ ] Existing Appointment Intake time slot selection and navigation work identically from the user's perspective.
+- [x] A pure domain engine function calculates available 30-minute Time Slots between 08:00 and 17:00 for a given doctor and date, filtering out conflicts for doctor or patient.
+- [x] When all Time Slots on the requested date are booked, the pure domain engine identifies the next available date within a 14-day forward window.
+- [x] The calculation engine is free of Angular dependencies (no DI, signals, or resources) and covered by a comprehensive, fast unit test suite testing conflict scenarios and lookahead edge cases.
+- [x] The in-memory data adapter delegates its time slot query handling to the pure engine while preserving the `HospitalDataAccess` port contract.
+- [x] Existing Appointment Intake time slot selection and navigation work identically from the user's perspective.
+
