@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] A pure domain engine function aggregates consultation visit counts per patient-doctor pair within a date range from stored appointments, patient records, and doctor records, covered by pure unit tests.
 - [ ] The `HospitalDataAccess` port, `InMemoryHospitalDataAdapter`, `HttpHospitalDataAdapter`, and `ClerkReport` use `ConsultationFrequencyReport` and `getConsultationFrequencyReport`.
