@@ -33,12 +33,21 @@ import {
   TimeSlotQueryParams,
   TimeSlotsResult,
 } from './hospital-data-access';
+import {
+  HospitalFixtureData,
+  StoredAppointment,
+  createDemoHospitalData,
+  createMinimalHospitalData,
+} from './mock-hospital-data';
+
+export type { StoredAppointment, HospitalFixtureData };
 
 export interface InMemoryAdapterConfig {
   seedDelayMs?: number;
   migrateDelayMs?: number;
   initialDbType?: 'MariaDB' | 'MongoDB' | null;
   isLoading?: boolean;
+  fixtureMode?: 'minimal' | 'demo';
 }
 
 export const IN_MEMORY_ADAPTER_CONFIG = new InjectionToken<InMemoryAdapterConfig>(
@@ -47,126 +56,6 @@ export const IN_MEMORY_ADAPTER_CONFIG = new InjectionToken<InMemoryAdapterConfig
 
 export interface TestHospitalDataOptions extends InMemoryAdapterConfig {
   dbType?: 'MariaDB' | 'MongoDB' | null;
-}
-
-interface StoredAppointment {
-  id: number;
-  date: string;
-  time: string;
-  doctorSsn: string;
-  patientSsn: string;
-  reason?: string;
-  clerkSsn?: string;
-  treatment?: Treatment;
-}
-
-function createInitialDoctors(): Doctor[] {
-  return [
-    {
-      id: '3001',
-      name: 'Dr. Alexander Weber',
-      ssn: '3001',
-      specialty: 'Cardiology',
-      position: 'Chief of Department',
-      department: 'Cardiology',
-    },
-    {
-      id: '3002',
-      name: 'Dr. Sarah Jenkins',
-      ssn: '3002',
-      specialty: 'Neurology',
-      position: 'Attending',
-      department: 'Neurology',
-    },
-    {
-      id: '3003',
-      name: 'Dr. Michael Chen',
-      ssn: '3003',
-      specialty: 'Orthopedics',
-      position: 'Senior Resident',
-      department: 'Orthopedics',
-    },
-  ];
-}
-
-function createInitialClerks(): Clerk[] {
-  return [
-    { id: '1001', name: 'Erika Mustermann', ssn: '1001' },
-    { id: '1002', name: 'Max Mustermann', ssn: '1002' },
-  ];
-}
-
-function createInitialPatients(): Patient[] {
-  return [
-    {
-      id: '2001',
-      name: 'Maria Gruber',
-      ssn: '2001',
-      insurance: 'ÖGK',
-      nacaScore: 1,
-      appointments: [
-        {
-          id: 101,
-          date: '2026-09-10',
-          time: '09:00',
-          doctorName: 'Dr. Alexander Weber',
-          reason: 'Initial consultation',
-        },
-      ],
-    },
-    {
-      id: '2002',
-      name: 'Johann Schmidt',
-      ssn: '2002',
-      insurance: 'BVAEB',
-      nacaScore: 2,
-      appointments: [],
-    },
-    {
-      id: '2003',
-      name: 'Anna Fischer',
-      ssn: '2003',
-      insurance: 'SVS',
-      nacaScore: 0,
-      appointments: [],
-    },
-  ];
-}
-
-function createInitialMedications(): Medication[] {
-  return [
-    { id: 1, name: 'Aspirin' },
-    { id: 2, name: 'Paracetamol' },
-    { id: 3, name: 'Ibuprofen' },
-    { id: 4, name: 'Amoxicillin' },
-    { id: 5, name: 'Metformin' },
-  ];
-}
-
-function createInitialAppointments(): StoredAppointment[] {
-  return [
-    {
-      id: 101,
-      date: '2026-09-10',
-      time: '09:00',
-      doctorSsn: '3001',
-      patientSsn: '2001',
-      reason: 'Initial consultation',
-      treatment: {
-        description: 'Echocardiogram',
-        cost: 250,
-        medications: [{ id: 1, name: 'Aspirin' }],
-      },
-    },
-    {
-      id: 102,
-      date: '2026-10-15',
-      time: '09:00',
-      doctorSsn: '3001',
-      patientSsn: '2002',
-      reason: 'Routine checkup',
-    },
-  ];
 }
 
 @Injectable({
@@ -181,19 +70,35 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   );
 
   private nextAppointmentId = 500;
-  private doctors: Doctor[] = createInitialDoctors();
-  private clerks: Clerk[] = createInitialClerks();
-  private patients: Patient[] = createInitialPatients();
-  private medications: Medication[] = createInitialMedications();
-  private appointments: StoredAppointment[] = createInitialAppointments();
+  private doctors: Doctor[];
+  private clerks: Clerk[];
+  private patients: Patient[];
+  private medications: Medication[];
+  private appointments: StoredAppointment[];
+
+  constructor() {
+    const initial = this.loadFixtures();
+    this.doctors = initial.doctors;
+    this.clerks = initial.clerks;
+    this.patients = initial.patients;
+    this.medications = initial.medications;
+    this.appointments = initial.appointments;
+  }
+
+  private loadFixtures(): HospitalFixtureData {
+    return this.config?.fixtureMode === 'demo'
+      ? createDemoHospitalData()
+      : createMinimalHospitalData();
+  }
 
   private resetFixtures(bumpVersion = true): void {
     this.nextAppointmentId = 500;
-    this.doctors = createInitialDoctors();
-    this.clerks = createInitialClerks();
-    this.patients = createInitialPatients();
-    this.medications = createInitialMedications();
-    this.appointments = createInitialAppointments();
+    const refreshed = this.loadFixtures();
+    this.doctors = refreshed.doctors;
+    this.clerks = refreshed.clerks;
+    this.patients = refreshed.patients;
+    this.medications = refreshed.medications;
+    this.appointments = refreshed.appointments;
     if (bumpVersion) {
       this.stateVersion.update((v) => v + 1);
     }
@@ -625,6 +530,7 @@ export function provideTestHospitalData(options?: TestHospitalDataOptions): Prov
     migrateDelayMs: options?.migrateDelayMs ?? 0,
     initialDbType,
     isLoading: options?.isLoading ?? false,
+    fixtureMode: options?.fixtureMode ?? 'minimal',
   };
   return [
     { provide: IN_MEMORY_ADAPTER_CONFIG, useValue: config },

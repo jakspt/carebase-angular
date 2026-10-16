@@ -24,11 +24,12 @@ describe('appConfig (static)', () => {
     expect(dataAccess).toBeInstanceOf(InMemoryHospitalDataAdapter);
   });
 
-  it('provides simulated delays for static demo environment in IN_MEMORY_ADAPTER_CONFIG', () => {
+  it('provides simulated delays and demo fixture mode for static demo environment in IN_MEMORY_ADAPTER_CONFIG', () => {
     const config = TestBed.inject(IN_MEMORY_ADAPTER_CONFIG);
     expect(config).toEqual({
       seedDelayMs: 3000,
       migrateDelayMs: 10000,
+      fixtureMode: 'demo',
     });
   });
 });

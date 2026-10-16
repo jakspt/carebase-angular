@@ -425,4 +425,70 @@ describe('provideTestHospitalData', () => {
       expect(statusRes.hasValue()).toBe(false);
     });
   });
+
+  it('should initialize with expanded demo fixtures when fixtureMode is demo', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideTestHospitalData({ fixtureMode: 'demo' })],
+    });
+    const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
+
+    // 6 doctors across 6 departments
+    const doctorsRes = instance.getDoctors();
+    await vi.waitFor(() => {
+      expect(doctorsRes.value().length).toBe(6);
+    });
+    const departments = new Set(doctorsRes.value().map((d) => d.department));
+    expect(departments.size).toBe(6);
+    expect(departments).toContain('Cardiology');
+    expect(departments).toContain('Neurology');
+    expect(departments).toContain('Orthopedics');
+    expect(departments).toContain('Internal Medicine');
+    expect(departments).toContain('Pediatrics');
+    expect(departments).toContain('Dermatology');
+
+    // 8 medications formulary
+    const medsRes = instance.getMedications();
+    await vi.waitFor(() => {
+      expect(medsRes.value().length).toBe(8);
+    });
+
+    // 3 clerks searchable
+    const clerksRes = instance.searchClerks(signal(''));
+    await vi.waitFor(() => {
+      expect(clerksRes.value().length).toBe(3);
+    });
+
+    // Search patients by diverse autocomplete letter combos
+    const stefanRes = instance.searchPatients(signal('Stefan'));
+    await vi.waitFor(() => {
+      expect(stefanRes.value().some((p) => p.name === 'Stefan Wagner')).toBe(true);
+    });
+
+    const elenaRes = instance.searchPatients(signal('Elena'));
+    await vi.waitFor(() => {
+      expect(elenaRes.value().some((p) => p.name === 'Elena Bauer')).toBe(true);
+    });
+
+    const markusRes = instance.searchPatients(signal('Markus'));
+    await vi.waitFor(() => {
+      expect(markusRes.value().some((p) => p.name === 'Markus Huber')).toBe(true);
+    });
+
+    // Annual doctor earnings has earnings for multiple doctors in demo mode
+    const currentYear = new Date().getFullYear();
+    const earningsRes = instance.getDoctorEarningsReport(signal(currentYear));
+    await vi.waitFor(() => {
+      expect(earningsRes.value()).toBeDefined();
+    });
+    const reportData = earningsRes.value()?.data ?? [];
+    const earningDoctors = reportData.filter((d) => d.totalCosts > 0);
+    expect(earningDoctors.length).toBeGreaterThanOrEqual(4);
+
+    // Re-seeding preserves demo mode
+    await instance.seedDatabase();
+    const refreshedDocs = instance.getDoctors();
+    await vi.waitFor(() => {
+      expect(refreshedDocs.value().length).toBe(6);
+    });
+  });
 });

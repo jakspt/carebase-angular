@@ -20,6 +20,7 @@ export const appConfig: ApplicationConfig = {
       useValue: {
         seedDelayMs: 3000,
         migrateDelayMs: 10000,
+        fixtureMode: 'demo',
       },
     },
   ],
