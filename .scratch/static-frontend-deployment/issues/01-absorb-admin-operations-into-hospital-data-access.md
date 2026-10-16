@@ -1,6 +1,6 @@
 # Absorb Admin Operations into Hospital Data Access Seam
 
-Status: ready-for-agent
+Status: resolved
 
 ## Context
 

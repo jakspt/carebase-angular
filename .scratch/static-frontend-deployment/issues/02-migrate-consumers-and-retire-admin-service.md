@@ -1,6 +1,6 @@
 # Migrate Consumers and Retire AdminService
 
-Status: ready-for-agent
+Status: resolved
 
 ## Context
 

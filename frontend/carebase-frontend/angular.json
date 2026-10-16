@@ -49,6 +49,16 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "static": {
+              "baseHref": "/carebase-angular/",
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/app.config.ts",
+                  "with": "src/app/app.config.static.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
