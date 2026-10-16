@@ -21,7 +21,7 @@ This is [a refactored version of my university project](https://github.com/jaksp
 
 ## Live Demo
 
-[**Launch the Live Demo**](https://jakspt.github.io/carebase)
+[**Launch the Live Demo**](https://jakspt.github.io/carebase-angular/)
 
 Because the frontend uses a **Hexagonal Architecture (Ports and Adapters)**, the UI code only talks to an abstract `HospitalDataAccess` interface. It doesn't care where the data actually comes from.
 
