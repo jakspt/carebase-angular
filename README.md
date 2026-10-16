@@ -117,7 +117,15 @@ flowchart TD
 
 ## Screenshots & Workflows
 
+<p align="center">
+  <img src="demo/clerk_workflow_new.png" alt="Centered image" width="600" />
+</p>
+
 *Figure 1: Clerk scheduling view with a multi-step booking form and live 30-minute time slot checks.*
+
+<p align="center">
+  <img src="demo/doctor_workflow.png" alt="Centered image" width="600" />
+</p>
 
 *Figure 2: Analytics dashboard showing consultation frequency reports and yearly doctor earnings.*
 
