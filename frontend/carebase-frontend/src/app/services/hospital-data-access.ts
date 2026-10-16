@@ -10,6 +10,7 @@ import {
   CreateAppointmentResponse,
   TimeSlotsResponse,
   PatientVisitsReportResponse,
+  DbStatus,
 } from '../models/models';
 
 export interface TimeSlotQueryParams {
@@ -83,6 +84,9 @@ export interface HospitalDataAccess {
     appointmentId: number,
     treatment: Treatment,
   ): Promise<AddTreatmentResponse>;
+  getDatabaseStatus(): ResourceRef<DbStatus | undefined>;
+  seedDatabase(): Promise<{ success: boolean; message: string }>;
+  migrateDatabase(): Promise<{ success: boolean; message: string }>;
 }
 
 export const HOSPITAL_DATA_ACCESS = new InjectionToken<HospitalDataAccess>('HOSPITAL_DATA_ACCESS');

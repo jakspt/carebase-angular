@@ -9,6 +9,7 @@ import {
   Treatment,
   CreateAppointmentRequest,
   CreateAppointmentResponse,
+  DbStatus,
 } from '../models/models';
 import {
   AddTreatmentResponse,
@@ -72,7 +73,7 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
   searchClerks(query: Signal<string> | (() => string)): ResourceRef<Clerk[]> {
     return httpResource<Clerk[]>(
       () => {
-        const q = typeof query === 'function' ? query()?.trim() ?? '' : '';
+        const q = typeof query === 'function' ? (query()?.trim() ?? '') : '';
         return `/api/clerk/clerks/search?q=${encodeURIComponent(q)}`;
       },
       {
@@ -103,14 +104,11 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
   }
 
   getMedications(): ResourceRef<Medication[]> {
-    return httpResource<Medication[]>(
-      () => '/api/doctor/medications',
-      {
-        injector: this.injector,
-        defaultValue: [],
-        parse: (raw: unknown) => (raw as { medications?: Medication[] })?.medications ?? [],
-      },
-    );
+    return httpResource<Medication[]>(() => '/api/doctor/medications', {
+      injector: this.injector,
+      defaultValue: [],
+      parse: (raw: unknown) => (raw as { medications?: Medication[] })?.medications ?? [],
+    });
   }
 
   getDoctorEarningsReport(
@@ -179,6 +177,33 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
       const httpErr = err as { error?: { error?: string }; message?: string };
       throw new HospitalDataError(
         httpErr?.error?.error || httpErr?.message || 'Failed to add treatment.',
+        err,
+      );
+    }
+  }
+
+  getDatabaseStatus(): ResourceRef<DbStatus | undefined> {
+    return httpResource<DbStatus>(() => '/api/status', { injector: this.injector });
+  }
+
+  async seedDatabase(): Promise<{ success: boolean; message: string }> {
+    return this.postAdminAction('/api/admin/seed', 'Failed to seed database.');
+  }
+
+  async migrateDatabase(): Promise<{ success: boolean; message: string }> {
+    return this.postAdminAction('/api/admin/migrate', 'Failed to migrate database.');
+  }
+
+  private async postAdminAction(
+    url: string,
+    defaultErrorMessage: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      return await firstValueFrom(this.http.post<{ success: boolean; message: string }>(url, {}));
+    } catch (err: unknown) {
+      const httpErr = err as { error?: { error?: string }; message?: string };
+      throw new HospitalDataError(
+        httpErr?.error?.error || httpErr?.message || defaultErrorMessage,
         err,
       );
     }

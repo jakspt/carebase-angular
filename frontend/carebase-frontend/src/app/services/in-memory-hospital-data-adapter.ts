@@ -1,5 +1,6 @@
 import {
   Injectable,
+  InjectionToken,
   Injector,
   Provider,
   ResourceRef,
@@ -19,6 +20,7 @@ import {
   TimeSlot,
   PatientVisitRecord,
   DoctorEarnings,
+  DbStatus,
 } from '../models/models';
 import {
   AddTreatmentResponse,
@@ -32,6 +34,20 @@ import {
   TimeSlotsResult,
 } from './hospital-data-access';
 
+export interface InMemoryAdapterConfig {
+  seedDelayMs?: number;
+  migrateDelayMs?: number;
+  initialDbType?: 'MariaDB' | 'MongoDB';
+}
+
+export const IN_MEMORY_ADAPTER_CONFIG = new InjectionToken<InMemoryAdapterConfig>(
+  'IN_MEMORY_ADAPTER_CONFIG',
+);
+
+export interface TestHospitalDataOptions extends InMemoryAdapterConfig {
+  dbType?: 'MariaDB' | 'MongoDB';
+}
+
 interface StoredAppointment {
   id: number;
   date: string;
@@ -43,16 +59,8 @@ interface StoredAppointment {
   treatment?: Treatment;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
-export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
-  private readonly injector = inject(Injector);
-  private readonly stateVersion = signal(0);
-
-  private nextAppointmentId = 500;
-
-  private doctors: Doctor[] = [
+function createInitialDoctors(): Doctor[] {
+  return [
     {
       id: '3001',
       name: 'Dr. Alexander Weber',
@@ -78,13 +86,17 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       department: 'Orthopedics',
     },
   ];
+}
 
-  private clerks: Clerk[] = [
+function createInitialClerks(): Clerk[] {
+  return [
     { id: '1001', name: 'Erika Mustermann', ssn: '1001' },
     { id: '1002', name: 'Max Mustermann', ssn: '1002' },
   ];
+}
 
-  private patients: Patient[] = [
+function createInitialPatients(): Patient[] {
+  return [
     {
       id: '2001',
       name: 'Maria Gruber',
@@ -118,16 +130,20 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       appointments: [],
     },
   ];
+}
 
-  private medications: Medication[] = [
+function createInitialMedications(): Medication[] {
+  return [
     { id: 1, name: 'Aspirin' },
     { id: 2, name: 'Paracetamol' },
     { id: 3, name: 'Ibuprofen' },
     { id: 4, name: 'Amoxicillin' },
     { id: 5, name: 'Metformin' },
   ];
+}
 
-  private appointments: StoredAppointment[] = [
+function createInitialAppointments(): StoredAppointment[] {
+  return [
     {
       id: 101,
       date: '2026-09-10',
@@ -150,6 +166,37 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       reason: 'Routine checkup',
     },
   ];
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
+  private readonly injector = inject(Injector);
+  private readonly config = inject(IN_MEMORY_ADAPTER_CONFIG, { optional: true });
+  private readonly stateVersion = signal(0);
+  private readonly dbStatus = signal<'MariaDB' | 'MongoDB'>(
+    this.config?.initialDbType ?? 'MariaDB',
+  );
+
+  private nextAppointmentId = 500;
+  private doctors: Doctor[] = createInitialDoctors();
+  private clerks: Clerk[] = createInitialClerks();
+  private patients: Patient[] = createInitialPatients();
+  private medications: Medication[] = createInitialMedications();
+  private appointments: StoredAppointment[] = createInitialAppointments();
+
+  private resetFixtures(bumpVersion = true): void {
+    this.nextAppointmentId = 500;
+    this.doctors = createInitialDoctors();
+    this.clerks = createInitialClerks();
+    this.patients = createInitialPatients();
+    this.medications = createInitialMedications();
+    this.appointments = createInitialAppointments();
+    if (bumpVersion) {
+      this.stateVersion.update((v) => v + 1);
+    }
+  }
 
   getDoctors(): ResourceRef<Doctor[]> {
     return resource<Doctor[], number>({
@@ -506,8 +553,50 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
       results,
     };
   }
+
+  getDatabaseStatus(): ResourceRef<DbStatus | undefined> {
+    return resource<DbStatus | undefined, 'MariaDB' | 'MongoDB'>({
+      injector: this.injector,
+      params: () => this.dbStatus(),
+      loader: async (ctx) => ({ dbType: ctx.params }),
+    });
+  }
+
+  private async delay(ms?: number): Promise<void> {
+    if (ms && ms > 0) {
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    }
+  }
+
+  async seedDatabase(): Promise<{ success: boolean; message: string }> {
+    await this.delay(this.config?.seedDelayMs);
+    this.resetFixtures(true);
+    this.dbStatus.set('MariaDB');
+    return {
+      success: true,
+      message: 'Database successfully populated with randomized test data.',
+    };
+  }
+
+  async migrateDatabase(): Promise<{ success: boolean; message: string }> {
+    await this.delay(this.config?.migrateDelayMs);
+    this.dbStatus.set('MongoDB');
+    return {
+      success: true,
+      message:
+        'Migration completed! MariaDB records successfully transferred and switched to MongoDB.',
+    };
+  }
 }
 
-export function provideTestHospitalData(): Provider[] {
-  return [{ provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter }];
+export function provideTestHospitalData(options?: TestHospitalDataOptions): Provider[] {
+  const config: InMemoryAdapterConfig = {
+    seedDelayMs: options?.seedDelayMs ?? 0,
+    migrateDelayMs: options?.migrateDelayMs ?? 0,
+    initialDbType: options?.initialDbType ?? options?.dbType ?? 'MariaDB',
+  };
+  return [
+    { provide: IN_MEMORY_ADAPTER_CONFIG, useValue: config },
+    { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+  ];
 }

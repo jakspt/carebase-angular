@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import {
+  IN_MEMORY_ADAPTER_CONFIG,
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
 } from './in-memory-hospital-data-adapter';
@@ -249,6 +250,128 @@ describe('InMemoryHospitalDataAdapter', () => {
     // 2026-10-16 is the candidate date with open slots
     expect(res.value()?.nextAvailableDate).toBe('2026-10-16');
   });
+
+  it('should return initial database status as MariaDB by default', async () => {
+    const statusRes = adapter.getDatabaseStatus();
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MariaDB' });
+    });
+  });
+
+  it('should migrate database to MongoDB and reactively update database status', async () => {
+    const statusRes = adapter.getDatabaseStatus();
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MariaDB' });
+    });
+
+    const result = await adapter.migrateDatabase();
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('Migration completed!');
+
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MongoDB' });
+    });
+  });
+
+  it('should reset internal fixtures and database status to MariaDB on seedDatabase', async () => {
+    // 1. Switch to MongoDB
+    await adapter.migrateDatabase();
+    const statusRes = adapter.getDatabaseStatus();
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MongoDB' });
+    });
+
+    // 2. Add an appointment
+    const newAppointment = await adapter.bookAppointment({
+      patientSsn: '2001',
+      doctorSsn: '3001',
+      date: '2026-12-01',
+      time: '14:00',
+      reason: 'Temporary test appointment',
+    });
+    expect(newAppointment.success).toBe(true);
+
+    // Verify time slot is unavailable
+    const slots = adapter.getTimeSlots(
+      signal<TimeSlotQueryParams | undefined>({
+        date: '2026-12-01',
+        doctorSsn: '3001',
+      }),
+    );
+    await vi.waitFor(() => {
+      const slot = slots.value()?.slots.find((s) => s.time === '14:00');
+      expect(slot?.available).toBe(false);
+    });
+
+    // 3. Seed database
+    const seedResult = await adapter.seedDatabase();
+    expect(seedResult.success).toBe(true);
+    expect(seedResult.message).toContain(
+      'Database successfully populated with randomized test data.',
+    );
+
+    // 4. Verify database status reset back to MariaDB
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MariaDB' });
+    });
+
+    // 5. Verify the temporary appointment was reset
+    const refreshedSlots = adapter.getTimeSlots(
+      signal<TimeSlotQueryParams | undefined>({
+        date: '2026-12-01',
+        doctorSsn: '3001',
+      }),
+    );
+    await vi.waitFor(() => {
+      const slot = refreshedSlots.value()?.slots.find((s) => s.time === '14:00');
+      expect(slot?.available).toBe(true);
+    });
+  });
+});
+
+describe('InMemoryHospitalDataAdapter with IN_MEMORY_ADAPTER_CONFIG', () => {
+  it('should respect initialDbType and operation delays configured via IN_MEMORY_ADAPTER_CONFIG', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: IN_MEMORY_ADAPTER_CONFIG,
+          useValue: {
+            initialDbType: 'MongoDB',
+            seedDelayMs: 25,
+            migrateDelayMs: 25,
+          },
+        },
+        InMemoryHospitalDataAdapter,
+      ],
+    });
+
+    const configuredAdapter = TestBed.inject(InMemoryHospitalDataAdapter);
+    const statusRes = configuredAdapter.getDatabaseStatus();
+
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MongoDB' });
+    });
+
+    const startSeed = Date.now();
+    const seedRes = await configuredAdapter.seedDatabase();
+    const elapsedSeed = Date.now() - startSeed;
+    expect(seedRes.success).toBe(true);
+    expect(elapsedSeed).toBeGreaterThanOrEqual(15);
+
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MariaDB' });
+    });
+
+    const startMigrate = Date.now();
+    const migrateRes = await configuredAdapter.migrateDatabase();
+    const elapsedMigrate = Date.now() - startMigrate;
+    expect(migrateRes.success).toBe(true);
+    expect(elapsedMigrate).toBeGreaterThanOrEqual(15);
+
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MongoDB' });
+    });
+  });
 });
 
 describe('provideTestHospitalData', () => {
@@ -258,5 +381,23 @@ describe('provideTestHospitalData', () => {
     });
     const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
     expect(instance).toBeInstanceOf(InMemoryHospitalDataAdapter);
+  });
+
+  it('should accept initial database status and default operation delays to 0ms', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideTestHospitalData({ dbType: 'MongoDB' })],
+    });
+    const instance = TestBed.inject(HOSPITAL_DATA_ACCESS);
+    const statusRes = instance.getDatabaseStatus();
+
+    await vi.waitFor(() => {
+      expect(statusRes.value()).toEqual({ dbType: 'MongoDB' });
+    });
+
+    const start = Date.now();
+    await instance.seedDatabase();
+    const elapsed = Date.now() - start;
+    // 0ms delay should resolve virtually instantaneously
+    expect(elapsed).toBeLessThan(50);
   });
 });

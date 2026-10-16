@@ -348,4 +348,77 @@ describe('HttpHospitalDataAdapter', () => {
       await expect(promise).rejects.toThrow(HospitalDataError);
     });
   });
+
+  describe('getDatabaseStatus', () => {
+    it('should query /api/status and return DbStatus', async () => {
+      const res = adapter.getDatabaseStatus();
+      TestBed.tick();
+
+      const req = httpTesting.expectOne('/api/status');
+      expect(req.request.method).toBe('GET');
+
+      req.flush({ dbType: 'MariaDB' });
+
+      await vi.waitFor(() => {
+        expect(res.value()).toEqual({ dbType: 'MariaDB' });
+      });
+    });
+  });
+
+  describe('seedDatabase', () => {
+    it('should POST /api/admin/seed and return success response', async () => {
+      const promise = adapter.seedDatabase();
+
+      const req = httpTesting.expectOne('/api/admin/seed');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({});
+
+      req.flush({
+        success: true,
+        message: 'Database successfully populated with randomized test data.',
+      });
+
+      const res = await promise;
+      expect(res.success).toBe(true);
+      expect(res.message).toContain('Database successfully populated');
+    });
+
+    it('should translate seed network error into HospitalDataError', async () => {
+      const promise = adapter.seedDatabase();
+
+      const req = httpTesting.expectOne('/api/admin/seed');
+      req.flush({ error: 'Seed failed' }, { status: 500, statusText: 'Server Error' });
+
+      await expect(promise).rejects.toThrow(HospitalDataError);
+    });
+  });
+
+  describe('migrateDatabase', () => {
+    it('should POST /api/admin/migrate and return success response', async () => {
+      const promise = adapter.migrateDatabase();
+
+      const req = httpTesting.expectOne('/api/admin/migrate');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({});
+
+      req.flush({
+        success: true,
+        message:
+          'Migration completed! MariaDB records successfully transferred and switched to MongoDB.',
+      });
+
+      const res = await promise;
+      expect(res.success).toBe(true);
+      expect(res.message).toContain('Migration completed');
+    });
+
+    it('should translate migrate network error into HospitalDataError', async () => {
+      const promise = adapter.migrateDatabase();
+
+      const req = httpTesting.expectOne('/api/admin/migrate');
+      req.flush({ error: 'Migration failed' }, { status: 500, statusText: 'Server Error' });
+
+      await expect(promise).rejects.toThrow(HospitalDataError);
+    });
+  });
 });
