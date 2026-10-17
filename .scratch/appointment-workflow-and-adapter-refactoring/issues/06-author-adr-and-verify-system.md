@@ -4,7 +4,7 @@
 
 **Blocked by:** 05: Extract Appointment Submission Coordinator and Decompose Workflow
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Architecture Decision Record ADR 0006 is authored in the repository ADR directory following project standards.
 - [ ] ADR details context, options considered, decisions regarding capability tokens, workflow coordinator extraction, in-memory adapter retention, and terminology alignment.
