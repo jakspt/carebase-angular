@@ -4,11 +4,11 @@
 
 **Blocked by:** 02: Reorganize Services Directory into Sub-Domains
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] Master data access contract is decomposed into four capability interfaces: Scheduling, Clinical, Reporting, and System.
-- [ ] Master hospital data access interface extends all four capability interfaces for composite backward compatibility.
-- [ ] Dedicated Angular injection tokens are introduced for Scheduling, Clinical, Reporting, and System data access.
-- [ ] Provider configuration helper registers the adapter and aliases all capability tokens to the master token using Angular `useExisting`.
-- [ ] Domain consumers (Doctor use case, Doctor report, Clerk report, Admin page, Header layout) inject their respective capability tokens.
-- [ ] Dependency injection aliasing tests verify that injecting capability tokens returns the exact master adapter instance.
+- [x] Master data access contract is decomposed into four capability interfaces: Scheduling, Clinical, Reporting, and System.
+- [x] Master hospital data access interface extends all four capability interfaces for composite backward compatibility.
+- [x] Dedicated Angular injection tokens are introduced for Scheduling, Clinical, Reporting, and System data access.
+- [x] Provider configuration helper registers the adapter and aliases all capability tokens to the master token using Angular `useExisting`.
+- [x] Domain consumers (Doctor use case, Doctor report, Clerk report, Admin page, Header layout) inject their respective capability tokens.
+- [x] Dependency injection aliasing tests verify that injecting capability tokens returns the exact master adapter instance.

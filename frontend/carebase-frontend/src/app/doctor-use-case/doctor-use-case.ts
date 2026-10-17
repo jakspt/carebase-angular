@@ -14,7 +14,7 @@ import { form, FormField, max, min, required } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Appointment, Medication, Patient } from '../models/models';
-import { HOSPITAL_DATA_ACCESS, OperationRunner } from '../services';
+import { CLINICAL_DATA_ACCESS, OperationRunner } from '../services';
 
 interface TreatmentFormModel {
   description: string;
@@ -42,14 +42,14 @@ interface TreatmentFormModel {
   templateUrl: './doctor-use-case.html',
 })
 export class DoctorUseCase {
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly clinicalDataAccess = inject(CLINICAL_DATA_ACCESS);
   readonly operationRunner = inject(OperationRunner);
 
   // ── Step 1: Patient Search (Debounced) ──
   readonly searchQuery = signal('');
   readonly searchInputValue = signal('');
   private readonly searchSubject$ = new Subject<string>();
-  readonly searchResults = this.hospitalDataAccess.searchPatients(this.searchQuery);
+  readonly searchResults = this.clinicalDataAccess.searchPatients(this.searchQuery);
   readonly patients = computed(() => {
     if (this.searchResults.hasValue()) {
       return this.searchResults.value() ?? [];
@@ -59,7 +59,7 @@ export class DoctorUseCase {
 
   readonly selectedPatient = signal<Patient | null>(null);
   readonly selectedPatientId = computed(() => this.selectedPatient()?.id ?? null);
-  readonly patientDetailsResource = this.hospitalDataAccess.getPatientDetails(
+  readonly patientDetailsResource = this.clinicalDataAccess.getPatientDetails(
     this.selectedPatientId,
   );
 
@@ -114,7 +114,7 @@ export class DoctorUseCase {
   });
 
   // Medications autocomplete
-  readonly medicationsResource = this.hospitalDataAccess.getMedications();
+  readonly medicationsResource = this.clinicalDataAccess.getMedications();
   readonly medSearchQuery = signal('');
   readonly filteredMedications = computed(() => {
     const all = this.medicationsResource.hasValue() ? (this.medicationsResource.value() ?? []) : [];
@@ -177,7 +177,7 @@ export class DoctorUseCase {
         if (!patient || !appt) {
           throw new Error('Patient and appointment must be selected.');
         }
-        return await this.hospitalDataAccess.addTreatment(patient.id, appt.id, {
+        return await this.clinicalDataAccess.addTreatment(patient.id, appt.id, {
           description: this.treatmentModel().description,
           cost: Number(this.treatmentModel().cost),
           medications: this.treatmentModel().medications,

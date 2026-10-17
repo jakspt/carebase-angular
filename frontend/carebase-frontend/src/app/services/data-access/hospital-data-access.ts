@@ -1,4 +1,4 @@
-import { InjectionToken, ResourceRef, Signal } from '@angular/core';
+import { InjectionToken, Provider, ResourceRef, Signal, Type } from '@angular/core';
 import {
   Clerk,
   Doctor,
@@ -11,6 +11,8 @@ import {
   TimeSlotsResponse,
   PatientVisitsReportResponse,
   DbStatus,
+  Appointment,
+  AppointmentResult,
 } from '../../models/models';
 
 export interface TimeSlotQueryParams {
@@ -20,6 +22,7 @@ export interface TimeSlotQueryParams {
 }
 
 export type TimeSlotsResult = TimeSlotsResponse;
+export type TimeSlotResponse = TimeSlotsResponse;
 
 export interface DateRange {
   startDate: string;
@@ -37,6 +40,26 @@ export interface DoctorEarningsReport {
 export interface AddTreatmentResponse {
   success: boolean;
 }
+
+export type DatabaseStatusResponse = DbStatus;
+export interface DatabaseSeedResponse {
+  success: boolean;
+  message: string;
+}
+export interface DatabaseMigrationResponse {
+  success: boolean;
+  message: string;
+}
+
+export type ClinicalHistoryItem = Appointment;
+
+export interface TreatmentRecordRequest {
+  patientId: string | number;
+  appointmentId: number;
+  treatment: Treatment;
+}
+
+export type TreatmentRecordResult = AddTreatmentResponse;
 
 export class HospitalDataError extends Error {
   public override readonly cause?: unknown;
@@ -62,17 +85,33 @@ export class PatientNotFoundError extends HospitalDataError {
   }
 }
 
-export interface HospitalDataAccess {
+export interface SchedulingDataAccess {
   getDoctors(): ResourceRef<Doctor[]>;
   searchPatients(query: Signal<string> | (() => string)): ResourceRef<Patient[]>;
-  getPatientDetails(
-    patientId: Signal<string | number | null> | (() => string | number | null),
-  ): ResourceRef<Patient | null>;
   searchClerks(query: Signal<string> | (() => string)): ResourceRef<Clerk[]>;
   getTimeSlots(
     params: Signal<TimeSlotQueryParams | undefined> | (() => TimeSlotQueryParams | undefined),
   ): ResourceRef<TimeSlotsResult | undefined>;
-  getMedications(): ResourceRef<Medication[]>;
+  bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse>;
+  createAppointment?(request: CreateAppointmentRequest): Promise<AppointmentResult>;
+}
+
+export interface ClinicalDataAccess {
+  searchPatients(query: Signal<string> | (() => string)): ResourceRef<Patient[]>;
+  getPatientDetails(
+    patientId: Signal<string | number | null> | (() => string | number | null),
+  ): ResourceRef<Patient | null>;
+  getPatientClinicalHistory?(patientSsn: Signal<string>): ResourceRef<ClinicalHistoryItem[] | undefined>;
+  getMedications(category?: Signal<string>): ResourceRef<Medication[]>;
+  addTreatment(
+    patientId: string | number,
+    appointmentId: number,
+    treatment: Treatment,
+  ): Promise<AddTreatmentResponse>;
+  recordTreatment?(request: TreatmentRecordRequest): Promise<TreatmentRecordResult>;
+}
+
+export interface ReportingDataAccess {
   getDoctorEarningsReport(
     year: Signal<number> | (() => number),
   ): ResourceRef<DoctorEarningsReport | undefined>;
@@ -82,15 +121,34 @@ export interface HospitalDataAccess {
   getPatientVisitsReport?(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
   ): ResourceRef<PatientVisitsReport | undefined>;
-  bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse>;
-  addTreatment(
-    patientId: string | number,
-    appointmentId: number,
-    treatment: Treatment,
-  ): Promise<AddTreatmentResponse>;
-  getDatabaseStatus(): ResourceRef<DbStatus | undefined>;
-  seedDatabase(): Promise<{ success: boolean; message: string }>;
-  migrateDatabase(): Promise<{ success: boolean; message: string }>;
 }
 
+export interface SystemDataAccess {
+  getDatabaseStatus(): ResourceRef<DbStatus | undefined>;
+  seedDatabase(): Promise<DatabaseSeedResponse>;
+  migrateDatabase(): Promise<DatabaseMigrationResponse>;
+}
+
+export interface HospitalDataAccess
+  extends SchedulingDataAccess,
+    ClinicalDataAccess,
+    ReportingDataAccess,
+    SystemDataAccess {}
+
 export const HOSPITAL_DATA_ACCESS = new InjectionToken<HospitalDataAccess>('HOSPITAL_DATA_ACCESS');
+export const SCHEDULING_DATA_ACCESS = new InjectionToken<SchedulingDataAccess>('SCHEDULING_DATA_ACCESS');
+export const CLINICAL_DATA_ACCESS = new InjectionToken<ClinicalDataAccess>('CLINICAL_DATA_ACCESS');
+export const REPORTING_DATA_ACCESS = new InjectionToken<ReportingDataAccess>('REPORTING_DATA_ACCESS');
+export const SYSTEM_DATA_ACCESS = new InjectionToken<SystemDataAccess>('SYSTEM_DATA_ACCESS');
+
+export function provideHospitalDataAccessProviders(
+  adapterType: Type<HospitalDataAccess>,
+): Provider[] {
+  return [
+    { provide: HOSPITAL_DATA_ACCESS, useClass: adapterType },
+    { provide: SCHEDULING_DATA_ACCESS, useExisting: HOSPITAL_DATA_ACCESS },
+    { provide: CLINICAL_DATA_ACCESS, useExisting: HOSPITAL_DATA_ACCESS },
+    { provide: REPORTING_DATA_ACCESS, useExisting: HOSPITAL_DATA_ACCESS },
+    { provide: SYSTEM_DATA_ACCESS, useExisting: HOSPITAL_DATA_ACCESS },
+  ];
+}

@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ActionCard } from '../action-card/action-card';
-import { HOSPITAL_DATA_ACCESS, OperationRunner } from '../services';
+import { OperationRunner, SYSTEM_DATA_ACCESS } from '../services';
 
 @Component({
   imports: [ActionCard, MatIconModule],
@@ -10,11 +10,11 @@ import { HOSPITAL_DATA_ACCESS, OperationRunner } from '../services';
   templateUrl: './admin-page.html',
 })
 export class AdminPage {
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly systemDataAccess = inject(SYSTEM_DATA_ACCESS);
   private readonly operationRunner = inject(OperationRunner);
 
   migrateDb(): void {
-    this.operationRunner.execute(() => this.hospitalDataAccess.migrateDatabase(), {
+    this.operationRunner.execute(() => this.systemDataAccess.migrateDatabase(), {
       requireConfirmation: true,
       title: 'Migrate Database to MongoDB',
       description:
@@ -27,7 +27,7 @@ export class AdminPage {
   }
 
   seedDb(): void {
-    this.operationRunner.execute(() => this.hospitalDataAccess.seedDatabase(), {
+    this.operationRunner.execute(() => this.systemDataAccess.seedDatabase(), {
       requireConfirmation: true,
       title: 'Run Database Seeding',
       description:

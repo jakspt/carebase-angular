@@ -13,7 +13,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { BarChartModule } from '@swimlane/ngx-charts';
 import { createDebouncedLoadingSignal } from '../utils';
-import { ConsultationFrequencyReport, HOSPITAL_DATA_ACCESS } from '../services';
+import { ConsultationFrequencyReport, REPORTING_DATA_ACCESS } from '../services';
 import { PatientVisitRecord } from '../models/models';
 
 interface ChartDataItem {
@@ -42,7 +42,7 @@ interface ChartDataItem {
   templateUrl: './clerk-report.html',
 })
 export class ClerkReport {
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly reportingDataAccess = inject(REPORTING_DATA_ACCESS);
 
   readonly currentYear = new Date().getFullYear();
   readonly startDate = signal<string>(`${this.currentYear}-01-01`);
@@ -72,7 +72,7 @@ export class ClerkReport {
   });
 
   readonly reportResource: ResourceRef<ConsultationFrequencyReport | undefined> =
-    this.hospitalDataAccess.getConsultationFrequencyReport(this.activeRange);
+    this.reportingDataAccess.getConsultationFrequencyReport(this.activeRange);
 
   // Debounced progress indicator (<250ms threshold)
   readonly showSpinner = createDebouncedLoadingSignal(this.reportResource.isLoading);
