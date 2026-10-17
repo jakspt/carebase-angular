@@ -1,6 +1,6 @@
-import { computed, inject, Injectable, linkedSignal, Signal, signal } from '@angular/core';
-import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, of, Subject, switchMap, timer, debounceTime, distinctUntilChanged } from 'rxjs';
+import { computed, inject, Injectable, linkedSignal, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import {
   AppointmentNotes,
   AppointmentResult,
@@ -18,38 +18,9 @@ import {
   OperationRunner,
 } from '../services';
 import { form, maxLength } from '@angular/forms/signals';
+import { createDebouncedLoadingSignal, parseIsoDate } from '../utils';
 
 export type { AppointmentNotes, AppointmentResult, BookingResult };
-
-function createDebouncedLoadingSignal(
-  isLoadingSignal: Signal<boolean>,
-  delayMs = 250,
-): Signal<boolean> {
-  return toSignal(
-    toObservable(isLoadingSignal).pipe(
-      switchMap((loading) => (loading ? timer(delayMs).pipe(map(() => true)) : of(false))),
-    ),
-    { initialValue: false },
-  );
-}
-
-function parseIsoDate(target: string | Date): Date {
-  if (target instanceof Date) {
-    const d = new Date(target);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-  const parts = target.split('-');
-  if (parts.length === 3) {
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    return new Date(year, month, day, 0, 0, 0, 0);
-  }
-  const d = new Date(target);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 @Injectable()
 export class AppointmentIntakeWorkflow {

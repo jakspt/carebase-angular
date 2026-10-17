@@ -12,8 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { BarChartModule } from '@swimlane/ngx-charts';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, of, switchMap, timer } from 'rxjs';
+import { createDebouncedLoadingSignal } from '../utils';
 import { ConsultationFrequencyReport, REPORTING_DATA_ACCESS } from '../services';
 import { PatientVisitRecord } from '../models/models';
 
@@ -76,15 +75,7 @@ export class ClerkReport {
     this.reportingDataAccess.getConsultationFrequencyReport(this.activeRange);
 
   // Debounced progress indicator (<250ms threshold)
-  private readonly spinnerDelayMs = 250;
-  readonly showSpinner = toSignal(
-    toObservable(this.reportResource.isLoading).pipe(
-      switchMap((loading) =>
-        loading ? timer(this.spinnerDelayMs).pipe(map(() => true)) : of(false),
-      ),
-    ),
-    { initialValue: false },
-  );
+  readonly showSpinner = createDebouncedLoadingSignal(this.reportResource.isLoading);
 
   // Mockable signal for unit testing or live resource data
   readonly reportDataSignal = signal<PatientVisitRecord[] | null>(null);

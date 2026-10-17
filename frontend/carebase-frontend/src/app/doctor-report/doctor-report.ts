@@ -11,8 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { BarChartModule } from '@swimlane/ngx-charts';
 import { REPORTING_DATA_ACCESS } from '../services';
 import { DoctorEarnings } from '../models/models';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, of, switchMap, timer } from 'rxjs';
+import { createDebouncedLoadingSignal } from '../utils';
 
 interface ChartDataItem {
   name: string;
@@ -49,15 +48,7 @@ export class DoctorReport {
 
   readonly reportResource = this.reportingDataAccess.getDoctorEarningsReport(this.selectedYear);
 
-  private readonly spinnerDelayMs = 250;
-  readonly showSpinner = toSignal(
-    toObservable(this.reportResource.isLoading).pipe(
-      switchMap((loading) =>
-        loading ? timer(this.spinnerDelayMs).pipe(map(() => true)) : of(false),
-      ),
-    ),
-    { initialValue: false },
-  );
+  readonly showSpinner = createDebouncedLoadingSignal(this.reportResource.isLoading);
 
   readonly reportData = computed<DoctorEarnings[]>(() => {
     if (this.reportResource.hasValue()) {
