@@ -71,12 +71,15 @@ export class HospitalDataError extends Error {
   }
 }
 
-export class BookingConflictError extends HospitalDataError {
-  constructor(message = 'Appointment time slot is no longer available.', cause?: unknown) {
+export class AppointmentConflictError extends HospitalDataError {
+  constructor(message = 'Appointment scheduling conflict.', cause?: unknown) {
     super(message, cause);
-    this.name = 'BookingConflictError';
+    this.name = 'AppointmentConflictError';
   }
 }
+
+export const BookingConflictError = AppointmentConflictError;
+export type BookingConflictError = AppointmentConflictError;
 
 export class PatientNotFoundError extends HospitalDataError {
   constructor(message = 'Patient could not be found.', cause?: unknown) {

@@ -6,6 +6,7 @@ import {
   provideTestHospitalData,
 } from './in-memory-hospital-data-adapter';
 import {
+  AppointmentConflictError,
   BookingConflictError,
   type ConsultationFrequencyReport,
   TimeSlotQueryParams,
@@ -120,7 +121,7 @@ describe('InMemoryHospitalDataAdapter', () => {
     expect(slot?.available).toBe(false);
   });
 
-  it('should throw BookingConflictError on duplicate booking for the same slot', async () => {
+  it('should throw AppointmentConflictError on duplicate booking for the same slot', async () => {
     const payload: CreateAppointmentRequest = {
       patientSsn: '2001',
       doctorSsn: '3001',
@@ -140,6 +141,9 @@ describe('InMemoryHospitalDataAdapter', () => {
       reason: 'Urgent consultation',
     };
 
+    await expect(adapter.bookAppointment(conflictingPayload)).rejects.toThrow(
+      AppointmentConflictError,
+    );
     await expect(adapter.bookAppointment(conflictingPayload)).rejects.toThrow(BookingConflictError);
   });
 

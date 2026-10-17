@@ -2,6 +2,7 @@ import {
   Injectable,
   InjectionToken,
   Injector,
+  PendingTasks,
   Provider,
   ResourceRef,
   Signal,
@@ -21,7 +22,7 @@ import {
 } from '../../models/models';
 import {
   AddTreatmentResponse,
-  BookingConflictError,
+  AppointmentConflictError,
   ConsultationFrequencyReport,
   DateRange,
   DoctorEarningsReport,
@@ -105,145 +106,165 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     }
   }
 
+  private createQueryResource<T, P>(
+    params: () => P,
+    loader: (p: P) => Promise<T>,
+    defaultValue: T,
+    customInjector?: Injector,
+  ): ResourceRef<T>;
+  private createQueryResource<T, P>(
+    params: () => P,
+    loader: (p: P) => Promise<T>,
+    defaultValue?: undefined,
+    customInjector?: Injector,
+  ): ResourceRef<T | undefined>;
+  private createQueryResource<T, P>(
+    params: () => P,
+    loader: (p: P) => Promise<T>,
+    defaultValue?: T,
+    customInjector?: Injector,
+  ): ResourceRef<T> {
+    const injector = customInjector ?? this.injector;
+    if (defaultValue !== undefined) {
+      return resource<T, P>({
+        injector,
+        params,
+        loader: async (ctx) => loader(ctx.params),
+        defaultValue,
+      });
+    }
+    return resource<T | undefined, P>({
+      injector,
+      params,
+      loader: async (ctx) => loader(ctx.params),
+    }) as unknown as ResourceRef<T>;
+  }
+
   getDoctors(): ResourceRef<Doctor[]> {
-    return resource<Doctor[], number>({
-      injector: this.injector,
-      defaultValue: [],
-      params: () => this.stateVersion(),
-      loader: async () => [...this.doctors],
-    });
+    return this.createQueryResource(
+      () => this.stateVersion(),
+      async () => [...this.doctors],
+      [],
+    );
   }
 
   searchPatients(query: Signal<string> | (() => string)): ResourceRef<Patient[]> {
-    return resource<Patient[], { version: number; q: string } | undefined>({
-      injector: this.injector,
-      defaultValue: [],
-      params: () => {
+    return this.createQueryResource(
+      () => {
         const v = this.stateVersion();
         const raw = typeof query === 'function' ? query()?.trim() : '';
         if (!raw || raw.length < 2) return undefined;
         return { version: v, q: raw };
       },
-      loader: async (ctx) => {
-        const q = ctx.params?.q?.toLowerCase() ?? '';
+      async (ctxParams) => {
+        const q = ctxParams?.q?.toLowerCase() ?? '';
         if (!q) return [];
         return this.patients.filter((p) => p.name.toLowerCase().includes(q) || p.ssn.includes(q));
       },
-    });
+      [],
+    );
   }
 
   getPatientDetails(
     patientId: Signal<string | number | null> | (() => string | number | null),
   ): ResourceRef<Patient | null> {
-    return resource<Patient | null, { version: number; id: string } | undefined>({
-      injector: this.injector,
-      defaultValue: null,
-      params: () => {
+    return this.createQueryResource<
+      Patient | null,
+      { version: number; id: string } | undefined
+    >(
+      () => {
         const v = this.stateVersion();
         const id = typeof patientId === 'function' ? patientId() : null;
         if (!id) return undefined;
         return { version: v, id: String(id) };
       },
-      loader: async (ctx) => {
-        const id = ctx.params?.id;
+      async (ctxParams) => {
+        const id = ctxParams?.id;
         if (!id) return null;
         const patient = this.patients.find((p) => String(p.id) === id || p.ssn === id);
         return patient ? JSON.parse(JSON.stringify(patient)) : null;
       },
-    });
+      null,
+    );
   }
 
   searchClerks(query: Signal<string> | (() => string)): ResourceRef<Clerk[]> {
-    return resource<Clerk[], { version: number; q: string }>({
-      injector: this.injector,
-      defaultValue: [],
-      params: () => ({
+    return this.createQueryResource(
+      () => ({
         version: this.stateVersion(),
         q: typeof query === 'function' ? (query()?.trim() ?? '') : '',
       }),
-      loader: async (ctx) => {
-        const q = ctx.params?.q?.toLowerCase() ?? '';
+      async (ctxParams) => {
+        const q = ctxParams.q.toLowerCase();
         if (!q) return [...this.clerks];
         return this.clerks.filter((c) => c.name.toLowerCase().includes(q) || c.ssn.includes(q));
       },
-    });
+      [],
+    );
   }
 
   getTimeSlots(
     params: Signal<TimeSlotQueryParams | undefined> | (() => TimeSlotQueryParams | undefined),
   ): ResourceRef<TimeSlotsResult | undefined> {
-    return resource<
-      TimeSlotsResult | undefined,
-      { version: number; p: TimeSlotQueryParams } | undefined
-    >({
-      injector: this.injector,
-      params: () => {
+    return this.createQueryResource(
+      () => {
         const v = this.stateVersion();
         const p = typeof params === 'function' ? params() : undefined;
         if (!p || !p.date || !p.doctorSsn) return undefined;
         return { version: v, p };
       },
-      loader: async (ctx) => {
-        if (!ctx.params?.p) return undefined;
-        return calculateTimeSlots(this.appointments, ctx.params.p);
+      async (ctxParams) => {
+        if (!ctxParams?.p) return undefined;
+        return calculateTimeSlots(this.appointments, ctxParams.p);
       },
-    });
+    );
   }
 
   getMedications(): ResourceRef<Medication[]> {
-    return resource<Medication[], number>({
-      injector: this.injector,
-      defaultValue: [],
-      params: () => this.stateVersion(),
-      loader: async () => [...this.medications],
-    });
+    return this.createQueryResource(
+      () => this.stateVersion(),
+      async () => [...this.medications],
+      [],
+    );
   }
 
   getDoctorEarningsReport(
     year: Signal<number> | (() => number),
   ): ResourceRef<DoctorEarningsReport | undefined> {
-    return resource<
-      DoctorEarningsReport | undefined,
-      { version: number; year: number } | undefined
-    >({
-      injector: this.injector,
-      params: () => {
+    return this.createQueryResource(
+      () => {
         const v = this.stateVersion();
         const y = typeof year === 'function' ? year() : undefined;
         if (y === undefined) return undefined;
         return { version: v, year: y };
       },
-      loader: async (ctx) => {
-        if (!ctx.params) return undefined;
-        return calculateDoctorEarnings(this.doctors, this.appointments, ctx.params.year);
+      async (ctxParams) => {
+        if (!ctxParams) return undefined;
+        return calculateDoctorEarnings(this.doctors, this.appointments, ctxParams.year);
       },
-    });
+    );
   }
 
   getConsultationFrequencyReport(
     dateRange: Signal<DateRange | undefined> | (() => DateRange | undefined),
   ): ResourceRef<ConsultationFrequencyReport | undefined> {
-    return resource<
-      ConsultationFrequencyReport | undefined,
-      { version: number; range: DateRange } | undefined
-    >({
-      injector: this.injector,
-      params: () => {
+    return this.createQueryResource(
+      () => {
         const v = this.stateVersion();
         const r = typeof dateRange === 'function' ? dateRange() : undefined;
         if (!r || !r.startDate || !r.endDate) return undefined;
         return { version: v, range: r };
       },
-      loader: async (ctx) => {
-        if (!ctx.params?.range) return undefined;
+      async (ctxParams) => {
+        if (!ctxParams?.range) return undefined;
         return calculateConsultationFrequency(
           this.appointments,
           this.patients,
           this.doctors,
-          ctx.params.range,
+          ctxParams.range,
         );
       },
-    });
+    );
   }
 
   getPatientVisitsReport(
@@ -265,7 +286,9 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     );
 
     if (conflict) {
-      throw new BookingConflictError('The selected time slot was already booked by another user.');
+      throw new AppointmentConflictError(
+        'The selected time slot was already booked by another user.',
+      );
     }
 
     const apptId = this.nextAppointmentId++;
@@ -341,33 +364,29 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
   }
 
   getDatabaseStatus(): ResourceRef<DbStatus | undefined> {
-    if (this.config?.isLoading) {
-      const isLoading = signal(true);
-      const value = signal<DbStatus | undefined>(undefined);
-      const hasValue = signal(false);
-      const error = signal<unknown>(undefined);
-      const status = signal<'idle' | 'loading' | 'resolved' | 'error'>('loading');
-      return {
-        value: value.asReadonly(),
-        status: status.asReadonly(),
-        error: error.asReadonly(),
-        isLoading: isLoading.asReadonly(),
-        hasValue: hasValue.asReadonly(),
-        reload: () => false,
-        destroy: () => {},
-        set: () => {},
-        update: () => {},
-        snapshot: () => undefined,
-        asReadonly() {
-          return this;
-        },
-      } as unknown as ResourceRef<DbStatus | undefined>;
-    }
-    return resource<DbStatus | undefined, 'MariaDB' | 'MongoDB' | null>({
-      injector: this.injector,
-      params: () => this.dbStatus(),
-      loader: async (ctx) => (ctx.params ? { dbType: ctx.params } : undefined),
-    });
+    const customInjector = this.config?.isLoading
+      ? Injector.create({
+          parent: this.injector,
+          providers: [
+            {
+              provide: PendingTasks,
+              useValue: { add: () => () => {}, run: (fn: any) => fn() },
+            },
+          ],
+        })
+      : undefined;
+
+    return this.createQueryResource(
+      () => this.dbStatus(),
+      async (status) => {
+        if (this.config?.isLoading) {
+          return new Promise<never>(() => {});
+        }
+        return status ? { dbType: status } : undefined;
+      },
+      undefined,
+      customInjector,
+    );
   }
 
   private async delay(ms?: number): Promise<void> {

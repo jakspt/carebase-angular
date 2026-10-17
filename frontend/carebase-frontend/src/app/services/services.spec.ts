@@ -30,6 +30,7 @@ describe('Services Sub-Domain and Root Barrels', () => {
       expect(DataAccessBarrel.REPORTING_DATA_ACCESS).toBeDefined();
       expect(DataAccessBarrel.SYSTEM_DATA_ACCESS).toBeDefined();
       expect(typeof DataAccessBarrel.HospitalDataError).toBe('function');
+      expect(typeof DataAccessBarrel.AppointmentConflictError).toBe('function');
       expect(typeof DataAccessBarrel.BookingConflictError).toBe('function');
       expect(typeof DataAccessBarrel.PatientNotFoundError).toBe('function');
     });
@@ -63,6 +64,7 @@ describe('Services Sub-Domain and Root Barrels', () => {
       expect(typeof RootServices.HttpHospitalDataAdapter).toBe('function');
       expect(typeof RootServices.InMemoryHospitalDataAdapter).toBe('function');
       expect(typeof RootServices.provideTestHospitalData).toBe('function');
+      expect(typeof RootServices.AppointmentConflictError).toBe('function');
       expect(typeof RootServices.BookingConflictError).toBe('function');
     });
 
