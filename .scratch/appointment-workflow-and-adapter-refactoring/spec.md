@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # Spec: Appointment Workflow Decomposition, Adapter Deepening, and Shared Utilities
 
