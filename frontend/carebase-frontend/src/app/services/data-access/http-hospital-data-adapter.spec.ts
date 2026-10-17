@@ -10,7 +10,7 @@ import {
   TimeSlotQueryParams,
   DateRange,
 } from './hospital-data-access';
-import { CreateAppointmentRequest, Treatment } from '../models/models';
+import { CreateAppointmentRequest, Treatment } from '../../models/models';
 
 describe('HttpHospitalDataAdapter', () => {
   let adapter: HttpHospitalDataAdapter;

@@ -4,11 +4,11 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { MatTableHarness } from '@angular/material/table/testing';
 import { DoctorReport } from './doctor-report';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
 import {
+  HOSPITAL_DATA_ACCESS,
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
-} from '../services/in-memory-hospital-data-adapter';
+} from '../services';
 
 describe('DoctorReport', () => {
   let component: DoctorReport;

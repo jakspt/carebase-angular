@@ -14,8 +14,7 @@ import { form, FormField, max, min, required } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Appointment, Medication, Patient } from '../models/models';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { OperationRunner } from '../services/operation-runner';
+import { HOSPITAL_DATA_ACCESS, OperationRunner } from '../services';
 
 interface TreatmentFormModel {
   description: string;

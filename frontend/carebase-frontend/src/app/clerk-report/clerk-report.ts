@@ -14,7 +14,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { BarChartModule } from '@swimlane/ngx-charts';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, of, switchMap, timer } from 'rxjs';
-import { ConsultationFrequencyReport, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { ConsultationFrequencyReport, HOSPITAL_DATA_ACCESS } from '../services';
 import { PatientVisitRecord } from '../models/models';
 
 interface ChartDataItem {

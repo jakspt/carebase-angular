@@ -1,4 +1,4 @@
-import { Clerk, Doctor, Medication, Patient, Treatment } from '../models/models';
+import { Clerk, Doctor, Medication, Patient, Treatment } from '../../models/models';
 
 export interface StoredAppointment {
   id: number;

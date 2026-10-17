@@ -1,5 +1,5 @@
-import { Doctor, DoctorEarnings } from '../models/models';
-import { StoredAppointment } from './mock-hospital-data';
+import { Doctor, DoctorEarnings } from '../../models/models';
+import { StoredAppointment } from '../data-access/mock-hospital-data';
 
 export interface DoctorEarningsReport {
   year: number;

@@ -8,11 +8,11 @@ import { HarnessLoader } from '@angular/cdk/testing';
 import { MatMenuHarness } from '@angular/material/menu/testing';
 import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { HeaderLayout } from './header-layout';
-import { ActorSession } from '../services/actor-session';
 import {
+  ActorSession,
   TestHospitalDataOptions,
   provideTestHospitalData,
-} from '../services/in-memory-hospital-data-adapter';
+} from '../services';
 
 @Component({ selector: 'stub-home', template: '<span>Home</span>' })
 class StubHomeComponent {}

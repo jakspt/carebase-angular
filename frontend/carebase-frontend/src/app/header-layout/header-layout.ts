@@ -5,8 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatAnchor } from '@angular/material/button';
-import { ActorRole, ActorSession } from '../services/actor-session';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { ActorRole, ActorSession, HOSPITAL_DATA_ACCESS } from '../services';
 import { UpperCasePipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 

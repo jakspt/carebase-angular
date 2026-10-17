@@ -7,7 +7,7 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { AdminPage } from './admin-page';
 import { ActionCardHarness } from '../action-card/testing';
-import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
+import { provideTestHospitalData } from '../services';
 
 describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;

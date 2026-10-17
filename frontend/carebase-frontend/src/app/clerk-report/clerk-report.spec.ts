@@ -10,11 +10,9 @@ import { ClerkReport } from './clerk-report';
 import {
   type ConsultationFrequencyReport,
   HOSPITAL_DATA_ACCESS,
-} from '../services/hospital-data-access';
-import {
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
-} from '../services/in-memory-hospital-data-adapter';
+} from '../services';
 
 describe('ClerkReport', () => {
   let component: ClerkReport;
