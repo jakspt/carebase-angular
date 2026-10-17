@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Extract Shared Reactive and Date Utilities, 03: Implement Data Access Interface Segregation, 04: Tidy and Deepen In-Memory Hospital Adapter
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Injectable appointment submission coordinator is created to handle validation, request creation, operation runner execution, 409 conflict detection, and error message resolution.
 - [ ] Appointment intake workflow injects the scheduling data access token instead of the monolithic port.
