@@ -4,7 +4,7 @@
 
 **Blocked by:** 02: Reorganize Services Directory into Sub-Domains
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Master data access contract is decomposed into four capability interfaces: Scheduling, Clinical, Reporting, and System.
 - [ ] Master hospital data access interface extends all four capability interfaces for composite backward compatibility.
