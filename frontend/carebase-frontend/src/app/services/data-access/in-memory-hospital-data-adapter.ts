@@ -338,6 +338,10 @@ export class InMemoryHospitalDataAdapter implements HospitalDataAccess {
     };
   }
 
+  async createAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse> {
+    return this.bookAppointment(payload);
+  }
+
   async addTreatment(
     patientId: string | number,
     appointmentId: number,

@@ -12,7 +12,4 @@ export type {
   DatabaseStatusResponse,
   DatabaseSeedResponse,
   DatabaseMigrationResponse,
-  ClinicalHistoryItem,
-  TreatmentRecordRequest,
-  TreatmentRecordResult,
 } from './hospital-data-access';

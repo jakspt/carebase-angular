@@ -11,7 +11,6 @@ import {
   TimeSlotsResponse,
   PatientVisitsReportResponse,
   DbStatus,
-  Appointment,
   AppointmentResult,
 } from '../../models/models';
 
@@ -51,16 +50,6 @@ export interface DatabaseMigrationResponse {
   message: string;
 }
 
-export type ClinicalHistoryItem = Appointment;
-
-export interface TreatmentRecordRequest {
-  patientId: string | number;
-  appointmentId: number;
-  treatment: Treatment;
-}
-
-export type TreatmentRecordResult = AddTreatmentResponse;
-
 export class HospitalDataError extends Error {
   public override readonly cause?: unknown;
 
@@ -96,7 +85,9 @@ export interface SchedulingDataAccess {
     params: Signal<TimeSlotQueryParams | undefined> | (() => TimeSlotQueryParams | undefined),
   ): ResourceRef<TimeSlotsResult | undefined>;
   bookAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse>;
-  createAppointment?(request: CreateAppointmentRequest): Promise<AppointmentResult>;
+  createAppointment?: (
+    request: CreateAppointmentRequest,
+  ) => Promise<CreateAppointmentResponse | AppointmentResult>;
 }
 
 export interface ClinicalDataAccess {
@@ -104,14 +95,12 @@ export interface ClinicalDataAccess {
   getPatientDetails(
     patientId: Signal<string | number | null> | (() => string | number | null),
   ): ResourceRef<Patient | null>;
-  getPatientClinicalHistory?(patientSsn: Signal<string>): ResourceRef<ClinicalHistoryItem[] | undefined>;
   getMedications(category?: Signal<string>): ResourceRef<Medication[]>;
   addTreatment(
     patientId: string | number,
     appointmentId: number,
     treatment: Treatment,
   ): Promise<AddTreatmentResponse>;
-  recordTreatment?(request: TreatmentRecordRequest): Promise<TreatmentRecordResult>;
 }
 
 export interface ReportingDataAccess {

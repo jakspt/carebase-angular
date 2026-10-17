@@ -135,10 +135,8 @@ export interface SchedulingDataAccess {
 export interface ClinicalDataAccess {
   searchPatients(query: Signal<string> | (() => string)): ResourceRef<Patient[]>;
   getPatientDetails(patientId: Signal<string | number | null> | (() => string | number | null)): ResourceRef<Patient | null>;
-  getPatientClinicalHistory?(patientSsn: Signal<string>): ResourceRef<ClinicalHistoryItem[] | undefined>;
   getMedications(category?: Signal<string>): ResourceRef<Medication[]>;
   addTreatment(patientId: string | number, appointmentId: number, treatment: Treatment): Promise<AddTreatmentResponse>;
-  recordTreatment?(request: TreatmentRecordRequest): Promise<TreatmentRecordResult>;
 }
 
 export interface ReportingDataAccess {

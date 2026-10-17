@@ -63,13 +63,6 @@ export class OperationRunner {
   private readonly _isLocked = signal(false);
   readonly isLocked: Signal<boolean> = this._isLocked.asReadonly();
 
-  run<T>(
-    action: () => Promise<T> | Observable<T> | T,
-    config?: OperationConfig<T>,
-  ): Promise<OperationResult<T>> {
-    return this.execute(action, config);
-  }
-
   async execute<T>(
     action: () => Promise<T> | Observable<T> | T,
     config?: OperationConfig<T>,

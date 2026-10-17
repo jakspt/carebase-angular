@@ -18,7 +18,4 @@ export type {
   DatabaseStatusResponse,
   DatabaseSeedResponse,
   DatabaseMigrationResponse,
-  ClinicalHistoryItem,
-  TreatmentRecordRequest,
-  TreatmentRecordResult,
 } from './data-access';

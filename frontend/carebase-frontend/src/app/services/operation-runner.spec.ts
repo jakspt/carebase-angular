@@ -59,17 +59,6 @@ describe('OperationRunner', () => {
     });
   });
 
-  it('should support run as an alias for execute', async () => {
-    TestBed.configureTestingModule({});
-    const runner = TestBed.inject(OperationRunner);
-
-    const result = await runner.run(async () => 'ran-action');
-
-    expect(result).toEqual({
-      status: 'success',
-      data: 'ran-action',
-    });
-  });
 
   it('should support actions returning an error Observable', async () => {
     TestBed.configureTestingModule({

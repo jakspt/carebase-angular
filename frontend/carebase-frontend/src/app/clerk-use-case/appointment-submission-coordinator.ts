@@ -8,7 +8,6 @@ import {
 } from '../models/models';
 import {
   AppointmentConflictError,
-  BookingConflictError,
   OperationRunner,
   SCHEDULING_DATA_ACCESS,
 } from '../services';
@@ -31,10 +30,6 @@ export class AppointmentSubmissionCoordinator {
   private readonly operationRunner = inject(OperationRunner);
 
   async submitAppointment(options: AppointmentSubmissionOptions): Promise<AppointmentResult> {
-    return this.submit(options);
-  }
-
-  async submit(options: AppointmentSubmissionOptions): Promise<AppointmentResult> {
     if (!options.patient || !options.doctor || !options.date || !options.timeSlot) {
       return {
         status: 'validation_error',
@@ -58,10 +53,7 @@ export class AppointmentSubmissionCoordinator {
       clerkSsn: options.clerk ? String(options.clerk.ssn) : undefined,
     };
 
-    let conflictOccurred = false;
-    let conflictPromise: Promise<void> | void = undefined;
-
-    const runnerResult = await this.operationRunner.run(
+    const runnerResult = await this.operationRunner.execute(
       async () => {
         const scheduling = this.schedulingDataAccess;
         const response =
@@ -91,14 +83,6 @@ export class AppointmentSubmissionCoordinator {
         successMessage: 'Appointment successfully scheduled.',
         errorMessageResolver: (err: unknown) => {
           if (this.isConflictError(err)) {
-            conflictOccurred = true;
-            if (options.onConflict) {
-              try {
-                conflictPromise = options.onConflict();
-              } catch {
-                // Ignore synchronous error from onConflict callback
-              }
-            }
             return 'Selected slot was just booked by another user. Please choose an alternate slot.';
           }
           return err instanceof Error
@@ -118,19 +102,12 @@ export class AppointmentSubmissionCoordinator {
       };
     }
 
-    if (conflictOccurred || this.isConflictError(runnerResult.error)) {
-      if (!conflictOccurred && options.onConflict) {
+    if (this.isConflictError(runnerResult.error)) {
+      if (options.onConflict) {
         try {
-          conflictPromise = options.onConflict();
+          await options.onConflict();
         } catch {
-          // Ignore synchronous error
-        }
-      }
-      if (conflictPromise) {
-        try {
-          await conflictPromise;
-        } catch {
-          // Ignore async error
+          // Ignore async error from onConflict callback
         }
       }
       return { status: 'conflict' };
@@ -148,16 +125,19 @@ export class AppointmentSubmissionCoordinator {
     return { status: 'error', message: errorMsg };
   }
 
+  readonly submit = (options: AppointmentSubmissionOptions): Promise<AppointmentResult> =>
+    this.submitAppointment(options);
+
   private isConflictError(err: unknown): boolean {
     if (!err) return false;
-    if (err instanceof AppointmentConflictError || err instanceof BookingConflictError) {
+    if (err instanceof AppointmentConflictError) {
       return true;
     }
     const anyErr = err as Record<string, any>;
     if (anyErr['status'] === 409 || anyErr['statusCode'] === 409) {
       return true;
     }
-    if (anyErr['name'] === 'AppointmentConflictError' || anyErr['name'] === 'BookingConflictError') {
+    if (anyErr['name'] === 'AppointmentConflictError') {
       return true;
     }
     if (anyErr['error'] && typeof anyErr['error'] === 'object' && anyErr['error']['status'] === 409) {

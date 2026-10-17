@@ -1,154 +1,167 @@
-import { Injector, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import {
+  createEnvironmentInjector,
+  EnvironmentInjector,
+  inject,
+  Injector,
+  runInInjectionContext,
+  signal,
+  ɵChangeDetectionScheduler,
+  ɵEffectScheduler,
+} from '@angular/core';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createDebouncedLoadingSignal } from './reactive-utils';
 
 describe('createDebouncedLoadingSignal', () => {
+  let injector: EnvironmentInjector;
+
   beforeEach(() => {
     vi.useFakeTimers();
+    let scheduled = false;
+    injector = createEnvironmentInjector(
+      [
+        {
+          provide: ɵEffectScheduler,
+          useFactory: () => (ɵEffectScheduler as any).ɵprov.factory(),
+        },
+        {
+          provide: ɵChangeDetectionScheduler,
+          useFactory: () => {
+            const es = inject(ɵEffectScheduler);
+            return {
+              notify: () => {
+                if (!scheduled) {
+                  scheduled = true;
+                  queueMicrotask(() => {
+                    scheduled = false;
+                    es.flush();
+                  });
+                }
+              },
+            };
+          },
+        },
+      ],
+      Injector.NULL as unknown as EnvironmentInjector,
+    );
   });
 
   afterEach(() => {
+    injector.destroy();
     vi.useRealTimers();
   });
 
   it('should initialize with false when source loading signal is false', () => {
-    TestBed.runInInjectionContext(() => {
+    runInInjectionContext(injector, () => {
       const isLoading = signal(false);
       const debounced = createDebouncedLoadingSignal(isLoading);
 
-      TestBed.flushEffects();
       expect(debounced()).toBe(false);
     });
   });
 
-  it('should not show spinner before default 250ms delay elapses', () => {
-    TestBed.runInInjectionContext(() => {
+  it('should not show spinner before default 250ms delay elapses', async () => {
+    await runInInjectionContext(injector, async () => {
       const isLoading = signal(false);
       const debounced = createDebouncedLoadingSignal(isLoading);
 
-      TestBed.flushEffects();
       expect(debounced()).toBe(false);
 
       isLoading.set(true);
-      TestBed.flushEffects();
 
       // Advance by 150ms (< 250ms default delay)
-      vi.advanceTimersByTime(150);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(150);
       expect(debounced()).toBe(false);
 
       // Advance to 249ms (still below threshold)
-      vi.advanceTimersByTime(99);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(99);
       expect(debounced()).toBe(false);
     });
   });
 
-  it('should show spinner once 250ms delay threshold has passed', () => {
-    TestBed.runInInjectionContext(() => {
+  it('should show spinner once 250ms delay threshold has passed', async () => {
+    await runInInjectionContext(injector, async () => {
       const isLoading = signal(false);
       const debounced = createDebouncedLoadingSignal(isLoading);
 
-      TestBed.flushEffects();
       isLoading.set(true);
-      TestBed.flushEffects();
 
-      vi.advanceTimersByTime(250);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(250);
       expect(debounced()).toBe(true);
     });
   });
 
-  it('should suppress spinner completely if loading finishes before threshold (prevents flicker)', () => {
-    TestBed.runInInjectionContext(() => {
+  it('should suppress spinner completely if loading finishes before threshold (prevents flicker)', async () => {
+    await runInInjectionContext(injector, async () => {
       const isLoading = signal(false);
       const debounced = createDebouncedLoadingSignal(isLoading);
 
-      TestBed.flushEffects();
       isLoading.set(true);
-      TestBed.flushEffects();
 
       // Loading lasts 100ms (fast response)
-      vi.advanceTimersByTime(100);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(100);
       expect(debounced()).toBe(false);
 
       isLoading.set(false);
-      TestBed.flushEffects();
 
       // Even if more time passes, spinner never showed
-      vi.advanceTimersByTime(300);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(300);
       expect(debounced()).toBe(false);
     });
   });
 
-  it('should immediately clear spinner when loading turns false (no turn-off delay)', () => {
-    TestBed.runInInjectionContext(() => {
+  it('should immediately clear spinner when loading turns false (no turn-off delay)', async () => {
+    await runInInjectionContext(injector, async () => {
       const isLoading = signal(false);
       const debounced = createDebouncedLoadingSignal(isLoading);
 
-      TestBed.flushEffects();
       isLoading.set(true);
-      TestBed.flushEffects();
 
       // Wait for spinner to become visible
-      vi.advanceTimersByTime(250);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(250);
       expect(debounced()).toBe(true);
 
       // Loading completes
       isLoading.set(false);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(0);
 
       // Spinner should clear immediately without waiting another 250ms
       expect(debounced()).toBe(false);
     });
   });
 
-  it('should respect custom delay threshold when specified', () => {
-    TestBed.runInInjectionContext(() => {
+  it('should respect custom delay threshold when specified', async () => {
+    await runInInjectionContext(injector, async () => {
       const isLoading = signal(false);
       const customDelay = 500;
       const debounced = createDebouncedLoadingSignal(isLoading, customDelay);
 
-      TestBed.flushEffects();
       isLoading.set(true);
-      TestBed.flushEffects();
 
       // At 250ms, default would be true, but custom delay of 500ms should still be false
-      vi.advanceTimersByTime(250);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(250);
       expect(debounced()).toBe(false);
 
       // At 499ms, still false
-      vi.advanceTimersByTime(249);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(249);
       expect(debounced()).toBe(false);
 
       // At 500ms, turns true
-      vi.advanceTimersByTime(1);
-      TestBed.flushEffects();
+      await vi.advanceTimersByTimeAsync(1);
       expect(debounced()).toBe(true);
     });
   });
 
-  it('should allow providing an explicit Injector via options outside an active injection context', () => {
-    const injector = TestBed.inject(Injector);
+  it('should allow providing an explicit Injector via options outside an active injection context', async () => {
     const isLoading = signal(false);
 
-    // Call outside TestBed.runInInjectionContext, passing injector explicitly
+    // Call outside runInInjectionContext, passing injector explicitly
     const debounced = createDebouncedLoadingSignal(isLoading, 100, { injector });
 
-    TestBed.flushEffects();
     expect(debounced()).toBe(false);
 
     isLoading.set(true);
-    TestBed.flushEffects();
 
-    vi.advanceTimersByTime(100);
-    TestBed.flushEffects();
+    await vi.advanceTimersByTimeAsync(100);
     expect(debounced()).toBe(true);
   });
 });

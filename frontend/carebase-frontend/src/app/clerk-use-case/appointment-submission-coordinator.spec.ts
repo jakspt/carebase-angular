@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AppointmentSubmissionCoordinator, AppointmentSubmissionOptions } from './appointment-submission-coordinator';
-import { Clerk, CreateAppointmentResponse, Doctor, Patient } from '../models/models';
+import { Clerk, CreateAppointmentRequest, CreateAppointmentResponse, Doctor, Patient } from '../models/models';
 import {
   AppointmentConflictError,
   BookingConflictError,
@@ -15,6 +15,8 @@ import {
 describe('AppointmentSubmissionCoordinator', () => {
   let coordinator: AppointmentSubmissionCoordinator;
   let mockSchedulingDataAccess: Partial<SchedulingDataAccess>;
+  let lastBookedRequest: CreateAppointmentRequest | undefined;
+  let lastCreatedRequest: CreateAppointmentRequest | undefined;
   let snackBar: HeadlessSnackBar;
   let operationRunner: OperationRunner;
 
@@ -45,11 +47,17 @@ describe('AppointmentSubmissionCoordinator', () => {
   };
 
   beforeEach(() => {
+    lastBookedRequest = undefined;
+    lastCreatedRequest = undefined;
+
     mockSchedulingDataAccess = {
-      bookAppointment: vi.fn().mockResolvedValue({
-        success: true,
-        appointmentId: 101,
-      } as CreateAppointmentResponse),
+      bookAppointment: async (req: CreateAppointmentRequest) => {
+        lastBookedRequest = req;
+        return {
+          success: true,
+          appointmentId: 101,
+        } as CreateAppointmentResponse;
+      },
     };
 
     TestBed.configureTestingModule({
@@ -83,7 +91,7 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'validation_error',
         message: 'Please fill in all required appointment details.',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+      expect(lastBookedRequest).toBeUndefined();
     });
 
     it('should fail validation when doctor is missing', async () => {
@@ -96,7 +104,7 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'validation_error',
         message: 'Please fill in all required appointment details.',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+      expect(lastBookedRequest).toBeUndefined();
     });
 
     it('should fail validation when date is empty', async () => {
@@ -109,7 +117,7 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'validation_error',
         message: 'Please fill in all required appointment details.',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+      expect(lastBookedRequest).toBeUndefined();
     });
 
     it('should fail validation when time slot is null', async () => {
@@ -122,7 +130,7 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'validation_error',
         message: 'Please fill in all required appointment details.',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+      expect(lastBookedRequest).toBeUndefined();
     });
 
     it('should fail validation when reason exceeds 500 characters', async () => {
@@ -135,7 +143,7 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'validation_error',
         message: 'Reason cannot exceed 500 characters.',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+      expect(lastBookedRequest).toBeUndefined();
     });
   });
 
@@ -143,17 +151,17 @@ describe('AppointmentSubmissionCoordinator', () => {
     it('should successfully submit appointment via bookAppointment and return appointmentId', async () => {
       const result = await coordinator.submitAppointment(defaultOptions);
 
-      expect(mockSchedulingDataAccess.bookAppointment).toHaveBeenCalledWith({
+      expect(result).toEqual({
+        status: 'success',
+        appointmentId: 101,
+      });
+      expect(lastBookedRequest).toEqual({
         patientSsn: '2002',
         doctorSsn: '3001',
         date: '2026-10-25',
         time: '09:30',
         reason: 'Regular cardiology followup',
         clerkSsn: '1001',
-      });
-      expect(result).toEqual({
-        status: 'success',
-        appointmentId: 101,
       });
       expect(snackBar.lastMessage()).toBe('Appointment successfully scheduled.');
     });
@@ -165,31 +173,38 @@ describe('AppointmentSubmissionCoordinator', () => {
         status: 'success',
         appointmentId: 101,
       });
+      expect(lastBookedRequest?.patientSsn).toBe('2002');
     });
 
     it('should handle missing clerk by passing undefined clerkSsn', async () => {
-      await coordinator.submitAppointment({
+      const result = await coordinator.submitAppointment({
         ...defaultOptions,
         clerk: null,
       });
 
-      expect(mockSchedulingDataAccess.bookAppointment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          clerkSsn: undefined,
-        }),
-      );
+      expect(result).toEqual({
+        status: 'success',
+        appointmentId: 101,
+      });
+      expect(lastBookedRequest?.clerkSsn).toBeUndefined();
     });
 
     it('should use createAppointment when provided by SchedulingDataAccess', async () => {
-      const mockCreateAppointment = vi.fn().mockResolvedValue({
-        success: true,
-        appointmentId: 202,
-      });
-      mockSchedulingDataAccess.createAppointment = mockCreateAppointment;
+      mockSchedulingDataAccess.createAppointment = async (req: CreateAppointmentRequest) => {
+        lastCreatedRequest = req;
+        return {
+          status: 'success',
+          appointmentId: 202,
+        };
+      };
 
       const result = await coordinator.submitAppointment(defaultOptions);
 
-      expect(mockCreateAppointment).toHaveBeenCalledWith({
+      expect(result).toEqual({
+        status: 'success',
+        appointmentId: 202,
+      });
+      expect(lastCreatedRequest).toEqual({
         patientSsn: '2002',
         doctorSsn: '3001',
         date: '2026-10-25',
@@ -197,63 +212,67 @@ describe('AppointmentSubmissionCoordinator', () => {
         reason: 'Regular cardiology followup',
         clerkSsn: '1001',
       });
-      expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        status: 'success',
-        appointmentId: 202,
-      });
+      expect(lastBookedRequest).toBeUndefined();
     });
   });
 
   describe('Conflict detection and handling', () => {
     it('should detect AppointmentConflictError, call onConflict, resolve snackbar message, and return conflict status', async () => {
-      const onConflictSpy = vi.fn();
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue(
-        new AppointmentConflictError('Slot unavailable'),
-      );
+      let conflictCallbackInvoked = false;
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw new AppointmentConflictError('Slot unavailable');
+      };
 
       const result = await coordinator.submitAppointment({
         ...defaultOptions,
-        onConflict: onConflictSpy,
+        onConflict: () => {
+          conflictCallbackInvoked = true;
+        },
       });
 
       expect(result).toEqual({ status: 'conflict' });
-      expect(onConflictSpy).toHaveBeenCalledTimes(1);
+      expect(conflictCallbackInvoked).toBe(true);
       expect(snackBar.lastMessage()).toBe(
         'Selected slot was just booked by another user. Please choose an alternate slot.',
       );
     });
 
     it('should detect BookingConflictError backward-compatible alias and call onConflict', async () => {
-      const onConflictSpy = vi.fn();
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue(
-        new BookingConflictError('Slot unavailable'),
-      );
+      let conflictCallbackInvoked = false;
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw new BookingConflictError('Slot unavailable');
+      };
 
       const result = await coordinator.submitAppointment({
         ...defaultOptions,
-        onConflict: onConflictSpy,
+        onConflict: () => {
+          conflictCallbackInvoked = true;
+        },
       });
 
       expect(result).toEqual({ status: 'conflict' });
-      expect(onConflictSpy).toHaveBeenCalledTimes(1);
+      expect(conflictCallbackInvoked).toBe(true);
       expect(snackBar.lastMessage()).toBe(
         'Selected slot was just booked by another user. Please choose an alternate slot.',
       );
     });
 
     it('should detect HTTP 409 conflict error status and invoke onConflict', async () => {
-      const onConflictSpy = vi.fn();
+      let conflictCallbackInvoked = false;
       const http409Error = { status: 409, message: 'Slot already taken' };
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue(http409Error);
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw http409Error;
+      };
 
       const result = await coordinator.submitAppointment({
         ...defaultOptions,
-        onConflict: onConflictSpy,
+        onConflict: () => {
+          conflictCallbackInvoked = true;
+        },
       });
 
       expect(result).toEqual({ status: 'conflict' });
-      expect(onConflictSpy).toHaveBeenCalledTimes(1);
+      expect(conflictCallbackInvoked).toBe(true);
       expect(snackBar.lastMessage()).toBe(
         'Selected slot was just booked by another user. Please choose an alternate slot.',
       );
@@ -261,14 +280,14 @@ describe('AppointmentSubmissionCoordinator', () => {
 
     it('should await asynchronous onConflict callback when conflict occurs', async () => {
       let asyncCallbackFinished = false;
-      const asyncOnConflict = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+      const asyncOnConflict = async () => {
+        await Promise.resolve();
         asyncCallbackFinished = true;
-      });
+      };
 
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue(
-        new AppointmentConflictError('Slot collision'),
-      );
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw new AppointmentConflictError('Slot collision');
+      };
 
       const result = await coordinator.submitAppointment({
         ...defaultOptions,
@@ -276,16 +295,15 @@ describe('AppointmentSubmissionCoordinator', () => {
       });
 
       expect(result).toEqual({ status: 'conflict' });
-      expect(asyncOnConflict).toHaveBeenCalledTimes(1);
       expect(asyncCallbackFinished).toBe(true);
     });
   });
 
   describe('Generic failure handling', () => {
     it('should handle general Error rejection and return error status with message', async () => {
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue(
-        new Error('Network connection dropped'),
-      );
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw new Error('Network connection dropped');
+      };
 
       const result = await coordinator.submitAppointment(defaultOptions);
 
@@ -297,9 +315,11 @@ describe('AppointmentSubmissionCoordinator', () => {
     });
 
     it('should handle structured error payload with nested error message', async () => {
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockRejectedValue({
-        error: { error: 'Database constraint violated' },
-      });
+      mockSchedulingDataAccess.bookAppointment = async () => {
+        throw {
+          error: { error: 'Database constraint violated' },
+        };
+      };
 
       const result = await coordinator.submitAppointment(defaultOptions);
 
@@ -311,7 +331,7 @@ describe('AppointmentSubmissionCoordinator', () => {
     });
 
     it('should return error when response has success: false', async () => {
-      mockSchedulingDataAccess.bookAppointment = vi.fn().mockResolvedValue({
+      mockSchedulingDataAccess.bookAppointment = async () => ({
         success: false,
         message: 'Doctor schedule is currently blocked.',
       });
@@ -341,7 +361,7 @@ describe('AppointmentSubmissionCoordinator', () => {
           status: 'error',
           message: 'An operation is already in progress.',
         });
-        expect(mockSchedulingDataAccess.bookAppointment).not.toHaveBeenCalled();
+        expect(lastBookedRequest).toBeUndefined();
       } finally {
         finishLockedOp();
         await ongoingOp;

@@ -13,7 +13,7 @@ import {
 } from '../../models/models';
 import {
   AddTreatmentResponse,
-  BookingConflictError,
+  AppointmentConflictError,
   ConsultationFrequencyReport,
   DateRange,
   DoctorEarningsReport,
@@ -156,7 +156,7 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
     } catch (err: unknown) {
       const httpErr = err as { status?: number; error?: { error?: string }; message?: string };
       if (httpErr?.status === 409) {
-        throw new BookingConflictError(
+        throw new AppointmentConflictError(
           httpErr.error?.error || 'Appointment time slot is no longer available.',
           err,
         );
@@ -166,6 +166,10 @@ export class HttpHospitalDataAdapter implements HospitalDataAccess {
         err,
       );
     }
+  }
+
+  async createAppointment(payload: CreateAppointmentRequest): Promise<CreateAppointmentResponse> {
+    return this.bookAppointment(payload);
   }
 
   async addTreatment(

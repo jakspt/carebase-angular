@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { HttpHospitalDataAdapter } from './http-hospital-data-adapter';
 import {
+  AppointmentConflictError,
   BookingConflictError,
   type ConsultationFrequencyReport,
   HospitalDataError,
@@ -319,7 +320,7 @@ describe('HttpHospitalDataAdapter', () => {
       expect(res.appointmentId).toBe(101);
     });
 
-    it('should translate 409 Conflict response into BookingConflictError', async () => {
+    it('should translate 409 Conflict response into AppointmentConflictError', async () => {
       const promise = adapter.bookAppointment(payload);
 
       const req = httpTesting.expectOne('/api/clerk/appointments');
@@ -328,7 +329,26 @@ describe('HttpHospitalDataAdapter', () => {
         { status: 409, statusText: 'Conflict' },
       );
 
+      await expect(promise).rejects.toThrow(AppointmentConflictError);
       await expect(promise).rejects.toThrow(BookingConflictError);
+    });
+
+    it('should provide createAppointment delegating directly to bookAppointment', async () => {
+      const promise = adapter.createAppointment(payload);
+
+      const req = httpTesting.expectOne('/api/clerk/appointments');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+
+      req.flush({
+        success: true,
+        appointmentId: 101,
+        message: 'Booked',
+      });
+
+      const res = await promise;
+      expect(res.success).toBe(true);
+      expect(res.appointmentId).toBe(101);
     });
 
     it('should translate 500 error into HospitalDataError', async () => {

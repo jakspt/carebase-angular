@@ -348,6 +348,20 @@ describe('InMemoryHospitalDataAdapter', () => {
       expect(slot?.available).toBe(true);
     });
   });
+
+  it('should support createAppointment as canonical alias delegating to bookAppointment', async () => {
+    const res = await adapter.createAppointment({
+      patientSsn: '2001',
+      doctorSsn: '3001',
+      date: '2026-11-15',
+      time: '11:00',
+      reason: 'Routine checkup',
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.appointmentId).toBeDefined();
+    expect(res.message).toBe('Appointment successfully scheduled');
+  });
 });
 
 describe('InMemoryHospitalDataAdapter with IN_MEMORY_ADAPTER_CONFIG', () => {
