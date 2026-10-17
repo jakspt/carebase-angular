@@ -4,7 +4,7 @@
 
 **Blocked by:** 03: Implement Data Access Interface Segregation
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Database status query eliminates the synthetic 20-line mock resource object in favor of standard resource semantics when loading simulation is active.
 - [ ] Query methods in the in-memory adapter utilize a concise internal helper to reduce repetitive resource setup boilerplate.
