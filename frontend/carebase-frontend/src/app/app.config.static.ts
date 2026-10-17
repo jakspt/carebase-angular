@@ -3,11 +3,11 @@ import { provideRouter, withHashLocation, withViewTransitions } from '@angular/r
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { routes } from './app.routes';
-import { HOSPITAL_DATA_ACCESS } from './services/hospital-data-access';
 import {
+  HOSPITAL_DATA_ACCESS,
   IN_MEMORY_ADAPTER_CONFIG,
   InMemoryHospitalDataAdapter,
-} from './services/in-memory-hospital-data-adapter';
+} from './services';
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Doctor } from '../models/models';
-import { StoredAppointment } from './mock-hospital-data';
+import { Doctor } from '../../models/models';
+import { StoredAppointment } from '../data-access/mock-hospital-data';
 import { calculateDoctorEarnings } from './doctor-earnings-engine';
 
 describe('doctor-earnings-engine', () => {

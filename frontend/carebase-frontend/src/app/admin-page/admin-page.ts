@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ActionCard } from '../action-card/action-card';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { OperationRunner } from '../services/operation-runner';
+import { HOSPITAL_DATA_ACCESS, OperationRunner } from '../services';
 
 @Component({
   imports: [ActionCard, MatIconModule],

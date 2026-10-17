@@ -11,7 +11,7 @@ import {
   TimeSlotsResponse,
   PatientVisitsReportResponse,
   DbStatus,
-} from '../models/models';
+} from '../../models/models';
 
 export interface TimeSlotQueryParams {
   date: string;

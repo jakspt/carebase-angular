@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Doctor, Patient } from '../models/models';
-import { StoredAppointment } from './mock-hospital-data';
+import { Doctor, Patient } from '../../models/models';
+import { StoredAppointment } from '../data-access/mock-hospital-data';
 import {
   calculateConsultationFrequency,
   DateRange,

@@ -4,8 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { routes } from './app.routes';
-import { HOSPITAL_DATA_ACCESS } from './services/hospital-data-access';
-import { HttpHospitalDataAdapter } from './services/http-hospital-data-adapter';
+import { HOSPITAL_DATA_ACCESS, HttpHospitalDataAdapter } from './services';
 
 export const appConfig: ApplicationConfig = {
   providers: [

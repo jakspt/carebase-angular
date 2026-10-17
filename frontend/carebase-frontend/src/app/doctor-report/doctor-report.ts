@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { BarChartModule } from '@swimlane/ngx-charts';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { HOSPITAL_DATA_ACCESS } from '../services';
 import { DoctorEarnings } from '../models/models';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, of, switchMap, timer } from 'rxjs';

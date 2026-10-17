@@ -6,8 +6,7 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { MatToolbarHarness } from '@angular/material/toolbar/testing';
 import { App } from './app';
 import { HeaderLayout } from './header-layout/header-layout';
-import { ActorSession } from './services/actor-session';
-import { provideTestHospitalData } from './services/in-memory-hospital-data-adapter';
+import { ActorSession, provideTestHospitalData } from './services';
 
 @Component({ selector: 'stub-child', template: '<p>Child Content</p>' })
 class StubChildComponent {}
