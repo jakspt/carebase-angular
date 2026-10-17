@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] Reusable debounced loading signal helper is extracted and accepts an active loading signal and optional threshold delay.
-- [ ] ISO date parsing utility is extracted and correctly normalizes string dates and Date objects with zeroed timestamps.
-- [ ] Consultation Frequency Report consumes the shared debounced loading utility, removing inlined RxJS pipes.
-- [ ] Doctor Earnings Report consumes the shared debounced loading utility, removing inlined RxJS pipes.
-- [ ] Dedicated unit test suites verify debounced loading and date parsing behaviors with sub-millisecond execution.
+- [x] Reusable debounced loading signal helper is extracted and accepts an active loading signal and optional threshold delay.
+- [x] ISO date parsing utility is extracted and correctly normalizes string dates and Date objects with zeroed timestamps.
+- [x] Consultation Frequency Report consumes the shared debounced loading utility, removing inlined RxJS pipes.
+- [x] Doctor Earnings Report consumes the shared debounced loading utility, removing inlined RxJS pipes.
+- [x] Dedicated unit test suites verify debounced loading and date parsing behaviors with sub-millisecond execution.
