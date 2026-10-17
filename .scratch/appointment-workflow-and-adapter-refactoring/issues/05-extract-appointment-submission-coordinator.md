@@ -4,12 +4,12 @@
 
 **Blocked by:** 01: Extract Shared Reactive and Date Utilities, 03: Implement Data Access Interface Segregation, 04: Tidy and Deepen In-Memory Hospital Adapter
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] Injectable appointment submission coordinator is created to handle validation, request creation, operation runner execution, 409 conflict detection, and error message resolution.
-- [ ] Appointment intake workflow injects the scheduling data access token instead of the monolithic port.
-- [ ] Intake workflow delegates submission execution and slot conflict reload callbacks to the submission coordinator.
-- [ ] Intake workflow consumes the shared debounced loading and date parsing utilities.
-- [ ] Property names in the intake workflow standardize on appointment terminology with backward-compatible aliases for booking forms.
-- [ ] Dedicated unit tests verify the submission coordinator in isolation with mock scheduling data access and operation runner.
-- [ ] Existing Material stepper component harness tests continue passing without regression.
+- [x] Injectable appointment submission coordinator is created to handle validation, request creation, operation runner execution, 409 conflict detection, and error message resolution.
+- [x] Appointment intake workflow injects the scheduling data access token instead of the monolithic port.
+- [x] Intake workflow delegates submission execution and slot conflict reload callbacks to the submission coordinator.
+- [x] Intake workflow consumes the shared debounced loading and date parsing utilities.
+- [x] Property names in the intake workflow standardize on appointment terminology with backward-compatible aliases for booking forms.
+- [x] Dedicated unit tests verify the submission coordinator in isolation with mock scheduling data access and operation runner.
+- [x] Existing Material stepper component harness tests continue passing without regression.

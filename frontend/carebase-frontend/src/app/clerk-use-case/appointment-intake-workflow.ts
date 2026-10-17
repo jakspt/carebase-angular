@@ -1,63 +1,45 @@
 import { computed, inject, Injectable, linkedSignal, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import {
-  AppointmentNotes,
-  AppointmentResult,
-  BookingResult,
-  Clerk,
-  CreateAppointmentRequest,
-  Doctor,
-  Patient,
-  TimeSlot,
-} from '../models/models';
-import {
-  ActorSession,
-  BookingConflictError,
-  HOSPITAL_DATA_ACCESS,
-  OperationRunner,
-} from '../services';
 import { form, maxLength } from '@angular/forms/signals';
+import { AppointmentNotes, AppointmentResult, BookingResult, Clerk, Doctor, Patient, TimeSlot } from '../models/models';
+import { ActorSession, OperationRunner, SCHEDULING_DATA_ACCESS } from '../services';
 import { createDebouncedLoadingSignal, parseIsoDate } from '../utils';
+import { AppointmentSubmissionCoordinator } from './appointment-submission-coordinator';
 
 export type { AppointmentNotes, AppointmentResult, BookingResult };
 
 @Injectable()
 export class AppointmentIntakeWorkflow {
   private readonly actorSession = inject(ActorSession);
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly schedulingDataAccess = inject(SCHEDULING_DATA_ACCESS);
+  private readonly submissionCoordinator = inject(AppointmentSubmissionCoordinator);
   private readonly operationRunner = inject(OperationRunner);
 
   // ── Clerk Profile ──
   readonly activeClerk = this.actorSession.activeClerk;
   readonly clerkSearchQuery = signal('');
-  readonly clerkSearchResults = this.hospitalDataAccess.searchClerks(this.clerkSearchQuery);
+  readonly clerkSearchResults = this.schedulingDataAccess.searchClerks(this.clerkSearchQuery);
   readonly availableClerks = computed<Clerk[]>(() => {
-    if (this.clerkSearchResults.hasValue()) {
-      const val = this.clerkSearchResults.value();
-      return Array.isArray(val) ? val : ((val as any)?.clerks ?? []);
-    }
-    return [];
+    if (!this.clerkSearchResults.hasValue()) return [];
+    const val = this.clerkSearchResults.value();
+    return Array.isArray(val) ? val : ((val as any)?.clerks ?? []);
   });
 
   // ── Step 1: Patient Search ──
   private readonly _patientSearchQuery = signal('');
   readonly patientSearchQuery = this._patientSearchQuery.asReadonly();
-
   private readonly _patientInputValue = signal('');
   readonly patientInputValue = this._patientInputValue.asReadonly();
 
   private readonly patientSearchSubject$ = new Subject<string>();
-  readonly patientSearchResults = this.hospitalDataAccess.searchPatients(this.patientSearchQuery);
-
+  readonly patientSearchResults = this.schedulingDataAccess.searchPatients(this.patientSearchQuery);
   readonly showPatientSpinner = createDebouncedLoadingSignal(this.patientSearchResults.isLoading);
 
   readonly patients = computed<Patient[]>(() => {
-    if (this.patientSearchResults.hasValue()) {
-      const val = this.patientSearchResults.value();
-      return Array.isArray(val) ? val : ((val as any)?.patients ?? []);
-    }
-    return [];
+    if (!this.patientSearchResults.hasValue()) return [];
+    const val = this.patientSearchResults.value();
+    return Array.isArray(val) ? val : ((val as any)?.patients ?? []);
   });
 
   private readonly _selectedPatient = signal<Patient | null>(null);
@@ -66,27 +48,20 @@ export class AppointmentIntakeWorkflow {
   constructor() {
     this.patientSearchSubject$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
-      .subscribe((query) => {
-        this._patientSearchQuery.set(query);
-      });
+      .subscribe((query) => this._patientSearchQuery.set(query));
   }
 
   // ── Step 2: Department & Doctor Selection ──
-  readonly doctorsResource = this.hospitalDataAccess.getDoctors();
+  readonly doctorsResource = this.schedulingDataAccess.getDoctors();
   readonly allDoctors = computed<Doctor[]>(() => {
-    if (this.doctorsResource.hasValue()) {
-      const val = this.doctorsResource.value();
-      return Array.isArray(val) ? val : ((val as any)?.doctors ?? []);
-    }
-    return [];
+    if (!this.doctorsResource.hasValue()) return [];
+    const val = this.doctorsResource.value();
+    return Array.isArray(val) ? val : ((val as any)?.doctors ?? []);
   });
 
   readonly departments = computed<string[]>(() => {
-    const list = this.allDoctors();
     const depts = new Set<string>();
-    for (const d of list) {
-      if (d.department) depts.add(d.department);
-    }
+    for (const d of this.allDoctors()) if (d.department) depts.add(d.department);
     return Array.from(depts).sort();
   });
 
@@ -96,18 +71,14 @@ export class AppointmentIntakeWorkflow {
   readonly filteredDoctors = computed<Doctor[]>(() => {
     const dept = this.selectedDepartment();
     const all = this.allDoctors();
-    if (!dept) return all;
-    return all.filter((d) => d.department === dept);
+    return dept ? all.filter((d) => d.department === dept) : all;
   });
 
-  // Declarative dependent state: doctor resets to null if department changes and doctor is not in that department
   private readonly _selectedDoctor = linkedSignal<string, Doctor | null>({
     source: () => this.selectedDepartment(),
     computation: (newDept, previous) => {
-      const prevDoctor = previous?.value;
-      if (!prevDoctor) return null;
-      if (!newDept) return prevDoctor;
-      return prevDoctor.department === newDept ? prevDoctor : null;
+      const prev = previous?.value;
+      return !prev || (newDept && prev.department !== newDept) ? null : prev;
     },
   });
   readonly selectedDoctor = this._selectedDoctor.asReadonly();
@@ -127,20 +98,11 @@ export class AppointmentIntakeWorkflow {
     if (!raw) return '';
     const d = raw instanceof Date ? raw : new Date(raw);
     if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
-  // Declarative dependent state: time slot resets to null whenever doctor, date, department, or patient changes
   private readonly _selectedTimeSlot = linkedSignal<
-    {
-      doctorSsn: string | undefined;
-      date: string;
-      department: string;
-      patientSsn: string | undefined;
-    },
+    { doctorSsn?: string; date: string; department: string; patientSsn?: string },
     string | null
   >({
     source: () => ({
@@ -149,17 +111,11 @@ export class AppointmentIntakeWorkflow {
       department: this.selectedDepartment(),
       patientSsn: this.selectedPatient()?.ssn,
     }),
-    computation: (current, previous) => {
-      if (
-        previous &&
-        (current.doctorSsn !== previous.source.doctorSsn ||
-          current.date !== previous.source.date ||
-          current.department !== previous.source.department ||
-          current.patientSsn !== previous.source.patientSsn)
-      ) {
-        return null;
-      }
-      return previous?.value ?? null;
+    computation: (curr, prev) => {
+      if (!prev) return null;
+      const s = prev.source;
+      const changed = curr.doctorSsn !== s.doctorSsn || curr.date !== s.date || curr.department !== s.department || curr.patientSsn !== s.patientSsn;
+      return changed ? null : prev.value;
     },
   });
   readonly selectedTimeSlot = this._selectedTimeSlot.asReadonly();
@@ -168,35 +124,23 @@ export class AppointmentIntakeWorkflow {
     const date = this.formattedDate();
     const doctor = this.selectedDoctor();
     const patient = this.selectedPatient();
-    if (!date || !doctor) return undefined;
-    return {
-      date,
-      doctorSsn: doctor.ssn,
-      patientSsn: patient?.ssn,
-    };
+    return !date || !doctor ? undefined : { date, doctorSsn: doctor.ssn, patientSsn: patient?.ssn };
   });
 
-  readonly timeSlotsResource = this.hospitalDataAccess.getTimeSlots(this.slotParams);
-
+  readonly timeSlotsResource = this.schedulingDataAccess.getTimeSlots(this.slotParams);
   readonly showSlotSpinner = createDebouncedLoadingSignal(this.timeSlotsResource.isLoading);
 
-  readonly timeSlots = computed<TimeSlot[]>(() => {
-    if (this.timeSlotsResource.hasValue()) {
-      return this.timeSlotsResource.value()?.slots ?? [];
-    }
-    return [];
-  });
+  readonly timeSlots = computed<TimeSlot[]>(() =>
+    this.timeSlotsResource.hasValue() ? this.timeSlotsResource.value()?.slots ?? [] : [],
+  );
 
-  readonly hasAvailableSlots = computed<boolean>(() => {
-    return this.timeSlots().some((s) => s.available);
-  });
+  readonly hasAvailableSlots = computed<boolean>(() =>
+    this.timeSlots().some((s) => s.available),
+  );
 
-  readonly nextAvailableDate = computed<string | null>(() => {
-    if (this.timeSlotsResource.hasValue()) {
-      return this.timeSlotsResource.value()?.nextAvailableDate ?? null;
-    }
-    return null;
-  });
+  readonly nextAvailableDate = computed<string | null>(() =>
+    this.timeSlotsResource.hasValue() ? this.timeSlotsResource.value()?.nextAvailableDate ?? null : null,
+  );
 
   readonly parsedNextAvailableDate = computed<Date | null>(() => {
     const dateStr = this.nextAvailableDate();
@@ -207,10 +151,7 @@ export class AppointmentIntakeWorkflow {
   });
 
   // ── Step 4: Notes, Submission & State ──
-  readonly appointmentNotes = signal<AppointmentNotes>({
-    reason: '',
-  });
-
+  readonly appointmentNotes = signal<AppointmentNotes>({ reason: '' });
   readonly appointmentForm = form(this.appointmentNotes, (schema) => {
     maxLength(schema.reason, 500, { message: 'Reason cannot exceed 500 characters.' });
   });
@@ -218,7 +159,6 @@ export class AppointmentIntakeWorkflow {
   // Aliases for compatibility
   readonly bookingModel = this.appointmentNotes;
   readonly bookingForm = this.appointmentForm;
-
   readonly reason = computed(() => this.appointmentNotes().reason);
 
   readonly isLocked = this.operationRunner.isLocked;
@@ -232,10 +172,8 @@ export class AppointmentIntakeWorkflow {
   readonly createdAppointmentId = this._createdAppointmentId.asReadonly();
 
   // ── Commands / Actions ──
-
   setClerkSearchInput(query: string): void {
-    if (this.isLocked()) return;
-    this.clerkSearchQuery.set(query);
+    if (!this.isLocked()) this.clerkSearchQuery.set(query);
   }
 
   selectClerk(clerk: Clerk): void {
@@ -264,127 +202,56 @@ export class AppointmentIntakeWorkflow {
   }
 
   selectDepartment(dept: string): void {
-    if (this.isLocked()) return;
-    this._selectedDepartment.set(dept);
+    if (!this.isLocked()) this._selectedDepartment.set(dept);
   }
 
   selectDoctor(doctor: Doctor | null): void {
-    if (this.isLocked()) return;
-    this._selectedDoctor.set(doctor);
+    if (!this.isLocked()) this._selectedDoctor.set(doctor);
   }
 
   selectDate(date: Date | null): void {
-    if (this.isLocked()) return;
-    this._selectedDate.set(date);
+    if (!this.isLocked()) this._selectedDate.set(date);
   }
 
   selectNextAvailableDate(dateVal?: string | Date | null): void {
     if (this.isLocked()) return;
     const target = dateVal ?? this.parsedNextAvailableDate() ?? this.nextAvailableDate();
-    if (!target) return;
-    const targetDate = parseIsoDate(target);
-    this.selectDate(targetDate);
+    if (target) this.selectDate(parseIsoDate(target));
   }
 
   selectTimeSlot(time: string): void {
     if (this.isLocked()) return;
-    if (this._selectedTimeSlot() === time) {
-      this._selectedTimeSlot.set(null);
-    } else {
-      this._selectedTimeSlot.set(time);
-    }
+    this._selectedTimeSlot.set(this._selectedTimeSlot() === time ? null : time);
   }
 
   setReason(reason: string): void {
-    if (this.isLocked()) return;
-    this.appointmentNotes.set({ reason });
+    if (!this.isLocked()) this.appointmentNotes.set({ reason });
   }
 
   async submit(): Promise<AppointmentResult> {
     if (this.appointmentForm().invalid()) {
       const errorMsg = this.appointmentForm.reason().errors()[0]?.message || 'Validation error.';
-      return {
-        status: 'validation_error',
-        message: errorMsg,
-      };
+      return { status: 'validation_error', message: errorMsg };
     }
 
-    const patient = this.selectedPatient();
-    const doctor = this.selectedDoctor();
-    const date = this.formattedDate();
-    const time = this.selectedTimeSlot();
-    const activeClerk = this.activeClerk();
-
-    if (!patient || !doctor || !date || !time) {
-      return {
-        status: 'validation_error',
-        message: 'Please fill in all required appointment details.',
-      };
-    }
-
-    const payload: CreateAppointmentRequest = {
-      patientSsn: String(patient.ssn),
-      doctorSsn: String(doctor.ssn),
-      date,
-      time,
-      reason: this.appointmentNotes().reason.trim(),
-      clerkSsn: activeClerk ? String(activeClerk.ssn) : undefined,
-    };
-
-    let conflictOccurred = false;
-
-    const runnerResult = await this.operationRunner.execute(
-      async () => {
-        const response = await this.hospitalDataAccess.bookAppointment(payload);
-        if (!response.success) {
-          throw new Error(response.message || 'Failed to schedule appointment.');
-        }
-        return response;
+    const result = await this.submissionCoordinator.submitAppointment({
+      patient: this.selectedPatient(),
+      doctor: this.selectedDoctor(),
+      clerk: this.activeClerk(),
+      date: this.formattedDate(),
+      timeSlot: this.selectedTimeSlot(),
+      reason: this.appointmentNotes().reason,
+      onConflict: () => {
+        this._selectedTimeSlot.set(null);
+        this.timeSlotsResource.reload();
       },
-      {
-        successMessage: 'Appointment successfully scheduled.',
-        errorMessageResolver: (err: unknown) => {
-          if (err instanceof BookingConflictError || (err as any)?.status === 409) {
-            conflictOccurred = true;
-            this._selectedTimeSlot.set(null);
-            this.timeSlotsResource.reload();
-            return 'Selected slot was just booked by another user. Please choose an alternate slot.';
-          }
-          return err instanceof Error
-            ? err.message
-            : (err as any)?.error?.error ||
-                'Failed to schedule appointment. Please check your data and retry.';
-        },
-      },
-    );
+    });
 
-    if (runnerResult.status === 'success' && runnerResult.data) {
+    if (result.status === 'success') {
       this._appointmentSuccess.set(true);
-      this._createdAppointmentId.set(runnerResult.data.appointmentId ?? null);
-      return {
-        status: 'success',
-        appointmentId: runnerResult.data.appointmentId,
-      };
+      this._createdAppointmentId.set(result.appointmentId ?? null);
     }
-
-    if (
-      conflictOccurred ||
-      runnerResult.error instanceof BookingConflictError ||
-      (runnerResult.error as any)?.status === 409
-    ) {
-      return { status: 'conflict' };
-    }
-
-    if (runnerResult.status === 'cancelled') {
-      return { status: 'error', message: 'An operation is already in progress.' };
-    }
-
-    const errorMsg =
-      runnerResult.error instanceof Error
-        ? runnerResult.error.message
-        : (runnerResult.error as any)?.error?.error ||
-          'Failed to schedule appointment. Please check your data and retry.';
-    return { status: 'error', message: errorMsg };
+    return result;
   }
 
   reset(): void {
