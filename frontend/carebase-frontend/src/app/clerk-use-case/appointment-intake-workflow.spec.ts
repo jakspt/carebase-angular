@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
+import { AppointmentSubmissionCoordinator } from './appointment-submission-coordinator';
 import { Clerk, Doctor, Patient } from '../models/models';
 import {
   ActorSession,
@@ -45,6 +46,7 @@ describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        AppointmentSubmissionCoordinator,
         AppointmentIntakeWorkflow,
         ActorSession,
         provideTestHospitalData(),

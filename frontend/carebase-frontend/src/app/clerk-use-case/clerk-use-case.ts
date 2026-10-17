@@ -18,6 +18,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Clerk, Doctor, Patient } from '../models/models';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
+import { AppointmentSubmissionCoordinator } from './appointment-submission-coordinator';
 
 @Component({
   imports: [
@@ -39,7 +40,11 @@ import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
     MatTooltipModule,
     DatePipe,
   ],
-  providers: [provideNativeDateAdapter(), AppointmentIntakeWorkflow],
+  providers: [
+    provideNativeDateAdapter(),
+    AppointmentSubmissionCoordinator,
+    AppointmentIntakeWorkflow,
+  ],
   selector: 'app-clerk-use-case',
   styleUrl: './clerk-use-case.css',
   templateUrl: './clerk-use-case.html',
