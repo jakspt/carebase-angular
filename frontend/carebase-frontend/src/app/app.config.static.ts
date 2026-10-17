@@ -4,9 +4,9 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { routes } from './app.routes';
 import {
-  HOSPITAL_DATA_ACCESS,
   IN_MEMORY_ADAPTER_CONFIG,
   InMemoryHospitalDataAdapter,
+  provideHospitalDataAccessProviders,
 } from './services';
 
 export const appConfig: ApplicationConfig = {
@@ -14,7 +14,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withViewTransitions(), withHashLocation()),
     provideNativeDateAdapter(),
-    { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+    ...provideHospitalDataAccessProviders(InMemoryHospitalDataAdapter),
     {
       provide: IN_MEMORY_ADAPTER_CONFIG,
       useValue: {

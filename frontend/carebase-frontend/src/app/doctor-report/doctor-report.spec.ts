@@ -6,6 +6,7 @@ import { MatTableHarness } from '@angular/material/table/testing';
 import { DoctorReport } from './doctor-report';
 import {
   HOSPITAL_DATA_ACCESS,
+  REPORTING_DATA_ACCESS,
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
 } from '../services';
@@ -151,7 +152,7 @@ describe('DoctorReport', () => {
       providers: [
         provideNoopAnimations(),
         {
-          provide: HOSPITAL_DATA_ACCESS,
+          provide: REPORTING_DATA_ACCESS,
           useValue: {
             getDoctorEarningsReport: () => ({
               hasValue: () => true,

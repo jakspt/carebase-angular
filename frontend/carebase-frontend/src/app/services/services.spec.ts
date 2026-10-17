@@ -25,6 +25,10 @@ describe('Services Sub-Domain and Root Barrels', () => {
   describe('data-access barrel', () => {
     it('exports hospital data access injection token and domain errors', () => {
       expect(DataAccessBarrel.HOSPITAL_DATA_ACCESS).toBeDefined();
+      expect(DataAccessBarrel.SCHEDULING_DATA_ACCESS).toBeDefined();
+      expect(DataAccessBarrel.CLINICAL_DATA_ACCESS).toBeDefined();
+      expect(DataAccessBarrel.REPORTING_DATA_ACCESS).toBeDefined();
+      expect(DataAccessBarrel.SYSTEM_DATA_ACCESS).toBeDefined();
       expect(typeof DataAccessBarrel.HospitalDataError).toBe('function');
       expect(typeof DataAccessBarrel.BookingConflictError).toBe('function');
       expect(typeof DataAccessBarrel.PatientNotFoundError).toBe('function');
@@ -34,6 +38,7 @@ describe('Services Sub-Domain and Root Barrels', () => {
       expect(typeof DataAccessBarrel.HttpHospitalDataAdapter).toBe('function');
       expect(typeof DataAccessBarrel.InMemoryHospitalDataAdapter).toBe('function');
       expect(DataAccessBarrel.IN_MEMORY_ADAPTER_CONFIG).toBeDefined();
+      expect(typeof DataAccessBarrel.provideHospitalDataAccessProviders).toBe('function');
       expect(typeof DataAccessBarrel.provideTestHospitalData).toBe('function');
       expect(typeof DataAccessBarrel.createDemoHospitalData).toBe('function');
       expect(typeof DataAccessBarrel.createMinimalHospitalData).toBe('function');
@@ -50,6 +55,11 @@ describe('Services Sub-Domain and Root Barrels', () => {
 
     it('re-exports data-access symbols', () => {
       expect(RootServices.HOSPITAL_DATA_ACCESS).toBeDefined();
+      expect(RootServices.SCHEDULING_DATA_ACCESS).toBeDefined();
+      expect(RootServices.CLINICAL_DATA_ACCESS).toBeDefined();
+      expect(RootServices.REPORTING_DATA_ACCESS).toBeDefined();
+      expect(RootServices.SYSTEM_DATA_ACCESS).toBeDefined();
+      expect(typeof RootServices.provideHospitalDataAccessProviders).toBe('function');
       expect(typeof RootServices.HttpHospitalDataAdapter).toBe('function');
       expect(typeof RootServices.InMemoryHospitalDataAdapter).toBe('function');
       expect(typeof RootServices.provideTestHospitalData).toBe('function');

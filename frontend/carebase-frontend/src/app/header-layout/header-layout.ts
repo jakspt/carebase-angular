@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatAnchor } from '@angular/material/button';
-import { ActorRole, ActorSession, HOSPITAL_DATA_ACCESS } from '../services';
+import { ActorRole, ActorSession, SYSTEM_DATA_ACCESS } from '../services';
 import { UpperCasePipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -27,10 +27,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class HeaderLayout {
   private readonly actorSession = inject(ActorSession);
-  private readonly hospitalDataAccess = inject(HOSPITAL_DATA_ACCESS);
+  private readonly systemDataAccess = inject(SYSTEM_DATA_ACCESS);
   private readonly router = inject(Router);
 
-  private readonly dbStatusResource = this.hospitalDataAccess.getDatabaseStatus();
+  private readonly dbStatusResource = this.systemDataAccess.getDatabaseStatus();
 
   readonly activeRole = this.actorSession.role;
   readonly currentUser = this.activeRole;

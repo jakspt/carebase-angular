@@ -25,11 +25,11 @@ import {
   ConsultationFrequencyReport,
   DateRange,
   DoctorEarningsReport,
-  HOSPITAL_DATA_ACCESS,
   HospitalDataAccess,
   PatientVisitsReport,
   TimeSlotQueryParams,
   TimeSlotsResult,
+  provideHospitalDataAccessProviders,
 } from './hospital-data-access';
 import {
   HospitalFixtureData,
@@ -414,6 +414,6 @@ export function provideTestHospitalData(options?: TestHospitalDataOptions): Prov
   };
   return [
     { provide: IN_MEMORY_ADAPTER_CONFIG, useValue: config },
-    { provide: HOSPITAL_DATA_ACCESS, useClass: InMemoryHospitalDataAdapter },
+    ...provideHospitalDataAccessProviders(InMemoryHospitalDataAdapter),
   ];
 }
