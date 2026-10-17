@@ -10,7 +10,7 @@ import {
   CreateAppointmentRequest,
   CreateAppointmentResponse,
   DbStatus,
-} from '../models/models';
+} from '../../models/models';
 import {
   AddTreatmentResponse,
   BookingConflictError,

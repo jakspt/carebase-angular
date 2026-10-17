@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { LocationStrategy, HashLocationStrategy } from '@angular/common';
-import { HOSPITAL_DATA_ACCESS } from './services/hospital-data-access';
 import {
+  HOSPITAL_DATA_ACCESS,
   IN_MEMORY_ADAPTER_CONFIG,
   InMemoryHospitalDataAdapter,
-} from './services/in-memory-hospital-data-adapter';
+} from './services';
 import { appConfig } from './app.config.static';
 
 describe('appConfig (static)', () => {

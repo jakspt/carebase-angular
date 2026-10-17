@@ -18,7 +18,7 @@ import {
   CreateAppointmentRequest,
   CreateAppointmentResponse,
   DbStatus,
-} from '../models/models';
+} from '../../models/models';
 import {
   AddTreatmentResponse,
   BookingConflictError,
@@ -37,9 +37,9 @@ import {
   createDemoHospitalData,
   createMinimalHospitalData,
 } from './mock-hospital-data';
-import { calculateTimeSlots } from './time-slot-engine';
-import { calculateDoctorEarnings } from './doctor-earnings-engine';
-import { calculateConsultationFrequency } from './consultation-frequency-engine';
+import { calculateTimeSlots } from '../engines/time-slot-engine';
+import { calculateDoctorEarnings } from '../engines/doctor-earnings-engine';
+import { calculateConsultationFrequency } from '../engines/consultation-frequency-engine';
 
 export type { StoredAppointment, HospitalFixtureData };
 

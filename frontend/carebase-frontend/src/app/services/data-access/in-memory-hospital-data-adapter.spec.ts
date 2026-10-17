@@ -12,7 +12,7 @@ import {
   DateRange,
   HOSPITAL_DATA_ACCESS,
 } from './hospital-data-access';
-import { CreateAppointmentRequest, Treatment } from '../models/models';
+import { CreateAppointmentRequest, Treatment } from '../../models/models';
 
 describe('InMemoryHospitalDataAdapter', () => {
   let adapter: InMemoryHospitalDataAdapter;

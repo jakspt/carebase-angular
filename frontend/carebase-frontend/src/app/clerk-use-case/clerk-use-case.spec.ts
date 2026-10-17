@@ -14,10 +14,13 @@ import { MatSnackBarHarness } from '@angular/material/snack-bar/testing';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
 import { ClerkUseCase } from './clerk-use-case';
-import { ActorSession } from '../services/actor-session';
 import { Clerk, Doctor, Patient } from '../models/models';
-import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
-import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
+import {
+  ActorSession,
+  HOSPITAL_DATA_ACCESS,
+  HospitalDataAccess,
+  provideTestHospitalData,
+} from '../services';
 
 describe('ClerkUseCase', () => {
   let component: ClerkUseCase;

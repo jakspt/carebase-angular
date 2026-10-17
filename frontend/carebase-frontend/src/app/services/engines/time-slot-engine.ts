@@ -1,4 +1,4 @@
-import { TimeSlot, TimeSlotsResponse } from '../models/models';
+import { TimeSlot, TimeSlotsResponse } from '../../models/models';
 
 export interface TimeSlotAppointment {
   date: string;

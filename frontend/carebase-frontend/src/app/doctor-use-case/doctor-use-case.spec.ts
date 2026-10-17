@@ -7,13 +7,14 @@ import { MatButtonHarness } from '@angular/material/button/testing';
 import { By } from '@angular/platform-browser';
 import { MatStepper } from '@angular/material/stepper';
 import { DoctorUseCase } from './doctor-use-case';
-import { HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
+import { Appointment, Patient } from '../models/models';
 import {
+  HOSPITAL_DATA_ACCESS,
   InMemoryHospitalDataAdapter,
   provideTestHospitalData,
-} from '../services/in-memory-hospital-data-adapter';
-import { Appointment, Patient } from '../models/models';
-import { HeadlessSnackBar, provideTestOperationRunner } from '../services/operation-runner';
+  HeadlessSnackBar,
+  provideTestOperationRunner,
+} from '../services';
 
 describe('DoctorUseCase', () => {
   let component: DoctorUseCase;

@@ -1,14 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { AppointmentIntakeWorkflow } from './appointment-intake-workflow';
-import { ActorSession } from '../services/actor-session';
 import { Clerk, Doctor, Patient } from '../models/models';
-import { HOSPITAL_DATA_ACCESS, HospitalDataAccess } from '../services/hospital-data-access';
-import { provideTestHospitalData } from '../services/in-memory-hospital-data-adapter';
 import {
+  ActorSession,
+  HOSPITAL_DATA_ACCESS,
+  HospitalDataAccess,
+  provideTestHospitalData,
   HeadlessSnackBar,
   OperationRunner,
   provideTestOperationRunner,
-} from '../services/operation-runner';
+} from '../services';
 
 describe('AppointmentIntakeWorkflow (Ticket 01)', () => {
   let workflow: AppointmentIntakeWorkflow;

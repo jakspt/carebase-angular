@@ -11,9 +11,12 @@ import {
   Patient,
   TimeSlot,
 } from '../models/models';
-import { ActorSession } from '../services/actor-session';
-import { BookingConflictError, HOSPITAL_DATA_ACCESS } from '../services/hospital-data-access';
-import { OperationRunner } from '../services/operation-runner';
+import {
+  ActorSession,
+  BookingConflictError,
+  HOSPITAL_DATA_ACCESS,
+  OperationRunner,
+} from '../services';
 import { form, maxLength } from '@angular/forms/signals';
 import { createDebouncedLoadingSignal, parseIsoDate } from '../utils';
 
