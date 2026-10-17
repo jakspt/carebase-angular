@@ -4,9 +4,9 @@
 
 **Blocked by:** 03: Implement Data Access Interface Segregation
 
-**Status:** claimed
+**Status:** resolved
 
-- [ ] Database status query eliminates the synthetic 20-line mock resource object in favor of standard resource semantics when loading simulation is active.
-- [ ] Query methods in the in-memory adapter utilize a concise internal helper to reduce repetitive resource setup boilerplate.
-- [ ] Canonical `AppointmentConflictError` is established per the domain glossary, with `BookingConflictError` maintained as a backward-compatible alias.
-- [ ] In-memory adapter test suite passes with zero regressions.
+- [x] Database status query eliminates the synthetic 20-line mock resource object in favor of standard resource semantics when loading simulation is active.
+- [x] Query methods in the in-memory adapter utilize a concise internal helper to reduce repetitive resource setup boilerplate.
+- [x] Canonical `AppointmentConflictError` is established per the domain glossary, with `BookingConflictError` maintained as a backward-compatible alias.
+- [x] In-memory adapter test suite passes with zero regressions.

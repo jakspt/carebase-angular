@@ -8,6 +8,7 @@ import {
   SYSTEM_DATA_ACCESS,
   HospitalDataAccess,
   HospitalDataError,
+  AppointmentConflictError,
   BookingConflictError,
   PatientNotFoundError,
   provideHospitalDataAccessProviders,
@@ -127,19 +128,28 @@ describe('HospitalDataAccess Port and Domain Errors', () => {
       expect(err.cause).toEqual({ status: 500 });
     });
 
-    it('BookingConflictError should extend HospitalDataError', () => {
-      const err = new BookingConflictError();
+    it('AppointmentConflictError should extend HospitalDataError and be aliased by BookingConflictError', () => {
+      const err = new AppointmentConflictError();
       expect(err).toBeInstanceOf(Error);
       expect(err).toBeInstanceOf(HospitalDataError);
+      expect(err).toBeInstanceOf(AppointmentConflictError);
       expect(err).toBeInstanceOf(BookingConflictError);
-      expect(err.name).toBe('BookingConflictError');
-      expect(err.message).toBe('Appointment time slot is no longer available.');
+      expect(err.name).toBe('AppointmentConflictError');
+      expect(err.message).toBe('Appointment scheduling conflict.');
     });
 
-    it('BookingConflictError should support custom message and cause', () => {
-      const err = new BookingConflictError('Slot taken', { status: 409 });
+    it('AppointmentConflictError should support custom message and cause', () => {
+      const err = new AppointmentConflictError('Slot taken', { status: 409 });
       expect(err.message).toBe('Slot taken');
       expect(err.cause).toEqual({ status: 409 });
+    });
+
+    it('BookingConflictError should alias AppointmentConflictError for backward compatibility', () => {
+      expect(BookingConflictError).toBe(AppointmentConflictError);
+      const bookingErr = new BookingConflictError();
+      expect(bookingErr).toBeInstanceOf(AppointmentConflictError);
+      expect(bookingErr).toBeInstanceOf(HospitalDataError);
+      expect(bookingErr.name).toBe('AppointmentConflictError');
     });
 
     it('PatientNotFoundError should extend HospitalDataError', () => {
